@@ -13,9 +13,10 @@
     <div class="edit-toolbar">
       <div class="toolbar-row">
         <h1>Edit Mode</h1>
-        <div class="version-buttons">
-          <button class="version-btn active" data-version="1">Version 1 (Grid Feed)</button>
-          <button class="version-btn" data-version="2">Version 2 (Clothesline)</button>
+        <div class="version-buttons" id="version-buttons">
+          <button class="version-btn active" data-version="1" title="">Grid</button>
+          <button class="version-btn" data-version="2" title="">Clothesline</button>
+          <button class="version-btn" data-version="3" title="">Desk</button>
           <button class="version-btn create-btn">+ Create New ✨</button>
         </div>
         <div class="edit-controls">
@@ -82,6 +83,8 @@
     <div class="modal">
       <h2>Create a new version <span class="mock-tag">mock</span></h2>
       <p>Describe the layout you want and Claude will generate it as a new version of your site.</p>
+      <p class="hint">Example prompts for built-in layouts:</p>
+      <div class="prompt-examples" id="prompt-examples"></div>
       <textarea id="ai-prompt" rows="3" placeholder="e.g. a dark, full-bleed scrapbook layout"></textarea>
       <div class="modal-actions">
         <button id="create-cancel" class="ghost-btn">Cancel</button>
@@ -96,7 +99,7 @@
       <h2>Publish to GitHub <span class="mock-tag">mock</span></h2>
       <p>This will freeze your work into static files and push them to your repo:</p>
       <ul class="publish-steps">
-        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>manifest.json</code>, <code>theme.json</code></li>
+        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>ver3.html</code>, <code>manifest.json</code>, <code>theme.json</code></li>
         <li><code>git add . &amp;&amp; git commit -m "Update portfolio"</code></li>
         <li><code>git push origin main</code> → GitHub Actions deploys</li>
       </ul>
@@ -109,6 +112,7 @@
     </div>
   </div>
 
+  <script src="./scripts/layouts.js"></script>
   <script src="./scripts/edit-mode.js"></script>
 </body>
 </html>

@@ -30,6 +30,7 @@ This is a mockup of a malleable, editable art portfolio template site, designed 
    - **Edit mode**: http://localhost:8080/edit.html
    - **Grid view**: http://localhost:8080/ver1.html
    - **Clothesline view**: http://localhost:8080/ver2.html
+   - **Desk view**: http://localhost:8080/ver3.html
 
    The views read your `Art/` folder live, so newly added art shows up on refresh.
    Hit **Save** in the editor to write the static files for deploy.
@@ -51,12 +52,22 @@ Edit `theme.json` to control:
 
 Changes to `theme.json` are immediately visible in all views.
 
+### Built-in layouts
+
+| Layout | File | Example prompt |
+|--------|------|----------------|
+| **Grid** | `ver1.html` | A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders. |
+| **Clothesline** | `ver2.html` | Horizontal scroll strips per collection, like prints clipped on a clothesline — peek and swipe sideways. |
+| **Desk** | `ver3.html` | A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps. |
+
+Prompts live in `scripts/layouts.js` and appear as chips in the editor's **+ Create New** modal (hover a layout button in edit mode to see its prompt).
+
 ### Adding New Representations
 
-1. Create a new HTML file (e.g., `ver3.html`)
+1. Create a new HTML file (e.g., `ver4.html`)
 2. Load manifest and theme using `loader.js`
 3. Render your custom layout reading from `manifest.collections`
-4. Add a button in `edit.html` to switch to your new version
+4. Add an entry to `scripts/layouts.js` and a button in `edit.html`
 
 ### Deploy to GitHub Pages
 
@@ -144,7 +155,7 @@ Avoid `vercel/pkg` — it's deprecated/archived.)
 - [ ] Add image upload/reordering in edit mode
 - [ ] Implement AI representation generator
 - [ ] Add save/sync to backend (Firebase, Netlify, etc.)
-- [ ] Create ver3+ custom layouts
+- [x] Create ver3+ custom layouts (Desk view + example prompts in `scripts/layouts.js`)
 - [ ] Add dark mode toggle
 - [ ] Mobile-optimized edit interface
 

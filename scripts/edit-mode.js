@@ -14,11 +14,15 @@ async function initEditMode() {
   document.getElementById('color-primary').value = editedTheme.colors.primary;
   document.getElementById('color-accent').value = editedTheme.colors.accent;
 
-  // Load grid gap
+  // Load grid gap (slider uses px; keep CSS var in sync for desk layout)
   const gridGapSlider = document.getElementById('grid-gap');
-  const gridGapValue = parseInt(editedTheme.spacing.gridGap);
-  gridGapSlider.value = gridGapValue;
-  document.getElementById('grid-gap-display').textContent = gridGapValue + 'px';
+  const gridGapPx = Math.min(40, Math.max(8, Math.round(parseSpacingPx(editedTheme.spacing.gridGap))));
+  gridGapSlider.value = gridGapPx;
+  editedTheme.spacing.gridGap = gridGapPx + 'px';
+  document.documentElement.style.setProperty('--space-gridGap', gridGapPx + 'px');
+  document.getElementById('grid-gap-display').textContent = gridGapPx + 'px';
+
+  applyLayoutMetadata();
 
   // Setup event listeners
   setupVersionButtons();
@@ -57,10 +61,42 @@ function setupDeviceToggle() {
     mobileBtn.classList.toggle('active', mobile);
     desktopBtn.classList.toggle('active', !mobile);
     sizeLabel.textContent = mobile ? '390 px' : 'Desktop';
+    updatePreview();
   };
 
   desktopBtn.addEventListener('click', () => set('desktop'));
   mobileBtn.addEventListener('click', () => set('mobile'));
+}
+
+function getPreviewWidth() {
+  const frame = document.getElementById('device-frame');
+  return frame.classList.contains('mobile') ? 390 : 1100;
+}
+
+function applyLayoutMetadata() {
+  PORTFOLIO_LAYOUTS.forEach((layout) => {
+    const btn = document.querySelector(`.version-btn[data-version="${layout.id}"]`);
+    if (btn) {
+      btn.textContent = layout.name;
+      btn.title = layout.examplePrompt;
+    }
+  });
+
+  const examples = document.getElementById('prompt-examples');
+  if (!examples) return;
+
+  examples.innerHTML = '';
+  PORTFOLIO_LAYOUTS.forEach((layout) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'prompt-example';
+    chip.textContent = layout.name;
+    chip.title = layout.examplePrompt;
+    chip.addEventListener('click', () => {
+      document.getElementById('ai-prompt').value = layout.examplePrompt;
+    });
+    examples.appendChild(chip);
+  });
 }
 
 // ---- "Create New" → generate modal (MOCK) ----
@@ -158,11 +194,17 @@ function setupPropertyListeners() {
 
   document.getElementById('grid-gap').addEventListener('input', (e) => {
     const value = e.target.value;
-    editedTheme.spacing.gridGap = value + 'rem';
+    editedTheme.spacing.gridGap = value + 'px';
     document.documentElement.style.setProperty('--space-gridGap', value + 'px');
     document.getElementById('grid-gap-display').textContent = value + 'px';
     updatePreview();
   });
+}
+
+function getEditedGridGapPx() {
+  const slider = document.getElementById('grid-gap');
+  if (slider) return parseInt(slider.value, 10) || 24;
+  return parseSpacingPx(editedTheme.spacing?.gridGap);
 }
 
 function setupPreview() {
@@ -172,8 +214,8 @@ function setupPreview() {
   document.getElementById('save-btn').addEventListener('click', saveChanges);
 
   document.getElementById('preview-btn').addEventListener('click', () => {
-    const url = currentVersion === 1 ? './ver1.html' : './ver2.html';
-    window.open(url, '_blank');
+    const layout = getLayout(currentVersion);
+    window.open(`./${layout?.file || 'ver1.html'}`, '_blank');
   });
 }
 
@@ -209,46 +251,54 @@ function updatePreview() {
   const title = document.getElementById('title-input').value;
   const container = document.getElementById('preview-frame');
 
-  // Render HTML directly into preview
-  const versionFile = currentVersion === 1 ? 'ver1.html' : 'ver2.html';
-  
   // Create an iframe to sandbox the preview
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
-  iframe.sandbox.add('allow-same-origin');
+  iframe.sandbox.add('allow-same-origin', 'allow-scripts');
   
   container.appendChild(iframe);
 
   // Inject content into iframe
   window.appData.then(({ manifest }) => {
     const iframeDoc = iframe.contentDocument;
-    const html = buildPreviewHTML(title, manifest, currentVersion);
+    const html = buildPreviewHTML(title, manifest, currentVersion, getPreviewWidth());
     iframeDoc.write(html);
     iframeDoc.close();
   });
 }
 
-function buildPreviewHTML(title, manifest, version) {
-  const isGrid = version === 1;
-  const viewClass = isGrid ? 'grid-view' : 'images-scroll';
-  const containerClass = isGrid ? 'grid-view' : 'collection-strip';
-
+function buildPreviewHTML(title, manifest, version, previewWidth = 1100) {
+  const layout = getLayout(version) || getLayout(1);
   let collectionsHTML = '';
-  manifest.collections.forEach(collection => {
-    const sectionClass = isGrid ? '' : 'class="collection-strip"';
-    const titleHtml = `<h2${isGrid ? '' : ' class="strip-title"'}>${collection.name}</h2>`;
-    
-    let itemsHTML = '';
-    collection.images.forEach(img => {
-      const itemClass = isGrid ? 'grid-item' : 'scroll-item';
-      itemsHTML += `<div class="${itemClass}"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
-    });
 
-    const scrollOrGridHTML = `<div class="${viewClass}">${itemsHTML}</div>`;
-    collectionsHTML += `<section ${sectionClass}>${titleHtml}${scrollOrGridHTML}</section>`;
+  manifest.collections.forEach((collection) => {
+    if (layout.key === 'grid') {
+      let itemsHTML = '';
+      collection.images.forEach((img) => {
+        itemsHTML += `<div class="grid-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
+      });
+      collectionsHTML += `<section><h2>${collection.name}</h2><div class="grid-view">${itemsHTML}</div></section>`;
+      return;
+    }
+
+    if (layout.key === 'clothesline') {
+      let itemsHTML = '';
+      collection.images.forEach((img) => {
+        itemsHTML += `<div class="scroll-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
+      });
+      collectionsHTML += `<section class="collection-strip"><h2 class="strip-title">${collection.name}</h2><div class="images-scroll">${itemsHTML}</div></section>`;
+      return;
+    }
+
+    const deskLayout = deskSurfaceLayout(collection.images.length, previewWidth - 48, getEditedGridGapPx());
+    let itemsHTML = '';
+    collection.images.forEach((img, index) => {
+      itemsHTML += `<div class="desk-item" style="${deskItemStyleAttr(index, deskLayout)}"><img src="${img}" alt="artwork" draggable="false" onerror="this.remove()"></div>`;
+    });
+    collectionsHTML += `<section class="desk-collection"><h2 class="desk-title">${collection.name}</h2><div class="desk-surface" style="width: 100%; height: ${deskLayout.height}px; min-height: ${deskLayout.height}px; max-height: ${deskLayout.height}px; overflow: visible">${itemsHTML}</div></section>`;
   });
 
   return `<!DOCTYPE html>
@@ -269,14 +319,20 @@ function buildPreviewHTML(title, manifest, version) {
     h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; }
     h2 { font-size: 1.5rem; font-weight: 800; margin: 2rem 0 1rem; }
     .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
-    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-gridGap); padding: 0.5rem 0 2rem; }
-    .grid-item, .scroll-item { aspect-ratio: 1; background: var(--color-accent); border: 3px solid var(--color-primary); overflow: hidden; }
-    .grid-item:nth-child(even), .scroll-item:nth-child(even) { background: var(--color-green); }
-    .grid-item img, .scroll-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .collection-strip { margin: 2rem 0; }
-    .strip-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
+    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, 220px); gap: var(--space-gridGap); padding: 0.5rem 0 2rem; }
+    .grid-item, .scroll-item, .desk-item { aspect-ratio: 1; background: var(--color-accent); border: 3px solid var(--color-primary); overflow: hidden; }
+    .grid-item, .scroll-item { width: 220px; height: 220px; flex: 0 0 220px; }
+    .grid-item:nth-child(even), .scroll-item:nth-child(even), .desk-item:nth-child(even) { background: var(--color-green); }
+    .grid-item img, .scroll-item img, .desk-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .collection-strip, .desk-collection { margin: 2rem 0; }
+    .strip-title, .desk-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
     .images-scroll { display: flex; gap: var(--space-gridGap); overflow-x: auto; padding-bottom: 1rem; }
     .scroll-item { flex: 0 0 220px; }
+    .desk-surface { position: relative; padding: 0; overflow: visible; background: var(--color-secondary); border: 4px solid var(--color-primary); }
+    .desk-collection { overflow: visible; }
+    .desk-item { position: absolute; cursor: grab; touch-action: none; user-select: none; box-shadow: 3px 5px 0 var(--color-primary); }
+    .desk-item--dragging { cursor: grabbing; transition: none; transform: rotate(var(--desk-rotate, 0deg)) !important; z-index: 1000 !important; box-shadow: 5px 7px 0 var(--color-primary); }
+    .desk-item img { pointer-events: none; -webkit-user-drag: none; }
   </style>
 </head>
 <body>
@@ -286,7 +342,8 @@ function buildPreviewHTML(title, manifest, version) {
   <main class="container">
     ${collectionsHTML}
   </main>
-</body>
+  ${layout.key === 'desk' ? `<script src="./scripts/desk-drag.js"><\/script>
+  <script>document.querySelectorAll('.desk-surface').forEach(bindDeskDragging);<\/script>` : ''}
 </html>`;
 }
 

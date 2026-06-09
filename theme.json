@@ -12,7 +12,7 @@
     "body": "1rem"
   },
   "spacing": {
-    "gridGap": "8rem",
+    "gridGap": "40px",
     "imagePadding": "1rem"
   }
 }
