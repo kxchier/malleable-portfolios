@@ -1,0 +1,42 @@
+{
+  "collections": [
+    {
+      "name": "Comics / Fall Chilly",
+      "images": [
+        "Art/Comics/Fall Chilly/00.jpg",
+        "Art/Comics/Fall Chilly/01.jpg",
+        "Art/Comics/Fall Chilly/02.jpg",
+        "Art/Comics/Fall Chilly/03.jpg",
+        "Art/Comics/Fall Chilly/04.jpg",
+        "Art/Comics/Fall Chilly/05.jpg",
+        "Art/Comics/Fall Chilly/06.jpg",
+        "Art/Comics/Fall Chilly/07.jpg",
+        "Art/Comics/Fall Chilly/08.jpg",
+        "Art/Comics/Fall Chilly/09.jpg"
+      ]
+    },
+    {
+      "name": "Comics / vanishing",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE01.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE02.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE03.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE04.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE05.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE06.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE07.jpg",
+        "Art/Comics/vanishing/OBJECT_PERMANENCE08.jpg"
+      ]
+    },
+    {
+      "name": "VTubers",
+      "images": [
+        "Art/VTubers/Doodlezone_.jpg",
+        "Art/VTubers/Kyle.jpg",
+        "Art/VTubers/Mouseydog1.png",
+        "Art/VTubers/Quinn.jpg",
+        "Art/VTubers/Yin_.jpg"
+      ]
+    }
+  ]
+}

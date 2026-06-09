@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.local
+dist/
+build/
+
+# Packaged single-executable app (built by scripts/pack.sh)
+PortfolioEditor
+
+# AI / secrets — never commit these (kept local-only, see edit mode)
+secrets.local.json
+*.local.json
+.claude-api-key

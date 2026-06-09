@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — Grid View</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./scripts/loader.js"></script>
+</head>
+<body>
+  <header>
+    <h1>My Art Portfolio</h1>
+    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">[Grid]</a> | <a href="./ver2.html">Clothesline</a> | <a href="./edit.html">Edit</a></p>
+  </header>
+
+  <main class="container">
+    <div id="content"></div>
+  </main>
+
+  <script>
+    window.appData.then(({ manifest, theme }) => {
+      const content = document.getElementById('content');
+      
+      manifest.collections.forEach(collection => {
+        const section = document.createElement('section');
+        section.innerHTML = `<h2>${collection.name}</h2>`;
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid-view';
+        
+        collection.images.forEach(img => {
+          const item = document.createElement('div');
+          item.className = 'grid-item';
+          item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
+          grid.appendChild(item);
+        });
+        
+        section.appendChild(grid);
+        content.appendChild(section);
+      });
+    });
+  </script>
+</body>
+</html>

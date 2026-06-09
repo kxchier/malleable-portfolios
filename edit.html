@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — Editor</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./edit-mode.css">
+  <script src="./scripts/loader.js"></script>
+</head>
+<body class="edit-mode">
+  <header class="edit-header">
+    <div class="edit-toolbar">
+      <div class="toolbar-row">
+        <h1>Edit Mode</h1>
+        <div class="version-buttons">
+          <button class="version-btn active" data-version="1">Version 1 (Grid Feed)</button>
+          <button class="version-btn" data-version="2">Version 2 (Clothesline)</button>
+          <button class="version-btn create-btn">+ Create New ✨</button>
+        </div>
+        <div class="edit-controls">
+          <button id="toggle-props-btn" class="toggle-props-btn" aria-expanded="false">⚙ Edit design</button>
+          <button id="save-btn">Save Changes</button>
+          <button id="preview-btn">Preview</button>
+          <button id="publish-btn" class="publish-btn">Publish to GitHub ↑</button>
+        </div>
+      </div>
+
+      <!-- Direct-manipulation controls — collapsible, hidden until "Edit design" is clicked -->
+      <div id="properties-panel" class="properties-panel" hidden>
+        <div class="property-group">
+          <label>Portfolio Title</label>
+          <input type="text" id="title-input" placeholder="My Art Portfolio">
+        </div>
+        <div class="property-group">
+          <label>Primary Color</label>
+          <input type="color" id="color-primary" value="#000000">
+        </div>
+        <div class="property-group">
+          <label>Accent Color</label>
+          <input type="color" id="color-accent" value="#ff006e">
+        </div>
+        <div class="property-group">
+          <label>Grid Gap (px)</label>
+          <input type="range" id="grid-gap" min="8" max="40" value="32">
+          <span id="grid-gap-display">32px</span>
+        </div>
+        <div class="property-group">
+          <label>Claude API key <span class="mock-tag">mock</span></label>
+          <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off">
+          <div class="ai-key-row">
+            <button id="connect-ai-btn" class="ghost-btn">Connect</button>
+            <span id="ai-status" class="ai-status ai-status--off">not connected</span>
+          </div>
+          <p class="hint">Stored only in this browser — never committed or pushed.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="edit-container">
+    <div class="preview-toolbar">
+      <span class="preview-label">↓ your site (preview) ↓</span>
+      <div class="device-toggle">
+        <button id="device-desktop" class="device-btn active">🖥 Desktop</button>
+        <button id="device-mobile" class="device-btn">📱 Mobile</button>
+      </div>
+    </div>
+    <section class="preview-area">
+      <div id="device-frame" class="device-frame desktop">
+        <div class="device-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="device-size" id="device-size">Desktop</span>
+        </div>
+        <div id="preview-frame"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create a new version (mock) — only shown when "+ Create New" is clicked -->
+  <div id="create-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2>Create a new version <span class="mock-tag">mock</span></h2>
+      <p>Describe the layout you want and Claude will generate it as a new version of your site.</p>
+      <textarea id="ai-prompt" rows="3" placeholder="e.g. a dark, full-bleed scrapbook layout"></textarea>
+      <div class="modal-actions">
+        <button id="create-cancel" class="ghost-btn">Cancel</button>
+        <button id="generate-btn" class="publish-btn">✨ Generate version</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publish flow (mocked) -->
+  <div id="publish-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2>Publish to GitHub <span class="mock-tag">mock</span></h2>
+      <p>This will freeze your work into static files and push them to your repo:</p>
+      <ul class="publish-steps">
+        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>manifest.json</code>, <code>theme.json</code></li>
+        <li><code>git add . &amp;&amp; git commit -m "Update portfolio"</code></li>
+        <li><code>git push origin main</code> → GitHub Actions deploys</li>
+      </ul>
+      <p class="publish-url">Your live site:<br><code id="publish-url-text">https://you.github.io/art-portfolio/</code></p>
+      <div class="modal-actions">
+        <button id="publish-cancel" class="ghost-btn">Cancel</button>
+        <button id="publish-confirm" class="publish-btn">Publish</button>
+      </div>
+      <p id="publish-result" class="publish-result" hidden></p>
+    </div>
+  </div>
+
+  <script src="./scripts/edit-mode.js"></script>
+</body>
+</html>

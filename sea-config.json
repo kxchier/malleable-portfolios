@@ -1,0 +1,5 @@
+{
+  "main": "build/app.js",
+  "output": "build/sea-prep.blob",
+  "disableExperimentalSEAWarning": true
+}
