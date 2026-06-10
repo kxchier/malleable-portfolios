@@ -34,13 +34,24 @@ async function initEditMode() {
   setupDeviceToggle();
 }
 
-function ensureTypographyObject(token) {
-  const normalized = PortfolioContent.normalizeTypographyEntry(editedTheme.typography?.[token], token);
-  if (!editedTheme.typography) editedTheme.typography = {};
-  editedTheme.typography[token] = normalized;
+function getCurrentVersionKey() {
+  return getLayout(currentVersion)?.key || 'grid';
+}
+
+function ensureVersionTypographyObject(versionKey, token) {
+  if (!editedTheme.versions) editedTheme.versions = {};
+  if (!editedTheme.versions[versionKey]) editedTheme.versions[versionKey] = { typography: {} };
+  if (!editedTheme.versions[versionKey].typography) {
+    editedTheme.versions[versionKey].typography = {};
+  }
+  if (!editedTheme.versions[versionKey].typography[token]) {
+    editedTheme.versions[versionKey].typography[token] = {};
+  }
 }
 
 function handleTextEditChange({ id, role, scope, property, value }) {
+  const versionKey = getCurrentVersionKey();
+
   if (property === 'content') {
     if (!editedContent.text[id]) editedContent.text[id] = {};
     editedContent.text[id].content = value;
@@ -49,17 +60,19 @@ function handleTextEditChange({ id, role, scope, property, value }) {
     }
   } else if (scope === 'this') {
     if (!editedContent.text[id]) editedContent.text[id] = {};
-    editedContent.text[id][property] = value;
+    if (!editedContent.text[id].versions) editedContent.text[id].versions = {};
+    if (!editedContent.text[id].versions[versionKey]) editedContent.text[id].versions[versionKey] = {};
+    editedContent.text[id].versions[versionKey][property] = value;
   } else {
-    PortfolioContent.clearStyleOverrides(editedContent, scope, role, property);
+    PortfolioContent.clearStyleOverrides(editedContent, scope, role, property, versionKey);
     if (scope === 'role') {
       const token = PortfolioContent.ROLE_TOKENS[role];
-      ensureTypographyObject(token);
-      editedTheme.typography[token][property] = value;
+      ensureVersionTypographyObject(versionKey, token);
+      editedTheme.versions[versionKey].typography[token][property] = value;
     } else if (scope === 'all-headings') {
       ['heading1', 'heading2'].forEach((token) => {
-        ensureTypographyObject(token);
-        editedTheme.typography[token][property] = value;
+        ensureVersionTypographyObject(versionKey, token);
+        editedTheme.versions[versionKey].typography[token][property] = value;
       });
     }
   }
@@ -73,6 +86,7 @@ function patchPreview() {
       type: 'patch',
       theme: editedTheme,
       content: editedContent,
+      versionKey: getCurrentVersionKey(),
     }, '*');
   }
 }
@@ -312,9 +326,9 @@ function updatePreview() {
   });
 }
 
-function buildTextHeading(tag, className, id, role, fallback, theme, content) {
+function buildTextHeading(tag, className, id, role, fallback, theme, content, versionKey) {
   const text = PortfolioContent.getText(content, id, fallback);
-  const style = PortfolioContent.styleToCss(PortfolioContent.getElementStyle(theme, content, id, role));
+  const style = PortfolioContent.styleToCss(PortfolioContent.getElementStyle(theme, content, id, role, versionKey));
   const cls = className ? ` class="${className}"` : '';
   return `<${tag}${cls} data-text-id="${id}" data-text-role="${role}" data-text-fallback="${PortfolioContent.escapeHtml(fallback)}" style="${style}">${PortfolioContent.escapeHtml(text)}</${tag}>`;
 }
@@ -325,7 +339,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
 
   manifest.collections.forEach((collection, index) => {
     const cid = PortfolioContent.collectionId(index);
-    const heading = buildTextHeading('h2', layout.key === 'clothesline' ? 'strip-title' : layout.key === 'desk' ? 'desk-title' : '', cid, 'collection.title', collection.name, editedTheme, editedContent);
+    const heading = buildTextHeading('h2', layout.key === 'clothesline' ? 'strip-title' : layout.key === 'desk' ? 'desk-title' : '', cid, 'collection.title', collection.name, editedTheme, editedContent, layout.key);
 
     if (layout.key === 'grid') {
       let itemsHTML = '';
@@ -353,8 +367,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     collectionsHTML += `<section class="desk-collection">${heading}<div class="desk-surface" style="width: 100%; height: ${deskLayout.height}px; min-height: ${deskLayout.height}px; max-height: ${deskLayout.height}px; overflow: hidden">${itemsHTML}</div></section>`;
   });
 
-  const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent);
-  const editState = JSON.stringify({ theme: editedTheme, content: editedContent }).replace(/</g, '\\u003c');
+  const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
+  const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
 
   const deskScripts = layout.key === 'desk'
     ? `<script src="./scripts/desk-drag.js"><\/script>

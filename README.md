@@ -102,13 +102,10 @@ In the edit preview, **click any heading** (portfolio title or section title) to
 - **Font** — pick a font family
 - **Size** — adjust font size with a slider
 
-**Apply to** scope lets you choose what the style change affects:
+- **Text** — always applies to the heading you clicked (`content.json`)
+- **Font / Size** — **Apply to** lets you target this heading only, all section titles, or all headings **on the current layout** (Grid / Clothesline / Desk). Each layout keeps its own typography in `theme.json` under `versions`; per-heading overrides live in `content.json`.
 
-- **This text only** — override just that label (saved in `content.json`)
-- **All section titles** — update the `heading2` typography token (saved in `theme.json`)
-- **All headings** — update both `heading1` and `heading2` tokens
-
-Content overrides live in `content.json`; typography tokens live in `theme.json`. Both are written when you hit **Save**.
+Both files are written when you hit **Save**.
 
 ### Direct Manipulation Coming Soon
 

@@ -32,6 +32,15 @@ window.PortfolioContent = (() => {
     return normalizeTypographyEntry(entry, token);
   }
 
+  /** Typography for a layout version: global theme + per-version overrides. */
+  function getVersionTypography(theme, versionKey, token) {
+    const base = getTokenStyle(theme, token);
+    const versionEntry = theme?.versions?.[versionKey]?.typography?.[token];
+    if (!versionEntry) return base;
+    if (typeof versionEntry === 'string') return { ...base, fontSize: versionEntry };
+    return { ...base, ...versionEntry };
+  }
+
   function getTextOverride(content, id) {
     return content?.text?.[id] || {};
   }
@@ -44,18 +53,27 @@ window.PortfolioContent = (() => {
     return fallback;
   }
 
-  function getElementStyle(theme, content, id, role) {
-    const token = ROLE_TOKENS[role] || 'body';
-    const base = getTokenStyle(theme, token);
+  function getVersionTextStyle(content, id, versionKey) {
     const override = getTextOverride(content, id);
+    const versionStyle = override.versions?.[versionKey] || {};
     return {
-      fontFamily: override.fontFamily || base.fontFamily,
-      fontSize: override.fontSize || base.fontSize,
-      fontWeight: override.fontWeight || base.fontWeight,
+      fontFamily: versionStyle.fontFamily ?? override.fontFamily,
+      fontSize: versionStyle.fontSize ?? override.fontSize,
+      fontWeight: versionStyle.fontWeight ?? override.fontWeight,
     };
   }
 
-  /** IDs whose per-element style overrides should be cleared for a scoped edit. */
+  function getElementStyle(theme, content, id, role, versionKey) {
+    const token = ROLE_TOKENS[role] || 'body';
+    const base = versionKey ? getVersionTypography(theme, versionKey, token) : getTokenStyle(theme, token);
+    const textStyle = versionKey ? getVersionTextStyle(content, id, versionKey) : getTextOverride(content, id);
+    return {
+      fontFamily: textStyle.fontFamily || base.fontFamily,
+      fontSize: textStyle.fontSize || base.fontSize,
+      fontWeight: textStyle.fontWeight || base.fontWeight,
+    };
+  }
+
   function idsForStyleScope(content, scope, role) {
     const text = content?.text || {};
     if (scope === 'role') {
@@ -74,17 +92,32 @@ window.PortfolioContent = (() => {
     const entry = content.text?.[id];
     if (!entry) return;
     const hasContent = entry.content != null && String(entry.content).trim() !== '';
-    const hasStyle = entry.fontFamily || entry.fontSize || entry.fontWeight;
-    if (!hasContent && !hasStyle) delete content.text[id];
+    const hasLegacyStyle = entry.fontFamily || entry.fontSize || entry.fontWeight;
+    const hasVersionStyle = entry.versions && Object.values(entry.versions).some(
+      (v) => v && (v.fontFamily || v.fontSize || v.fontWeight)
+    );
+    if (!hasContent && !hasLegacyStyle && !hasVersionStyle) delete content.text[id];
+    if (entry.versions) {
+      Object.keys(entry.versions).forEach((vk) => {
+        const v = entry.versions[vk];
+        if (v && !v.fontFamily && !v.fontSize && !v.fontWeight) delete entry.versions[vk];
+      });
+      if (Object.keys(entry.versions).length === 0) delete entry.versions;
+    }
   }
 
-  /** Remove per-id style so theme tokens take effect for role / all-headings scope. */
-  function clearStyleOverrides(content, scope, role, property) {
-    if (scope === 'this' || property === 'content') return;
+  function clearStyleOverrides(content, scope, role, property, versionKey) {
+    if (scope === 'this' || property === 'content' || !versionKey) return;
     if (!content.text) content.text = {};
     idsForStyleScope(content, scope, role).forEach((id) => {
       if (!content.text[id]) return;
       delete content.text[id][property];
+      if (content.text[id].versions?.[versionKey]) {
+        delete content.text[id].versions[versionKey][property];
+        if (Object.keys(content.text[id].versions[versionKey]).length === 0) {
+          delete content.text[id].versions[versionKey];
+        }
+      }
       pruneTextEntry(content, id);
     });
   }
@@ -93,32 +126,34 @@ window.PortfolioContent = (() => {
     return `font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight}`;
   }
 
-  function applyTypographyVars(theme, root = document.documentElement) {
+  function applyTypographyVars(theme, versionKey, root = document.documentElement) {
     Object.keys(DEFAULT_TYPO).forEach((token) => {
-      const s = getTokenStyle(theme, token);
+      const s = versionKey
+        ? getVersionTypography(theme, versionKey, token)
+        : getTokenStyle(theme, token);
       root.style.setProperty(`--font-${token}`, s.fontSize);
       root.style.setProperty(`--font-${token}-family`, s.fontFamily);
       root.style.setProperty(`--font-${token}-weight`, s.fontWeight);
     });
   }
 
-  function applyToElement(el, theme, content) {
+  function applyToElement(el, theme, content, versionKey) {
     const id = el.dataset.textId;
     const role = el.dataset.textRole;
     if (!id || !role) return;
     const fallback = el.dataset.textFallback || el.textContent;
     el.textContent = getText(content, id, fallback);
-    const style = getElementStyle(theme, content, id, role);
+    const style = getElementStyle(theme, content, id, role, versionKey);
     el.style.fontFamily = style.fontFamily;
     el.style.fontSize = style.fontSize;
     el.style.fontWeight = style.fontWeight;
   }
 
-  function applyPageText(manifest, theme, content, root = document) {
-    applyTypographyVars(theme, root.documentElement);
+  function applyPageText(manifest, theme, content, versionKey, root = document) {
+    applyTypographyVars(theme, versionKey, root.documentElement);
 
     root.querySelectorAll('[data-text-id]').forEach((el) => {
-      applyToElement(el, theme, content);
+      applyToElement(el, theme, content, versionKey);
     });
 
     const titleEl = root.querySelector('[data-text-id="portfolio.title"]');
@@ -163,6 +198,7 @@ window.PortfolioContent = (() => {
     FONT_OPTIONS,
     normalizeTypographyEntry,
     getTokenStyle,
+    getVersionTypography,
     getText,
     getElementStyle,
     clearStyleOverrides,
