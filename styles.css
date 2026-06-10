@@ -5,11 +5,10 @@
 }
 
 :root {
-  /* Lo-fi prototype palette: warm gray + orange + green */
+  /* Lo-fi prototype palette: warm gray + orange hover */
   --color-primary: #262320;
   --color-secondary: #ece6da;
   --color-accent: #cf9355;
-  --color-green: #9aab84;
   --color-background: #bdb6aa;
   --font-heading1: 2.5rem;
   --font-heading2: 1.5rem;
@@ -76,17 +75,11 @@ h2 {
 .grid-item,
 .scroll-item {
   aspect-ratio: 1;
-  background: var(--color-accent);
+  background: var(--color-secondary);
   border: 3px solid var(--color-primary);
   cursor: pointer;
   transition: transform 0.1s ease;
   overflow: hidden;
-}
-
-/* Alternate orange / green placeholder fills for that prototype feel */
-.grid-item:nth-child(even),
-.scroll-item:nth-child(even) {
-  background: var(--color-green);
 }
 
 .grid-item:hover,
@@ -166,7 +159,7 @@ h2 {
 .desk-item {
   position: absolute;
   aspect-ratio: 1;
-  background: var(--color-accent);
+  background: var(--color-background);
   border: 3px solid var(--color-primary);
   cursor: grab;
   touch-action: none;
@@ -182,10 +175,6 @@ h2 {
   transform: rotate(var(--desk-rotate, 0deg)) !important;
   box-shadow: 5px 7px 0 var(--color-primary);
   z-index: 1000 !important;
-}
-
-.desk-item:nth-child(even) {
-  background: var(--color-green);
 }
 
 .desk-item:hover {

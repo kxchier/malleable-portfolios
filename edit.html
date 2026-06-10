@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./edit-mode.css">
   <script src="./scripts/content.js"></script>
+  <script src="./scripts/palette-colors.js"></script>
   <script src="./scripts/loader.js"></script>
 </head>
 <body class="edit-mode">
@@ -18,54 +19,37 @@
           <button class="version-btn active" data-version="1" title="">Grid</button>
           <button class="version-btn" data-version="2" title="">Clothesline</button>
           <button class="version-btn" data-version="3" title="">Desk</button>
-          <button class="version-btn create-btn">+ Create New ✨</button>
+          <button class="version-btn create-btn">+ Create New</button>
         </div>
         <div class="edit-controls">
-          <button id="toggle-props-btn" class="toggle-props-btn" aria-expanded="false">⚙ Edit design</button>
           <button id="save-btn">Save Changes</button>
           <button id="preview-btn">Preview</button>
           <button id="publish-btn" class="publish-btn">Publish to GitHub ↑</button>
         </div>
       </div>
 
-      <!-- Direct-manipulation controls — collapsible, hidden until "Edit design" is clicked -->
-      <div id="properties-panel" class="properties-panel" hidden>
-        <div class="property-group">
-          <label>Portfolio Title</label>
-          <input type="text" id="title-input" placeholder="My Art Portfolio">
-        </div>
-        <div class="property-group">
-          <label>Primary Color</label>
-          <input type="color" id="color-primary" value="#000000">
-        </div>
-        <div class="property-group">
-          <label>Accent Color</label>
-          <input type="color" id="color-accent" value="#ff006e">
-        </div>
-        <div class="property-group">
-          <label>Grid Gap (px)</label>
-          <input type="range" id="grid-gap" min="8" max="40" value="32">
-          <span id="grid-gap-display">32px</span>
-        </div>
-        <div class="property-group">
-          <label>Claude API key <span class="mock-tag">mock</span></label>
-          <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off">
-          <div class="ai-key-row">
-            <button id="connect-ai-btn" class="ghost-btn">Connect</button>
-            <span id="ai-status" class="ai-status ai-status--off">not connected</span>
-          </div>
-          <p class="hint">Stored only in this browser — never committed or pushed.</p>
-        </div>
+      <div class="toolbar-api-row">
+        <label class="toolbar-api-label" for="api-key-input">Claude API key <span class="mock-tag">mock</span></label>
+        <input type="password" id="api-key-input" class="toolbar-api-input" placeholder="sk-ant-…" autocomplete="off">
+        <button id="connect-ai-btn" class="ghost-btn">Connect</button>
+        <span id="ai-status" class="ai-status ai-status--off">not connected</span>
+        <span class="toolbar-api-hint">Stored only in this browser</span>
       </div>
     </div>
   </header>
 
   <main class="edit-container">
     <div class="preview-toolbar">
-      <span class="preview-label">↓ your site (preview) — click text to edit ↓</span>
+      <span class="preview-label">Click title or headings in the preview to edit</span>
+      <div class="palette-strip" id="palette-strip" title="Click a swatch to open the color pad — drag for hue &amp; lightness, or use sliders."></div>
+      <div class="preview-gap" title="Spacing between images">
+        <label for="grid-gap">Gap</label>
+        <input type="range" id="grid-gap" min="8" max="40" value="32">
+        <span id="grid-gap-display">32px</span>
+      </div>
       <div class="device-toggle">
-        <button id="device-desktop" class="device-btn active">🖥 Desktop</button>
-        <button id="device-mobile" class="device-btn">📱 Mobile</button>
+        <button id="device-desktop" class="device-btn active">Desktop</button>
+        <button id="device-mobile" class="device-btn">Mobile</button>
       </div>
     </div>
     <section class="preview-area">

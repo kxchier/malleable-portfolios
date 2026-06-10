@@ -107,9 +107,18 @@ In the edit preview, **click any heading** (portfolio title or section title) to
 
 Both files are written when you hit **Save**.
 
+### Palette swatches (direct manipulation)
+
+Above the preview, **drag a palette swatch** to adjust that color live:
+
+- **↔ horizontal** — shift hue
+- **↕ vertical** — lighter (up) or darker (down)
+- **Click** — open the system color picker
+
+Swatches: Background, Primary, Hover (edit outlines & nav link hover), Desk (surface + grid/clothesline tiles). Click a swatch to open a color pad with live preview. **Gap** slider adjusts image spacing. Click the portfolio title or any heading in the preview to edit text. Changes save to `theme.json` and `content.json`.
+
 ### Direct Manipulation Coming Soon
 
-- Drag color swatches to adjust palette
 - Generate new representations with AI prompts
 
 ## Packaging as a double-click app
