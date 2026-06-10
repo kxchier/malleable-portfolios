@@ -37,6 +37,12 @@
         "Art/VTubers/Quinn.jpg",
         "Art/VTubers/Yin_.jpg"
       ]
+    },
+    {
+      "name": "photography",
+      "images": [
+        "Art/photography/IMG_8506.jpg"
+      ]
     }
   ]
 }

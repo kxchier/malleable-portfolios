@@ -1,18 +1,22 @@
 {
   "colors": {
-    "primary": "#1c5a33",
+    "primary": "#61177c",
     "secondary": "#ece6da",
-    "accent": "#ffa64d",
+    "accent": "#fffde5",
     "green": "#9aab84",
     "background": "#bdb6aa"
   },
   "typography": {
     "heading1": "2.5rem",
-    "heading2": "1.5rem",
+    "heading2": {
+      "fontFamily": "system-ui",
+      "fontSize": "1.5rem",
+      "fontWeight": "800"
+    },
     "body": "1rem"
   },
   "spacing": {
-    "gridGap": "8rem",
+    "gridGap": "40px",
     "imagePadding": "1rem"
   }
 }

@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Art Portfolio — Clothesline View</title>
   <link rel="stylesheet" href="./styles.css">
+  <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
 </head>
 <body>
   <header>
-    <h1>My Art Portfolio</h1>
-    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">Grid</a> | <a href="./ver2.html">[Clothesline]</a> | <a href="./edit.html">Edit</a></p>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">Grid</a> | <a href="./ver2.html">[Clothesline]</a> | <a href="./ver3.html">Desk</a> | <a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container">
@@ -18,27 +19,36 @@
   </main>
 
   <script>
-    window.appData.then(({ manifest, theme }) => {
-      const content = document.getElementById('content');
-      
-      manifest.collections.forEach(collection => {
+    window.appData.then(({ manifest, theme, content }) => {
+      const root = document.getElementById('content');
+
+      manifest.collections.forEach((collection, index) => {
         const section = document.createElement('section');
         section.className = 'collection-strip';
-        section.innerHTML = `<h2 class="strip-title">${collection.name}</h2>`;
-        
+
+        const h2 = document.createElement('h2');
+        h2.className = 'strip-title';
+        const cid = PortfolioContent.collectionId(index);
+        h2.dataset.textId = cid;
+        h2.dataset.textRole = 'collection.title';
+        h2.dataset.textFallback = collection.name;
+        section.appendChild(h2);
+
         const scrollContainer = document.createElement('div');
         scrollContainer.className = 'images-scroll';
-        
+
         collection.images.forEach(img => {
           const item = document.createElement('div');
           item.className = 'scroll-item';
           item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
           scrollContainer.appendChild(item);
         });
-        
+
         section.appendChild(scrollContainer);
-        content.appendChild(section);
+        root.appendChild(section);
       });
+
+      PortfolioContent.applyPageText(manifest, theme, content, 'clothesline');
     });
   </script>
 </body>
