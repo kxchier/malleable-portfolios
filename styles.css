@@ -39,6 +39,13 @@ h1 {
   margin-bottom: 0.75rem;
 }
 
+/* Keep editable headings in the layout when their text is cleared */
+h1[data-text-id],
+h2[data-text-id] {
+  min-height: 1em;
+  display: block;
+}
+
 header p {
   font-size: 0.95rem;
 }

@@ -407,8 +407,10 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     .desk-item { position: absolute; cursor: grab; touch-action: none; user-select: none; box-shadow: 3px 5px 0 var(--color-primary); }
     .desk-item--dragging { cursor: grabbing; transition: none; transform: rotate(var(--desk-rotate, 0deg)) !important; z-index: 1000 !important; box-shadow: 5px 7px 0 var(--color-primary); }
     .desk-item img { pointer-events: none; -webkit-user-drag: none; }
+    h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
     [data-text-id] { cursor: text; }
     [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
+    [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
     .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
     .text-edit-toolbar { position: absolute; z-index: 2000; background: #fff; border: 2px solid var(--color-primary); border-radius: 8px; padding: 0.65rem 0.75rem; min-width: 220px; box-shadow: 4px 4px 0 var(--color-primary); font-size: 0.82rem; }
     .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }

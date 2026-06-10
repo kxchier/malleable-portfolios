@@ -47,7 +47,7 @@ window.PortfolioContent = (() => {
 
   function getText(content, id, fallback) {
     const override = getTextOverride(content, id);
-    if (override.content != null && String(override.content).trim() !== '') {
+    if (Object.prototype.hasOwnProperty.call(override, 'content')) {
       return override.content;
     }
     return fallback;
@@ -91,7 +91,7 @@ window.PortfolioContent = (() => {
   function pruneTextEntry(content, id) {
     const entry = content.text?.[id];
     if (!entry) return;
-    const hasContent = entry.content != null && String(entry.content).trim() !== '';
+    const hasContent = Object.prototype.hasOwnProperty.call(entry, 'content');
     const hasLegacyStyle = entry.fontFamily || entry.fontSize || entry.fontWeight;
     const hasVersionStyle = entry.versions && Object.values(entry.versions).some(
       (v) => v && (v.fontFamily || v.fontSize || v.fontWeight)
@@ -142,7 +142,9 @@ window.PortfolioContent = (() => {
     const role = el.dataset.textRole;
     if (!id || !role) return;
     const fallback = el.dataset.textFallback || el.textContent;
-    el.textContent = getText(content, id, fallback);
+    const text = getText(content, id, fallback);
+    el.textContent = text;
+    el.hidden = false;
     const style = getElementStyle(theme, content, id, role, versionKey);
     el.style.fontFamily = style.fontFamily;
     el.style.fontSize = style.fontSize;
