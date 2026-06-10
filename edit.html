@@ -6,6 +6,7 @@
   <title>Art Portfolio — Editor</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./edit-mode.css">
+  <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
 </head>
 <body class="edit-mode">
@@ -61,7 +62,7 @@
 
   <main class="edit-container">
     <div class="preview-toolbar">
-      <span class="preview-label">↓ your site (preview) ↓</span>
+      <span class="preview-label">↓ your site (preview) — click text to edit ↓</span>
       <div class="device-toggle">
         <button id="device-desktop" class="device-btn active">🖥 Desktop</button>
         <button id="device-mobile" class="device-btn">📱 Mobile</button>
@@ -99,7 +100,7 @@
       <h2>Publish to GitHub <span class="mock-tag">mock</span></h2>
       <p>This will freeze your work into static files and push them to your repo:</p>
       <ul class="publish-steps">
-        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>ver3.html</code>, <code>manifest.json</code>, <code>theme.json</code></li>
+        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>ver3.html</code>, <code>manifest.json</code>, <code>theme.json</code>, <code>content.json</code></li>
         <li><code>git add . &amp;&amp; git commit -m "Update portfolio"</code></li>
         <li><code>git push origin main</code> → GitHub Actions deploys</li>
       </ul>

@@ -109,7 +109,7 @@ window.layoutDeskSurface = (surface, images) => {
   surface.style.height = `${layout.height}px`;
   surface.style.minHeight = `${layout.height}px`;
   surface.style.maxHeight = `${layout.height}px`;
-  surface.style.overflow = 'visible';
+  surface.style.overflow = 'hidden';
   surface.innerHTML = '';
 
   images.forEach((img, index) => {

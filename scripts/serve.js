@@ -14,6 +14,7 @@
  *   GET  /api/manifest  -> live scan of Art/ (always current, never stale)
  *   POST /api/rebuild   -> rescan Art/ and write manifest.json to disk
  *   POST /api/theme     -> write the posted JSON body to theme.json
+ *   POST /api/content   -> write the posted JSON body to content.json
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
  *   (anything else)     -> static file from the project root
  */
@@ -84,12 +85,31 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/theme' && req.method === 'POST') {
     try {
-      const theme = JSON.parse(await readBody(req));
+      const body = JSON.parse(await readBody(req));
+      const content = body.content;
+      const theme = { ...body };
+      delete theme.content;
       fs.writeFileSync(path.join(ROOT, 'theme.json'), JSON.stringify(theme, null, 2));
-      console.log('[theme] theme.json saved');
-      return sendJSON(res, 200, { written: true });
+      if (content) {
+        fs.writeFileSync(path.join(ROOT, 'content.json'), JSON.stringify(content, null, 2));
+        console.log('[theme] theme.json + content.json saved');
+      } else {
+        console.log('[theme] theme.json saved');
+      }
+      return sendJSON(res, 200, { written: true, contentWritten: Boolean(content) });
     } catch (e) {
       return sendJSON(res, 400, { error: 'invalid theme json: ' + e.message });
+    }
+  }
+
+  if (pathname === '/api/content' && req.method === 'POST') {
+    try {
+      const content = JSON.parse(await readBody(req));
+      fs.writeFileSync(path.join(ROOT, 'content.json'), JSON.stringify(content, null, 2));
+      console.log('[content] content.json saved');
+      return sendJSON(res, 200, { written: true });
+    } catch (e) {
+      return sendJSON(res, 400, { error: 'invalid content json: ' + e.message });
     }
   }
 

@@ -1,20 +1,20 @@
 /* Edit Mode JavaScript */
 let currentVersion = 1;
 let editedTheme = {};
+let editedContent = { text: {} };
+let previewIframe = null;
 
 async function initEditMode() {
-  const { manifest, theme } = await window.appData;
-  editedTheme = JSON.parse(JSON.stringify(theme)); // Deep copy
+  const { manifest, theme, content } = await window.appData;
+  editedTheme = JSON.parse(JSON.stringify(theme));
+  editedContent = JSON.parse(JSON.stringify(content));
 
-  // Load title
   const titleInput = document.getElementById('title-input');
-  titleInput.value = 'My Art Portfolio';
+  titleInput.value = PortfolioContent.getText(editedContent, 'portfolio.title', 'My Art Portfolio');
 
-  // Load colors
   document.getElementById('color-primary').value = editedTheme.colors.primary;
   document.getElementById('color-accent').value = editedTheme.colors.accent;
 
-  // Load grid gap (slider uses px; keep CSS var in sync for desk layout)
   const gridGapSlider = document.getElementById('grid-gap');
   const gridGapPx = Math.min(40, Math.max(8, Math.round(parseSpacingPx(editedTheme.spacing.gridGap))));
   gridGapSlider.value = gridGapPx;
@@ -23,11 +23,10 @@ async function initEditMode() {
   document.getElementById('grid-gap-display').textContent = gridGapPx + 'px';
 
   applyLayoutMetadata();
-
-  // Setup event listeners
   setupVersionButtons();
   setupPropertyListeners();
   setupPreview();
+  setupTextEditBridge();
   setupAI();
   setupPublish();
   setupToggleProps();
@@ -35,7 +34,56 @@ async function initEditMode() {
   setupDeviceToggle();
 }
 
-// ---- Collapsible "Edit design" panel ----
+function ensureTypographyObject(token) {
+  const normalized = PortfolioContent.normalizeTypographyEntry(editedTheme.typography?.[token], token);
+  if (!editedTheme.typography) editedTheme.typography = {};
+  editedTheme.typography[token] = normalized;
+}
+
+function handleTextEditChange({ id, role, scope, property, value }) {
+  if (property === 'content') {
+    if (!editedContent.text[id]) editedContent.text[id] = {};
+    editedContent.text[id].content = value;
+    if (id === 'portfolio.title') {
+      document.getElementById('title-input').value = value;
+    }
+  } else if (scope === 'this') {
+    if (!editedContent.text[id]) editedContent.text[id] = {};
+    editedContent.text[id][property] = value;
+  } else {
+    PortfolioContent.clearStyleOverrides(editedContent, scope, role, property);
+    if (scope === 'role') {
+      const token = PortfolioContent.ROLE_TOKENS[role];
+      ensureTypographyObject(token);
+      editedTheme.typography[token][property] = value;
+    } else if (scope === 'all-headings') {
+      ['heading1', 'heading2'].forEach((token) => {
+        ensureTypographyObject(token);
+        editedTheme.typography[token][property] = value;
+      });
+    }
+  }
+  patchPreview();
+}
+
+function patchPreview() {
+  if (previewIframe?.contentWindow) {
+    previewIframe.contentWindow.postMessage({
+      source: 'portfolio-editor',
+      type: 'patch',
+      theme: editedTheme,
+      content: editedContent,
+    }, '*');
+  }
+}
+
+function setupTextEditBridge() {
+  window.addEventListener('message', (e) => {
+    if (!e.data || e.data.source !== 'portfolio-text-edit') return;
+    if (e.data.type === 'change') handleTextEditChange(e.data);
+  });
+}
+
 function setupToggleProps() {
   const btn = document.getElementById('toggle-props-btn');
   const panel = document.getElementById('properties-panel');
@@ -47,7 +95,6 @@ function setupToggleProps() {
   });
 }
 
-// ---- Desktop / mobile preview width ----
 function setupDeviceToggle() {
   const frame = document.getElementById('device-frame');
   const sizeLabel = document.getElementById('device-size');
@@ -99,7 +146,6 @@ function applyLayoutMetadata() {
   });
 }
 
-// ---- "Create New" → generate modal (MOCK) ----
 function setupCreateModal() {
   const modal = document.getElementById('create-modal');
   const open = () => { modal.hidden = false; };
@@ -110,9 +156,6 @@ function setupCreateModal() {
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 }
 
-// ---- AI access (MOCK) ----
-// Real version would call the Claude API. For the study we just store the key in
-// localStorage (stays in the browser, never written to the repo) and fake generation.
 const AI_KEY_STORE = 'portfolio.claudeApiKey';
 
 function setupAI() {
@@ -130,7 +173,7 @@ function setupAI() {
   document.getElementById('connect-ai-btn').addEventListener('click', () => {
     const key = keyInput.value.trim();
     if (!key) { setConnected(false); localStorage.removeItem(AI_KEY_STORE); return; }
-    localStorage.setItem(AI_KEY_STORE, key); // local-only; gitignored if ever written to disk
+    localStorage.setItem(AI_KEY_STORE, key);
     setConnected(true);
   });
 
@@ -145,7 +188,6 @@ function setupAI() {
   });
 }
 
-// ---- Publish flow (MOCK) ----
 function setupPublish() {
   const modal = document.getElementById('publish-modal');
   const result = document.getElementById('publish-result');
@@ -165,19 +207,20 @@ function setupPublish() {
 
 function setupVersionButtons() {
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       document.querySelectorAll('.version-btn:not(.create-btn)').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentVersion = parseInt(btn.dataset.version);
       updatePreview();
     });
   });
-  // "+ Create New" opens the generate modal — see setupCreateModal()
 }
 
 function setupPropertyListeners() {
   document.getElementById('title-input').addEventListener('input', (e) => {
-    updatePreview();
+    if (!editedContent.text['portfolio.title']) editedContent.text['portfolio.title'] = {};
+    editedContent.text['portfolio.title'].content = e.target.value;
+    patchPreview();
   });
 
   document.getElementById('color-primary').addEventListener('change', (e) => {
@@ -208,35 +251,38 @@ function getEditedGridGapPx() {
 }
 
 function setupPreview() {
-  // Initial render
   updatePreview();
-
   document.getElementById('save-btn').addEventListener('click', saveChanges);
-
   document.getElementById('preview-btn').addEventListener('click', () => {
     const layout = getLayout(currentVersion);
     window.open(`./${layout?.file || 'ver1.html'}`, '_blank');
   });
 }
 
-// Save = write the static files (theme.json + manifest.json) that GitHub Pages serves.
-// Requires the local server (scripts/serve.js). On a plain static host there's no
-// backend to write to, so we tell the user to run the editor locally.
 async function saveChanges() {
   const btn = document.getElementById('save-btn');
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try {
+    // Bundle text overrides into the theme POST so one endpoint persists everything
+    // (older servers only had /api/theme; /api/content may still be unavailable)
+    const themePayload = { ...editedTheme, content: editedContent };
     const [themeRes, rebuildRes] = await Promise.all([
       fetch('/api/theme', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedTheme)
+        body: JSON.stringify(themePayload),
       }),
-      fetch('/api/rebuild', { method: 'POST' })
+      fetch('/api/rebuild', { method: 'POST' }),
     ]);
     if (!themeRes.ok || !rebuildRes.ok) throw new Error('server error');
+    // Best-effort standalone content write for servers that support it
+    fetch('/api/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedContent),
+    }).catch(() => {});
     const { collections } = await rebuildRes.json();
     btn.textContent = `Saved ✓ (${collections.length} collections)`;
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
@@ -248,39 +294,45 @@ async function saveChanges() {
 }
 
 function updatePreview() {
-  const title = document.getElementById('title-input').value;
   const container = document.getElementById('preview-frame');
-
-  // Create an iframe to sandbox the preview
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
   iframe.sandbox.add('allow-same-origin', 'allow-scripts');
-  
   container.appendChild(iframe);
+  previewIframe = iframe;
 
-  // Inject content into iframe
   window.appData.then(({ manifest }) => {
+    const html = buildPreviewHTML(manifest, currentVersion, getPreviewWidth());
     const iframeDoc = iframe.contentDocument;
-    const html = buildPreviewHTML(title, manifest, currentVersion, getPreviewWidth());
     iframeDoc.write(html);
     iframeDoc.close();
   });
 }
 
-function buildPreviewHTML(title, manifest, version, previewWidth = 1100) {
+function buildTextHeading(tag, className, id, role, fallback, theme, content) {
+  const text = PortfolioContent.getText(content, id, fallback);
+  const style = PortfolioContent.styleToCss(PortfolioContent.getElementStyle(theme, content, id, role));
+  const cls = className ? ` class="${className}"` : '';
+  return `<${tag}${cls} data-text-id="${id}" data-text-role="${role}" data-text-fallback="${PortfolioContent.escapeHtml(fallback)}" style="${style}">${PortfolioContent.escapeHtml(text)}</${tag}>`;
+}
+
+function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layout = getLayout(version) || getLayout(1);
   let collectionsHTML = '';
 
-  manifest.collections.forEach((collection) => {
+  manifest.collections.forEach((collection, index) => {
+    const cid = PortfolioContent.collectionId(index);
+    const heading = buildTextHeading('h2', layout.key === 'clothesline' ? 'strip-title' : layout.key === 'desk' ? 'desk-title' : '', cid, 'collection.title', collection.name, editedTheme, editedContent);
+
     if (layout.key === 'grid') {
       let itemsHTML = '';
       collection.images.forEach((img) => {
         itemsHTML += `<div class="grid-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
       });
-      collectionsHTML += `<section><h2>${collection.name}</h2><div class="grid-view">${itemsHTML}</div></section>`;
+      collectionsHTML += `<section>${heading}<div class="grid-view">${itemsHTML}</div></section>`;
       return;
     }
 
@@ -289,17 +341,25 @@ function buildPreviewHTML(title, manifest, version, previewWidth = 1100) {
       collection.images.forEach((img) => {
         itemsHTML += `<div class="scroll-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
       });
-      collectionsHTML += `<section class="collection-strip"><h2 class="strip-title">${collection.name}</h2><div class="images-scroll">${itemsHTML}</div></section>`;
+      collectionsHTML += `<section class="collection-strip">${heading}<div class="images-scroll">${itemsHTML}</div></section>`;
       return;
     }
 
     const deskLayout = deskSurfaceLayout(collection.images.length, previewWidth - 48, getEditedGridGapPx());
     let itemsHTML = '';
-    collection.images.forEach((img, index) => {
-      itemsHTML += `<div class="desk-item" style="${deskItemStyleAttr(index, deskLayout)}"><img src="${img}" alt="artwork" draggable="false" onerror="this.remove()"></div>`;
+    collection.images.forEach((img, imgIndex) => {
+      itemsHTML += `<div class="desk-item" style="${deskItemStyleAttr(imgIndex, deskLayout)}"><img src="${img}" alt="artwork" draggable="false" onerror="this.remove()"></div>`;
     });
-    collectionsHTML += `<section class="desk-collection"><h2 class="desk-title">${collection.name}</h2><div class="desk-surface" style="width: 100%; height: ${deskLayout.height}px; min-height: ${deskLayout.height}px; max-height: ${deskLayout.height}px; overflow: visible">${itemsHTML}</div></section>`;
+    collectionsHTML += `<section class="desk-collection">${heading}<div class="desk-surface" style="width: 100%; height: ${deskLayout.height}px; min-height: ${deskLayout.height}px; max-height: ${deskLayout.height}px; overflow: hidden">${itemsHTML}</div></section>`;
   });
+
+  const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent);
+  const editState = JSON.stringify({ theme: editedTheme, content: editedContent }).replace(/</g, '\\u003c');
+
+  const deskScripts = layout.key === 'desk'
+    ? `<script src="./scripts/desk-drag.js"><\/script>
+  <script>document.querySelectorAll('.desk-surface').forEach(bindDeskDragging);<\/script>`
+    : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -312,12 +372,14 @@ function buildPreviewHTML(title, manifest, version, previewWidth = 1100) {
       --color-accent: ${editedTheme.colors.accent};
       --color-green: ${editedTheme.colors.green || '#9aab84'};
       --color-background: ${editedTheme.colors.background};
+      --color-secondary: ${editedTheme.colors.secondary || '#ece6da'};
       --space-gridGap: ${editedTheme.spacing.gridGap};
     }
     body { font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif; background: var(--color-background); color: var(--color-primary); }
     header { padding: 2rem 1.5rem 1.5rem; border-bottom: 4px solid var(--color-primary); }
-    h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; }
-    h2 { font-size: 1.5rem; font-weight: 800; margin: 2rem 0 1rem; }
+    h1 { letter-spacing: -0.02em; }
+    h2 { margin: 2rem 0 1rem; }
+    .strip-title, .desk-title { margin-bottom: 1rem; }
     .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
     .grid-view { display: grid; grid-template-columns: repeat(auto-fill, 220px); gap: var(--space-gridGap); padding: 0.5rem 0 2rem; }
     .grid-item, .scroll-item, .desk-item { aspect-ratio: 1; background: var(--color-accent); border: 3px solid var(--color-primary); overflow: hidden; }
@@ -325,27 +387,41 @@ function buildPreviewHTML(title, manifest, version, previewWidth = 1100) {
     .grid-item:nth-child(even), .scroll-item:nth-child(even), .desk-item:nth-child(even) { background: var(--color-green); }
     .grid-item img, .scroll-item img, .desk-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .collection-strip, .desk-collection { margin: 2rem 0; }
-    .strip-title, .desk-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
     .images-scroll { display: flex; gap: var(--space-gridGap); overflow-x: auto; padding-bottom: 1rem; }
     .scroll-item { flex: 0 0 220px; }
-    .desk-surface { position: relative; padding: 0; overflow: visible; background: var(--color-secondary); border: 4px solid var(--color-primary); }
-    .desk-collection { overflow: visible; }
+    .desk-surface { position: relative; padding: 0; overflow: hidden; background: var(--color-secondary); border: 4px solid var(--color-primary); }
     .desk-item { position: absolute; cursor: grab; touch-action: none; user-select: none; box-shadow: 3px 5px 0 var(--color-primary); }
     .desk-item--dragging { cursor: grabbing; transition: none; transform: rotate(var(--desk-rotate, 0deg)) !important; z-index: 1000 !important; box-shadow: 5px 7px 0 var(--color-primary); }
     .desk-item img { pointer-events: none; -webkit-user-drag: none; }
+    [data-text-id] { cursor: text; }
+    [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
+    .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
+    .text-edit-toolbar { position: absolute; z-index: 2000; background: #fff; border: 2px solid var(--color-primary); border-radius: 8px; padding: 0.65rem 0.75rem; min-width: 220px; box-shadow: 4px 4px 0 var(--color-primary); font-size: 0.82rem; }
+    .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
+    .text-edit-props button { flex: 1; padding: 0.3rem 0.5rem; border: 1px solid var(--color-primary); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
+    .text-edit-props button.active { background: var(--color-accent); color: #fff; }
+    .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+    .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
+    .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
+    .text-edit-size { width: 100%; }
+    .text-edit-scope { border: none; margin-top: 0.5rem; padding: 0; }
+    .text-edit-scope legend { font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; }
+    .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
   </style>
 </head>
-<body>
+<body data-edit-mode="1">
   <header>
-    <h1>${title}</h1>
+    ${titleHeading}
   </header>
   <main class="container">
     ${collectionsHTML}
   </main>
-  ${layout.key === 'desk' ? `<script src="./scripts/desk-drag.js"><\/script>
-  <script>document.querySelectorAll('.desk-surface').forEach(bindDeskDragging);<\/script>` : ''}
+  <script>window.__EDIT_STATE__ = ${editState};<\/script>
+  <script src="./scripts/content.js"><\/script>
+  <script src="./scripts/text-edit.js"><\/script>
+  ${deskScripts}
+</body>
 </html>`;
 }
 
-// Initialize on load
 document.addEventListener('DOMContentLoaded', initEditMode);
