@@ -4,7 +4,8 @@ window.PaletteColors = (() => {
     { key: 'background', label: 'Background', hint: 'Page behind your art' },
     { key: 'primary', label: 'Primary', hint: 'Headings, text, borders' },
     { key: 'accent', label: 'Hover', hint: 'Edit outlines & nav link hover' },
-    { key: 'secondary', label: 'Desk', hint: 'Desk surface; grid & clothesline tiles' },
+    { key: 'secondary', label: 'Desk', hint: 'Desk surface color' },
+    { key: 'paper', label: 'Border', hint: 'Artwork border / mat color' },
   ];
 
   function parseHex(hex) {

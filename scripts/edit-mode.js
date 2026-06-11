@@ -3,14 +3,19 @@ let currentVersion = 1;
 let editedTheme = {};
 let editedContent = { text: {} };
 let previewIframe = null;
+const DEFAULT_THEME_COLORS = {
+  background: '#bdb6aa',
+  secondary: '#ece6da',
+  paper: '#f4f1ec',
+};
 
 async function initEditMode() {
   const { manifest, theme, content } = await window.appData;
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
 
-  if (!editedTheme.colors.secondary) editedTheme.colors.secondary = '#ece6da';
-  if (!editedTheme.colors.background) editedTheme.colors.background = '#bdb6aa';
+  if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
+  if (!editedTheme.colors.background) editedTheme.colors.background = DEFAULT_THEME_COLORS.background;
 
   const gridGapSlider = document.getElementById('grid-gap');
   const gridGapPx = Math.min(40, Math.max(8, Math.round(parseSpacingPx(editedTheme.spacing.gridGap))));
@@ -234,7 +239,8 @@ function syncPaletteSwatches() {
   document.querySelectorAll('.palette-swatch').forEach((btn) => {
     const key = btn.dataset.colorKey;
     const fill = btn.querySelector('.palette-swatch-fill');
-    if (fill && editedTheme.colors?.[key]) fill.style.background = editedTheme.colors[key];
+    const color = editedTheme.colors?.[key] || DEFAULT_THEME_COLORS[key];
+    if (fill && color) fill.style.background = color;
   });
 }
 
@@ -286,15 +292,8 @@ function setupPaletteDrag() {
       </div>
     </div>
     <p class="palette-popover-hint"></p>
-    <button type="button" class="palette-popover-pick">Exact color…</button>
   `;
   document.body.appendChild(popover);
-
-  const picker = document.createElement('input');
-  picker.type = 'color';
-  picker.className = 'palette-picker';
-  picker.tabIndex = -1;
-  strip.appendChild(picker);
 
   const titleEl = popover.querySelector('.palette-popover-title');
   const hintEl = popover.querySelector('.palette-popover-hint');
@@ -317,14 +316,19 @@ function setupPaletteDrag() {
     padHue.style.setProperty('--pad-sat', `${pct}%`);
   }
 
+  function getThemeColor(key) {
+    return editedTheme.colors[key] || DEFAULT_THEME_COLORS[key] || '#888888';
+  }
+
   function updateSample(key, hex) {
     const colors = editedTheme.colors || {};
     sampleEl.dataset.sampleKey = key;
     sampleEl.style.setProperty('--sample-color', hex);
-    sampleEl.style.setProperty('--sample-bg', colors.background || '#bdb6aa');
+    sampleEl.style.setProperty('--sample-bg', getThemeColor('background'));
     sampleEl.style.setProperty('--sample-primary', colors.primary || '#2a2a2a');
-    sampleEl.style.setProperty('--sample-secondary', colors.secondary || '#ece6da');
+    sampleEl.style.setProperty('--sample-secondary', getThemeColor('secondary'));
     sampleEl.style.setProperty('--sample-accent', colors.accent || '#cf9355');
+    sampleEl.style.setProperty('--sample-paper', getThemeColor('paper'));
   }
 
   function refreshUI(hex) {
@@ -348,7 +352,7 @@ function setupPaletteDrag() {
   function openPopover(key, anchorBtn) {
     const swatch = PaletteColors.SWATCHES.find((s) => s.key === key);
     activeKey = key;
-    const hex = editedTheme.colors[key] || '#888888';
+    const hex = getThemeColor(key);
     const { s } = PaletteColors.hexToHsl(hex);
     activeSat = s < 0.08 ? 0.65 : s;
     setPadSaturation(activeSat);
@@ -407,17 +411,6 @@ function setupPaletteDrag() {
     applyColor(PaletteColors.hslToHex(h, activeSat, +lightInput.value / 100));
   });
 
-  popover.querySelector('.palette-popover-pick').addEventListener('click', () => {
-    picker.value = editedTheme.colors[activeKey] || '#888888';
-    picker.onchange = () => {
-      activeSat = Math.max(0.08, PaletteColors.hexToHsl(picker.value).s);
-      setPadSaturation(activeSat);
-      applyColor(picker.value);
-      picker.onchange = null;
-    };
-    picker.click();
-  });
-
   popover.querySelector('.palette-popover-close').addEventListener('click', closePopover);
 
   PaletteColors.SWATCHES.forEach(({ key, label }) => {
@@ -432,7 +425,7 @@ function setupPaletteDrag() {
       if (activeKey === key && !popover.hidden) closePopover();
       else openPopover(key, btn);
     });
-    strip.insertBefore(btn, picker);
+    strip.appendChild(btn);
   });
 
   document.addEventListener('click', (e) => {
@@ -529,96 +522,66 @@ function buildTextHeading(tag, className, id, role, fallback, theme, content, ve
   return `<${tag}${cls} data-text-id="${id}" data-text-role="${role}" data-text-fallback="${PortfolioContent.escapeHtml(fallback)}" style="${style}">${PortfolioContent.escapeHtml(text)}</${tag}>`;
 }
 
+function buildPreviewNav(activeLayout) {
+  const links = [
+    { label: 'Home', file: 'index.html' },
+    ...PORTFOLIO_LAYOUTS.map((layout) => ({ label: layout.name, file: layout.file, key: layout.key })),
+    { label: 'Edit', file: 'edit.html' },
+  ];
+
+  const items = links.map((link) => {
+    if (link.key && link.key === activeLayout.key) {
+      return `<span class="active-view">${PortfolioContent.escapeHtml(link.label)}</span>`;
+    }
+    return `<a href="./${link.file}" data-preview-nav>${PortfolioContent.escapeHtml(link.label)}</a>`;
+  }).join('');
+
+  return `<p>${items}</p>`;
+}
+
 function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layout = getLayout(version) || getLayout(1);
-  let collectionsHTML = '';
-
-  manifest.collections.forEach((collection, index) => {
-    const cid = PortfolioContent.collectionId(index);
-    const heading = buildTextHeading('h2', layout.key === 'clothesline' ? 'strip-title' : layout.key === 'desk' ? 'desk-title' : '', cid, 'collection.title', collection.name, editedTheme, editedContent, layout.key);
-
-    if (layout.key === 'grid') {
-      let itemsHTML = '';
-      collection.images.forEach((img) => {
-        itemsHTML += `<div class="grid-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
-      });
-      collectionsHTML += `<section>${heading}<div class="grid-view">${itemsHTML}</div></section>`;
-      return;
-    }
-
-    if (layout.key === 'clothesline') {
-      let itemsHTML = '';
-      collection.images.forEach((img) => {
-        itemsHTML += `<div class="scroll-item"><img src="${img}" alt="artwork" onerror="this.remove()"></div>`;
-      });
-      collectionsHTML += `<section class="collection-strip">${heading}<div class="images-scroll">${itemsHTML}</div></section>`;
-      return;
-    }
-
-    const deskLayout = deskSurfaceLayout(collection.images.length, previewWidth - 48, getEditedGridGapPx());
-    let itemsHTML = '';
-    collection.images.forEach((img, imgIndex) => {
-      itemsHTML += `<div class="desk-item" style="${deskItemStyleAttr(imgIndex, deskLayout)}"><img src="${img}" alt="artwork" draggable="false" onerror="this.remove()"></div>`;
-    });
-    collectionsHTML += `<section class="desk-collection">${heading}<div class="desk-surface" style="width: 100%; height: ${deskLayout.height}px; min-height: ${deskLayout.height}px; max-height: ${deskLayout.height}px; overflow: hidden">${itemsHTML}</div></section>`;
-  });
-
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
+  const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
+  const previewLayout = JSON.stringify(layout).replace(/</g, '\\u003c');
 
   const deskScripts = layout.key === 'desk'
-    ? `<script src="./scripts/desk-drag.js"><\/script>
-  <script>document.querySelectorAll('.desk-surface').forEach(bindDeskDragging);<\/script>`
+    ? `<script src="./scripts/desk-drag.js"><\/script>`
     : '';
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
+  <link rel="stylesheet" href="./styles.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --color-primary: ${editedTheme.colors.primary};
       --color-accent: ${editedTheme.colors.accent};
       --color-background: ${editedTheme.colors.background};
       --color-secondary: ${editedTheme.colors.secondary || '#ece6da'};
+      --color-paper: ${editedTheme.colors.paper || DEFAULT_THEME_COLORS.paper};
       --space-gridGap: ${editedTheme.spacing.gridGap};
     }
-    body { font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif; background: var(--color-background); color: var(--color-primary); }
-    header { padding: 2rem 1.5rem 1.5rem; border-bottom: 4px solid var(--color-primary); }
-    h1 { letter-spacing: -0.02em; }
-    h2 { margin: 2rem 0 1rem; }
-    .strip-title, .desk-title { margin-bottom: 1rem; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
-    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, 220px); gap: var(--space-gridGap); padding: 0.5rem 0 2rem; }
-    .grid-item, .scroll-item { aspect-ratio: 1; background: var(--color-secondary); border: 3px solid var(--color-primary); overflow: hidden; }
-    .grid-item, .scroll-item { width: 220px; height: 220px; flex: 0 0 220px; }
-    .desk-item { aspect-ratio: 1; background: var(--color-background); border: 3px solid var(--color-primary); overflow: hidden; }
-    .grid-item img, .scroll-item img, .desk-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .collection-strip, .desk-collection { margin: 2rem 0; }
-    .images-scroll { display: flex; gap: var(--space-gridGap); overflow-x: auto; padding-bottom: 1rem; }
-    .scroll-item { flex: 0 0 220px; }
-    .desk-surface { position: relative; padding: 0; overflow: hidden; background: var(--color-secondary); border: 4px solid var(--color-primary); }
-    .desk-item { position: absolute; cursor: grab; touch-action: none; user-select: none; box-shadow: 3px 5px 0 var(--color-primary); }
-    .desk-item--dragging { cursor: grabbing; transition: none; transform: rotate(var(--desk-rotate, 0deg)) !important; z-index: 1000 !important; box-shadow: 5px 7px 0 var(--color-primary); }
-    .desk-item img { pointer-events: none; -webkit-user-drag: none; }
     h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
     [data-text-id] { cursor: text; }
     [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
     [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
     .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
-    .text-edit-toolbar { position: absolute; z-index: 2000; background: #fff; border: 2px solid var(--color-primary); border-radius: 8px; padding: 0.65rem 0.75rem; min-width: 220px; box-shadow: 4px 4px 0 var(--color-primary); font-size: 0.82rem; }
+    .text-edit-toolbar { position: absolute; z-index: 2000; background: #fff; border: 2px solid var(--color-primary); border-radius: 8px; padding: 0.65rem 0.75rem; min-width: 220px; font-size: 0.82rem; }
     .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
     .text-edit-props button { flex: 1; padding: 0.3rem 0.5rem; border: 1px solid var(--color-primary); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
     .text-edit-props button.active { background: var(--color-primary); color: #fff; }
-    body.color-focus-background { box-shadow: inset 0 0 0 4px var(--color-accent); }
+    body.color-focus-background { outline: 4px solid var(--color-accent); outline-offset: -4px; }
     body.color-focus-primary header,
     body.color-focus-primary h1,
-    body.color-focus-primary h2 { box-shadow: 0 0 0 3px var(--color-accent); }
+    body.color-focus-primary h2 { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     body.color-focus-accent [data-text-id] { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
-    body.color-focus-secondary .desk-surface,
-    body.color-focus-secondary .grid-item,
-    body.color-focus-secondary .scroll-item { box-shadow: 0 0 0 3px var(--color-accent); }
+    body.color-focus-secondary .desk-surface { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+    body.color-focus-paper .desk-item,
+    body.color-focus-paper .grid-item,
+    body.color-focus-paper .scroll-item { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
     .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
@@ -631,12 +594,100 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
 <body data-edit-mode="1">
   <header>
     ${titleHeading}
+    ${buildPreviewNav(layout)}
   </header>
   <main class="container">
-    ${collectionsHTML}
+    <div id="preview-organization"></div>
+    <div id="preview-content"></div>
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
+  <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_LAYOUT__ = ${previewLayout}; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
+  <script src="./scripts/content.js"><\/script>
+  <script src="./scripts/organization.js"><\/script>
+  <script src="./scripts/layouts.js"><\/script>
+  ${deskScripts}
   <script>
+  const previewRoot = document.getElementById('preview-content');
+  const previewLayout = window.__PREVIEW_LAYOUT__;
+
+  function appendImage(parent, img, className, draggable) {
+    const item = document.createElement('div');
+    item.className = className;
+    const image = document.createElement('img');
+    image.src = img;
+    image.alt = 'artwork';
+    image.onerror = () => image.remove();
+    if (draggable === false) image.draggable = false;
+    item.appendChild(image);
+    parent.appendChild(item);
+  }
+
+  function buildCollectionHeading(collection) {
+    const h2 = document.createElement('h2');
+    if (previewLayout.key === 'clothesline') h2.className = 'strip-title';
+    if (previewLayout.key === 'desk') h2.className = 'desk-title';
+
+    if (collection.originalIndex == null) {
+      h2.textContent = collection.name;
+      return h2;
+    }
+
+    const cid = PortfolioContent.collectionId(collection.originalIndex);
+    h2.dataset.textId = cid;
+    h2.dataset.textRole = 'collection.title';
+    h2.dataset.textFallback = collection.name;
+    return h2;
+  }
+
+  function renderPreviewCollections(collections) {
+    previewRoot.innerHTML = '';
+
+    collections.forEach((collection) => {
+      const section = document.createElement('section');
+      section.appendChild(buildCollectionHeading(collection));
+
+      if (previewLayout.key === 'grid') {
+        const grid = document.createElement('div');
+        grid.className = 'grid-view';
+        collection.images.forEach((img) => appendImage(grid, img, 'grid-item'));
+        section.appendChild(grid);
+        previewRoot.appendChild(section);
+        return;
+      }
+
+      if (previewLayout.key === 'clothesline') {
+        section.className = 'collection-strip';
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'images-scroll';
+        collection.images.forEach((img) => appendImage(scrollContainer, img, 'scroll-item'));
+        section.appendChild(scrollContainer);
+        previewRoot.appendChild(section);
+        return;
+      }
+
+      section.className = 'desk-collection';
+      const surface = document.createElement('div');
+      surface.className = 'desk-surface';
+      section.appendChild(surface);
+      previewRoot.appendChild(section);
+      requestAnimationFrame(() => layoutDeskSurface(surface, collection.images));
+    });
+
+    PortfolioContent.applyPageText(
+      window.__PREVIEW_MANIFEST__,
+      window.__EDIT_STATE__.theme,
+      window.__EDIT_STATE__.content,
+      previewLayout.key
+    );
+  }
+
+  const organizationControls = PortfolioOrganization.createControls({
+    manifest: window.__PREVIEW_MANIFEST__,
+    content: window.__EDIT_STATE__.content,
+    onChange: renderPreviewCollections,
+  });
+  document.getElementById('preview-organization').appendChild(organizationControls);
+
   window.addEventListener('message', (e) => {
     if (!e.data || e.data.source !== 'portfolio-editor') return;
     if (e.data.type === 'colors' && e.data.colors) {
@@ -645,14 +696,15 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       });
     }
     if (e.data.type === 'color-focus') {
-      document.body.classList.remove('color-focus-background', 'color-focus-primary', 'color-focus-accent', 'color-focus-secondary');
+      document.body.classList.remove('color-focus-background', 'color-focus-primary', 'color-focus-accent', 'color-focus-secondary', 'color-focus-paper');
       if (e.data.key) document.body.classList.add('color-focus-' + e.data.key);
     }
   });
+  document.querySelectorAll('[data-preview-nav]').forEach((link) => {
+    link.addEventListener('click', (e) => e.preventDefault());
+  });
   <\/script>
-  <script src="./scripts/content.js"><\/script>
   <script src="./scripts/text-edit.js"><\/script>
-  ${deskScripts}
 </body>
 </html>`;
 }

@@ -4,7 +4,8 @@
     "secondary": "#ece6da",
     "accent": "#fffde5",
     "green": "#9aab84",
-    "background": "#bdb6aa"
+    "background": "#bdb6aa",
+    "paper": "#f4f1ec"
   },
   "typography": {
     "heading1": "2.5rem",

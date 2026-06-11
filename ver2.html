@@ -7,11 +7,12 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
+  <script src="./scripts/organization.js"></script>
 </head>
 <body>
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">Grid</a> | <a href="./ver2.html">[Clothesline]</a> | <a href="./ver3.html">Desk</a> | <a href="./edit.html">Edit</a></p>
+    <p><a href="./index.html">Home</a><a href="./ver1.html">Grid</a><span class="active-view">Clothesline</span><a href="./ver3.html">Desk</a><a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container">
@@ -22,33 +23,48 @@
     window.appData.then(({ manifest, theme, content }) => {
       const root = document.getElementById('content');
 
-      manifest.collections.forEach((collection, index) => {
-        const section = document.createElement('section');
-        section.className = 'collection-strip';
+      function renderCollections(collections) {
+        root.innerHTML = '';
 
-        const h2 = document.createElement('h2');
-        h2.className = 'strip-title';
-        const cid = PortfolioContent.collectionId(index);
-        h2.dataset.textId = cid;
-        h2.dataset.textRole = 'collection.title';
-        h2.dataset.textFallback = collection.name;
-        section.appendChild(h2);
+        collections.forEach((collection) => {
+          const section = document.createElement('section');
+          section.className = 'collection-strip';
 
-        const scrollContainer = document.createElement('div');
-        scrollContainer.className = 'images-scroll';
+          const h2 = document.createElement('h2');
+          h2.className = 'strip-title';
+          if (collection.originalIndex == null) {
+            h2.textContent = collection.name;
+          } else {
+            const cid = PortfolioContent.collectionId(collection.originalIndex);
+            h2.dataset.textId = cid;
+            h2.dataset.textRole = 'collection.title';
+            h2.dataset.textFallback = collection.name;
+          }
+          section.appendChild(h2);
 
-        collection.images.forEach(img => {
-          const item = document.createElement('div');
-          item.className = 'scroll-item';
-          item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
-          scrollContainer.appendChild(item);
+          const scrollContainer = document.createElement('div');
+          scrollContainer.className = 'images-scroll';
+
+          collection.images.forEach(img => {
+            const item = document.createElement('div');
+            item.className = 'scroll-item';
+            item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
+            scrollContainer.appendChild(item);
+          });
+
+          section.appendChild(scrollContainer);
+          root.appendChild(section);
         });
 
-        section.appendChild(scrollContainer);
-        root.appendChild(section);
-      });
+        PortfolioContent.applyPageText(manifest, theme, content, 'clothesline');
+      }
 
-      PortfolioContent.applyPageText(manifest, theme, content, 'clothesline');
+      const controls = PortfolioOrganization.createControls({
+        manifest,
+        content,
+        onChange: renderCollections,
+      });
+      root.parentNode.insertBefore(controls, root);
     });
   </script>
 </body>

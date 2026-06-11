@@ -22,6 +22,9 @@
 
 /* ---- Top toolbar ---- */
 .edit-header {
+  width: 100%;
+  max-width: none;
+  margin: 0;
   background: var(--ed-toolbar);
   color: var(--ed-text);
   padding: 0.8rem 1.25rem;
@@ -217,13 +220,10 @@
   height: 34px;
   border-radius: 8px;
   border: 2px solid var(--ed-line);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.1s ease;
 }
 
 .palette-swatch:hover .palette-swatch-fill,
 .palette-swatch--open .palette-swatch-fill {
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
   outline: 2px dashed var(--ed-accent);
   outline-offset: 2px;
 }
@@ -235,14 +235,6 @@
   letter-spacing: 0.02em;
 }
 
-.palette-picker {
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
 .palette-popover {
   position: fixed;
   z-index: 3000;
@@ -251,7 +243,6 @@
   background: #fff;
   border: 2px solid var(--ed-line);
   border-radius: 10px;
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.14);
   font-size: 0.82rem;
 }
 
@@ -354,7 +345,22 @@
   height: 28px;
   border: 2px solid var(--sample-primary);
   background: var(--sample-bg);
-  box-shadow: 2px 3px 0 var(--sample-primary);
+}
+
+.palette-popover-sample[data-sample-key="paper"] {
+  background: var(--sample-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palette-popover-sample[data-sample-key="paper"]::after {
+  content: '';
+  width: 42px;
+  height: 42px;
+  background: var(--sample-secondary);
+  border: 10px solid var(--sample-color);
+  border-radius: 8px;
 }
 
 .palette-popover-hex {
@@ -410,7 +416,7 @@
   height: 14px;
   border-radius: 50%;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  outline: 1px solid rgba(0, 0, 0, 0.45);
   pointer-events: none;
 }
 
@@ -446,21 +452,6 @@
   font-size: 0.68rem;
   color: var(--ed-muted);
   line-height: 1.35;
-}
-
-.palette-popover-pick {
-  width: 100%;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #b4b5bb;
-  border-radius: 5px;
-  background: #f7f7f8;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.palette-popover-pick:hover {
-  background: #eeeef0;
 }
 
 .preview-label {
@@ -530,7 +521,6 @@
   background: #fff;
   border: 3px solid var(--ed-line);
   border-radius: 9px;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.22);
   display: flex;
   flex-direction: column;
   overflow: hidden;

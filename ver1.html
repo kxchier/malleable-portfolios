@@ -7,11 +7,12 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
+  <script src="./scripts/organization.js"></script>
 </head>
 <body>
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">[Grid]</a> | <a href="./ver2.html">Clothesline</a> | <a href="./ver3.html">Desk</a> | <a href="./edit.html">Edit</a></p>
+    <p><a href="./index.html">Home</a><span class="active-view">Grid</span><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container">
@@ -22,30 +23,45 @@
     window.appData.then(({ manifest, theme, content }) => {
       const root = document.getElementById('content');
 
-      manifest.collections.forEach((collection, index) => {
-        const section = document.createElement('section');
-        const h2 = document.createElement('h2');
-        const cid = PortfolioContent.collectionId(index);
-        h2.dataset.textId = cid;
-        h2.dataset.textRole = 'collection.title';
-        h2.dataset.textFallback = collection.name;
-        section.appendChild(h2);
+      function renderCollections(collections) {
+        root.innerHTML = '';
 
-        const grid = document.createElement('div');
-        grid.className = 'grid-view';
+        collections.forEach((collection) => {
+          const section = document.createElement('section');
+          const h2 = document.createElement('h2');
+          if (collection.originalIndex == null) {
+            h2.textContent = collection.name;
+          } else {
+            const cid = PortfolioContent.collectionId(collection.originalIndex);
+            h2.dataset.textId = cid;
+            h2.dataset.textRole = 'collection.title';
+            h2.dataset.textFallback = collection.name;
+          }
+          section.appendChild(h2);
 
-        collection.images.forEach(img => {
-          const item = document.createElement('div');
-          item.className = 'grid-item';
-          item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
-          grid.appendChild(item);
+          const grid = document.createElement('div');
+          grid.className = 'grid-view';
+
+          collection.images.forEach(img => {
+            const item = document.createElement('div');
+            item.className = 'grid-item';
+            item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
+            grid.appendChild(item);
+          });
+
+          section.appendChild(grid);
+          root.appendChild(section);
         });
 
-        section.appendChild(grid);
-        root.appendChild(section);
-      });
+        PortfolioContent.applyPageText(manifest, theme, content, 'grid');
+      }
 
-      PortfolioContent.applyPageText(manifest, theme, content, 'grid');
+      const controls = PortfolioOrganization.createControls({
+        manifest,
+        content,
+        onChange: renderCollections,
+      });
+      root.parentNode.insertBefore(controls, root);
     });
   </script>
 </body>

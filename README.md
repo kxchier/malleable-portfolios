@@ -109,13 +109,12 @@ Both files are written when you hit **Save**.
 
 ### Palette swatches (direct manipulation)
 
-Above the preview, **drag a palette swatch** to adjust that color live:
+Above the preview, click a palette swatch to open a color pad and adjust that color live:
 
 - **↔ horizontal** — shift hue
 - **↕ vertical** — lighter (up) or darker (down)
-- **Click** — open the system color picker
 
-Swatches: Background, Primary, Hover (edit outlines & nav link hover), Desk (surface + grid/clothesline tiles). Click a swatch to open a color pad with live preview. **Gap** slider adjusts image spacing. Click the portfolio title or any heading in the preview to edit text. Changes save to `theme.json` and `content.json`.
+Swatches: Background, Primary, Hover (edit outlines & nav link hover), Desk (surface), and Border (artwork mat). **Gap** slider adjusts image spacing. Click the portfolio title or any heading in the preview to edit text. Changes save to `theme.json` and `content.json`.
 
 ### Direct Manipulation Coming Soon
 

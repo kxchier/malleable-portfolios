@@ -7,13 +7,14 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
+  <script src="./scripts/organization.js"></script>
   <script src="./scripts/layouts.js"></script>
   <script src="./scripts/desk-drag.js"></script>
 </head>
 <body>
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p>View: <a href="./index.html">Home</a> | <a href="./ver1.html">Grid</a> | <a href="./ver2.html">Clothesline</a> | <a href="./ver3.html">[Desk]</a> | <a href="./edit.html">Edit</a></p>
+    <p><a href="./index.html">Home</a><a href="./ver1.html">Grid</a><a href="./ver2.html">Clothesline</a><span class="active-view">Desk</span><a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container">
@@ -24,27 +25,42 @@
     window.appData.then(({ manifest, theme, content }) => {
       const root = document.getElementById('content');
 
-      manifest.collections.forEach((collection, index) => {
-        const section = document.createElement('section');
-        section.className = 'desk-collection';
+      function renderCollections(collections) {
+        root.innerHTML = '';
 
-        const h2 = document.createElement('h2');
-        h2.className = 'desk-title';
-        const cid = PortfolioContent.collectionId(index);
-        h2.dataset.textId = cid;
-        h2.dataset.textRole = 'collection.title';
-        h2.dataset.textFallback = collection.name;
-        section.appendChild(h2);
+        collections.forEach((collection) => {
+          const section = document.createElement('section');
+          section.className = 'desk-collection';
 
-        const surface = document.createElement('div');
-        surface.className = 'desk-surface';
-        section.appendChild(surface);
-        root.appendChild(section);
+          const h2 = document.createElement('h2');
+          h2.className = 'desk-title';
+          if (collection.originalIndex == null) {
+            h2.textContent = collection.name;
+          } else {
+            const cid = PortfolioContent.collectionId(collection.originalIndex);
+            h2.dataset.textId = cid;
+            h2.dataset.textRole = 'collection.title';
+            h2.dataset.textFallback = collection.name;
+          }
+          section.appendChild(h2);
 
-        requestAnimationFrame(() => layoutDeskSurface(surface, collection.images));
+          const surface = document.createElement('div');
+          surface.className = 'desk-surface';
+          section.appendChild(surface);
+          root.appendChild(section);
+
+          requestAnimationFrame(() => layoutDeskSurface(surface, collection.images));
+        });
+
+        PortfolioContent.applyPageText(manifest, theme, content, 'desk');
+      }
+
+      const controls = PortfolioOrganization.createControls({
+        manifest,
+        content,
+        onChange: renderCollections,
       });
-
-      PortfolioContent.applyPageText(manifest, theme, content, 'desk');
+      root.parentNode.insertBefore(controls, root);
     });
   </script>
 </body>
