@@ -16,6 +16,7 @@
   --font-heading2: 1.5rem;
   --font-body: 1rem;
   --space-gridGap: 1.5rem;
+  --space-artSize: 190px;
   --space-imagePadding: 1rem;
 }
 
@@ -197,7 +198,7 @@ h2 {
 /* ---- Grid View ---- */
 .grid-view {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, var(--space-artSize));
   gap: var(--space-gridGap);
   padding: 0.5rem 0 2.5rem;
 }
@@ -229,9 +230,9 @@ h2 {
 }
 
 .scroll-item {
-  flex: 0 0 clamp(190px, 28vw, 300px);
-  width: clamp(190px, 28vw, 300px);
-  height: clamp(190px, 28vw, 300px);
+  flex: 0 0 var(--space-artSize);
+  width: var(--space-artSize);
+  height: var(--space-artSize);
 }
 
 /* Clothesline rig — wire + hangers + clips */
@@ -275,7 +276,8 @@ h2 {
 }
 
 .clothesline-piece {
-  flex: 0 0 clamp(190px, 28vw, 300px);
+  flex: 0 0 var(--space-artSize);
+  width: var(--space-artSize);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -336,7 +338,7 @@ h2 {
 .clothesline-piece .scroll-item {
   position: relative;
   width: 100%;
-  height: clamp(190px, 28vw, 300px);
+  height: var(--space-artSize);
   flex: none;
   margin-top: -0.5rem;
   z-index: 1;

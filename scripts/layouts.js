@@ -33,7 +33,6 @@ window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
 
 const DESK_COLS = 3;
 const DESK_PADDING = 24;
-const DESK_TILE_SIZE = 220;
 const DESK_ROTATION_SLACK = 28;
 
 /** Parse theme spacing values (px or rem) to pixels. */
@@ -53,13 +52,20 @@ window.getGridGapPx = () => {
   return parseSpacingPx(raw || '24px');
 };
 
+/** Read artwork thumbnail size from the active --space-artSize CSS variable. */
+window.getArtSizePx = () => {
+  if (typeof document === 'undefined') return 190;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--space-artSize').trim();
+  return parseSpacingPx(raw || '190px');
+};
+
 /** Compute desk surface size. Grid gap controls horizontal and vertical spacing between tiles. */
-window.deskSurfaceLayout = (imageCount, surfaceWidth = 1100, gridGapPx = getGridGapPx()) => {
+window.deskSurfaceLayout = (imageCount, surfaceWidth = 1100, gridGapPx = getGridGapPx(), artSizePx = getArtSizePx()) => {
   const gap = Math.max(0, gridGapPx);
   const cols = surfaceWidth < 520 ? 2 : DESK_COLS;
   const rows = Math.ceil(imageCount / cols) || 1;
   const innerWidth = Math.max(240, surfaceWidth - DESK_PADDING * 2);
-  const itemSize = Math.min(DESK_TILE_SIZE, Math.max(80, Math.floor(innerWidth / cols)));
+  const itemSize = Math.min(artSizePx, Math.max(80, Math.floor(innerWidth / cols)));
   const contentHeight = rows * itemSize + (rows - 1) * gap;
   const height = DESK_PADDING * 2 + contentHeight + DESK_ROTATION_SLACK;
   const contentWidth = cols * itemSize + (cols - 1) * gap;

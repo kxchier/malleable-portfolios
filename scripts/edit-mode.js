@@ -27,9 +27,17 @@ async function initEditMode() {
   document.documentElement.style.setProperty('--space-gridGap', gridGapPx + 'px');
   document.getElementById('grid-gap-display').textContent = gridGapPx + 'px';
 
+  const artSizeSlider = document.getElementById('art-size');
+  const artSizePx = Math.min(320, Math.max(120, Math.round(parseSpacingPx(editedTheme.spacing.artSize || '190px'))));
+  artSizeSlider.value = artSizePx;
+  editedTheme.spacing.artSize = artSizePx + 'px';
+  document.documentElement.style.setProperty('--space-artSize', artSizePx + 'px');
+  document.getElementById('art-size-display').textContent = artSizePx + 'px';
+
   applyLayoutMetadata();
   setupVersionButtons();
   setupGridGapListener();
+  setupArtSizeListener();
   setupPaletteDrag();
   setupPreview();
   setupTextEditBridge();
@@ -491,6 +499,17 @@ function setupGridGapListener() {
   });
 }
 
+function setupArtSizeListener() {
+  document.getElementById('art-size').addEventListener('input', (e) => {
+    const value = e.target.value;
+    editedTheme.spacing.artSize = value + 'px';
+    document.documentElement.style.setProperty('--space-artSize', value + 'px');
+    document.getElementById('art-size-display').textContent = value + 'px';
+    updatePreview();
+    refreshInspectModel();
+  });
+}
+
 function getEditedGridGapPx() {
   const slider = document.getElementById('grid-gap');
   if (slider) return parseInt(slider.value, 10) || 24;
@@ -610,6 +629,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       --color-secondary: ${editedTheme.colors.secondary || '#ece6da'};
       --color-paper: ${editedTheme.colors.paper || DEFAULT_THEME_COLORS.paper};
       --space-gridGap: ${editedTheme.spacing.gridGap};
+      --space-artSize: ${editedTheme.spacing.artSize || '190px'};
     }
     h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
     [data-text-id] { cursor: text; }

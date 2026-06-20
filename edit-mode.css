@@ -493,7 +493,8 @@
   accent-color: var(--ed-accent);
 }
 
-#grid-gap-display {
+#grid-gap-display,
+#art-size-display {
   font-size: 0.72rem;
   font-weight: 600;
   color: #6a6b73;

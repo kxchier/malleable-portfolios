@@ -18,6 +18,7 @@
   },
   "spacing": {
     "gridGap": "40px",
+    "artSize": "190px",
     "imagePadding": "1rem"
   }
 }
