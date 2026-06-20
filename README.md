@@ -50,7 +50,7 @@ node scripts/build-content.js          # should print collections + work count
 curl -s http://localhost:8080/api/content-model | head -c 200   # JSON with portfolio, collections, works
 ```
 
-In the browser: all three layout URLs should show the same art, laid out differently (grid vs horizontal strips vs scattered desk). Open the console on a view page — no errors from `PortfolioModels` or `PortfolioRender`.
+In the browser: all three layout URLs should show the same art, laid out differently (grid vs horizontal strips vs scattered desk). Each view shows all collections with a clean gallery-style UI — no folder picker. Open the console on a view page — no errors from `PortfolioModels` or `PortfolioRender`.
 
 ## Data model (Walo)
 
@@ -78,9 +78,9 @@ theme.json ───────────────────────
 ### Theme customization
 
 Edit `theme.json` to control:
-- **Colors**: primary, secondary, accent, background, paper
+- **Colors**: primary, secondary, accent, background, paper (artwork mat), panel (clothesline strip background)
 - **Typography**: heading1, heading2, body (global + per-layout under `versions`)
-- **Spacing**: gridGap, imagePadding
+- **Spacing**: gridGap, artSize, imagePadding
 
 Changes are visible in all views when using the editor or after saving.
 
@@ -114,17 +114,17 @@ Renderer logic lives in `scripts/render.js`; component types are listed in `scri
 3. Set source to "GitHub Actions"
 4. Push any commit to `main` — the workflow auto-deploys
 
-`.github/workflows/deploy.yml` runs `node scripts/build-content.js`, which writes `models/content.json` and `manifest.json`, then deploys the site.
+`.github/workflows/deploy.yml` runs `node scripts/build-content.js`, which writes `models/content.json` and `manifest.json`, then deploys the site via `actions/upload-pages-artifact@v3` and `actions/deploy-pages@v4`.
 
 Visit `https://yourusername.github.io/repo-name/ver1.html` to see your portfolio.
 
 ## Edit mode features
 
-In `/edit.html`, you can:
+The editor (`/edit.html`) uses a light, minimal UI so the portfolio preview stays the focus. In edit mode you can:
 
 - **Switch representations**: Toggle between Grid, Clothesline, and Desk previews
 - **Edit properties**: Change title, colors, spacing in real time
-- **Live preview**: See changes instantly in the preview pane
+- **Live preview**: See changes instantly in the framed preview pane
 - **Save changes**: Writes `theme.json`, `content.json`, and rebuilds `models/content.json` + `manifest.json` from `Art/` (requires `node scripts/serve.js`)
 - **Preview static**: Open the current layout in a new tab
 
@@ -142,7 +142,16 @@ Above the preview, click a palette swatch to open a color pad:
 - **↔ horizontal** — shift hue
 - **↕ vertical** — lighter (up) or darker (down)
 
-Swatches: Background, Primary, Hover, Desk (surface), and Border (artwork mat). The **Gap** slider adjusts image spacing.
+| Swatch | Applies to |
+|--------|------------|
+| **Background** | Page behind your art |
+| **Primary** | Headings, text, borders |
+| **Hover** | Edit outlines & nav link hover |
+| **Border** | Artwork mat / frame on tiles |
+| **Line panel** | Clothesline strip background *(Clothesline layout only)* |
+| **Desk** | Desk surface color *(Desk layout only)* |
+
+Layout-specific swatches appear at the end of the strip when you switch to Clothesline or Desk. The **Gap** and **Size** sliders adjust spacing and thumbnail size.
 
 ### Inspect model
 
@@ -170,12 +179,13 @@ Use **Copy JSON** to export any tab. Updates when you switch layouts, edit, or s
 | `models/schema.json` | Walo entity schema |
 | `models/content.json` | Structured art data (generated) |
 | `presentations/*.json` | Per-layout presentation models |
-| `theme.json` | Colors, typography, spacing |
+| `theme.json` | Colors, typography, spacing (includes `panel` for clothesline) |
 | `content.json` | Text overrides for headings |
 | `manifest.json` | Legacy collection list (generated shim) |
 | `scripts/build-content.js` | Scan `Art/` → content model + manifest |
 | `scripts/render.js` | Model-driven layout renderer |
 | `scripts/inspect-model.js` | Edit-mode model inspector panel |
+| `scripts/palette-colors.js` | Edit-mode color swatch definitions |
 | `scripts/model-loader.js` | Load schema, content, presentation, theme |
 | `scripts/serve.js` | Local editor server + APIs |
 
