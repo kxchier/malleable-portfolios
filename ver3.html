@@ -10,6 +10,9 @@
   <script src="./scripts/organization.js"></script>
   <script src="./scripts/layouts.js"></script>
   <script src="./scripts/desk-drag.js"></script>
+  <script src="./scripts/component-registry.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/render.js"></script>
 </head>
 <body>
   <header>
@@ -22,45 +25,17 @@
   </main>
 
   <script>
-    window.appData.then(({ manifest, theme, content }) => {
-      const root = document.getElementById('content');
-
-      function renderCollections(collections) {
-        root.innerHTML = '';
-
-        collections.forEach((collection) => {
-          const section = document.createElement('section');
-          section.className = 'desk-collection';
-
-          const h2 = document.createElement('h2');
-          h2.className = 'desk-title';
-          if (collection.originalIndex == null) {
-            h2.textContent = collection.name;
-          } else {
-            const cid = PortfolioContent.collectionId(collection.originalIndex);
-            h2.dataset.textId = cid;
-            h2.dataset.textRole = 'collection.title';
-            h2.dataset.textFallback = collection.name;
-          }
-          section.appendChild(h2);
-
-          const surface = document.createElement('div');
-          surface.className = 'desk-surface';
-          section.appendChild(surface);
-          root.appendChild(section);
-
-          requestAnimationFrame(() => layoutDeskSurface(surface, collection.images));
-        });
-
-        PortfolioContent.applyPageText(manifest, theme, content, 'desk');
-      }
-
-      const controls = PortfolioOrganization.createControls({
-        manifest,
-        content,
-        onChange: renderCollections,
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('desk', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
       });
-      root.parentNode.insertBefore(controls, root);
+      await PortfolioRender.mount({
+        root: document.getElementById('content'),
+        presentationId: 'desk',
+        models,
+      });
     });
   </script>
 </body>

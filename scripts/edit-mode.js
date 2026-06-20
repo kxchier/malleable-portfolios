@@ -541,13 +541,13 @@ function buildPreviewNav(activeLayout) {
 
 function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layout = getLayout(version) || getLayout(1);
+  const presentationId = layout.presentationId || layout.key;
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
   const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
-  const previewLayout = JSON.stringify(layout).replace(/</g, '\\u003c');
 
   const deskScripts = layout.key === 'desk'
-    ? `<script src="./scripts/desk-drag.js"><\/script>`
+    ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js"><\/script>`
     : '';
 
   return `<!DOCTYPE html>
@@ -601,92 +601,46 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     <div id="preview-content"></div>
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
-  <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_LAYOUT__ = ${previewLayout}; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
+  <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
   <script src="./scripts/content.js"><\/script>
   <script src="./scripts/organization.js"><\/script>
-  <script src="./scripts/layouts.js"><\/script>
+  <script src="./scripts/component-registry.js"><\/script>
+  <script src="./scripts/model-loader.js"><\/script>
   ${deskScripts}
+  <script src="./scripts/render.js"><\/script>
   <script>
-  const previewRoot = document.getElementById('preview-content');
-  const previewLayout = window.__PREVIEW_LAYOUT__;
-
-  function appendImage(parent, img, className, draggable) {
-    const item = document.createElement('div');
-    item.className = className;
-    const image = document.createElement('img');
-    image.src = img;
-    image.alt = 'artwork';
-    image.onerror = () => image.remove();
-    if (draggable === false) image.draggable = false;
-    item.appendChild(image);
-    parent.appendChild(item);
-  }
-
-  function buildCollectionHeading(collection) {
-    const h2 = document.createElement('h2');
-    if (previewLayout.key === 'clothesline') h2.className = 'strip-title';
-    if (previewLayout.key === 'desk') h2.className = 'desk-title';
-
-    if (collection.originalIndex == null) {
-      h2.textContent = collection.name;
-      return h2;
-    }
-
-    const cid = PortfolioContent.collectionId(collection.originalIndex);
-    h2.dataset.textId = cid;
-    h2.dataset.textRole = 'collection.title';
-    h2.dataset.textFallback = collection.name;
-    return h2;
-  }
-
-  function renderPreviewCollections(collections) {
-    previewRoot.innerHTML = '';
-
-    collections.forEach((collection) => {
-      const section = document.createElement('section');
-      section.appendChild(buildCollectionHeading(collection));
-
-      if (previewLayout.key === 'grid') {
-        const grid = document.createElement('div');
-        grid.className = 'grid-view';
-        collection.images.forEach((img) => appendImage(grid, img, 'grid-item'));
-        section.appendChild(grid);
-        previewRoot.appendChild(section);
-        return;
-      }
-
-      if (previewLayout.key === 'clothesline') {
-        section.className = 'collection-strip';
-        const scrollContainer = document.createElement('div');
-        scrollContainer.className = 'images-scroll';
-        collection.images.forEach((img) => appendImage(scrollContainer, img, 'scroll-item'));
-        section.appendChild(scrollContainer);
-        previewRoot.appendChild(section);
-        return;
-      }
-
-      section.className = 'desk-collection';
-      const surface = document.createElement('div');
-      surface.className = 'desk-surface';
-      section.appendChild(surface);
-      previewRoot.appendChild(section);
-      requestAnimationFrame(() => layoutDeskSurface(surface, collection.images));
+  (async () => {
+    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
+    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
+      theme: window.__EDIT_STATE__.theme,
+      contentOverrides: window.__EDIT_STATE__.content,
+      contentModel,
     });
 
-    PortfolioContent.applyPageText(
-      window.__PREVIEW_MANIFEST__,
-      window.__EDIT_STATE__.theme,
-      window.__EDIT_STATE__.content,
-      previewLayout.key
-    );
-  }
+    const previewRoot = document.getElementById('preview-content');
+    const orgHost = document.getElementById('preview-organization');
 
-  const organizationControls = PortfolioOrganization.createControls({
-    manifest: window.__PREVIEW_MANIFEST__,
-    content: window.__EDIT_STATE__.content,
-    onChange: renderPreviewCollections,
-  });
-  document.getElementById('preview-organization').appendChild(organizationControls);
+    if (window.PortfolioOrganization && models.presentation.encounter?.organization_modes?.length) {
+      const controls = PortfolioOrganization.createControls({
+        manifest: models.manifest,
+        content: models.contentOverrides,
+        onChange: (collections) => {
+          PortfolioRender.renderCollections(previewRoot, collections, models);
+        },
+      });
+      orgHost.appendChild(controls);
+    } else {
+      PortfolioRender.renderCollections(
+        previewRoot,
+        models.manifest.collections.map((col, index) => ({
+          id: PortfolioContent.collectionId(index),
+          originalIndex: index,
+          ...col,
+        })),
+        models
+      );
+    }
+  })();
 
   window.addEventListener('message', (e) => {
     if (!e.data || e.data.source !== 'portfolio-editor') return;

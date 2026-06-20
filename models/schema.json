@@ -1,0 +1,47 @@
+{
+  "task": "PORTFOLIO",
+  "entities": {
+    "PORTFOLIO": {
+      "description": "Root task object for an art portfolio presentation",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "title": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
+        "artist": { "type": "PNTR", "target": "ARTIST" },
+        "collections": { "type": "ARRY", "itemType": "PNTR", "target": "COLLECTION" }
+      }
+    },
+    "ARTIST": {
+      "description": "The artist whose work is presented",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "name": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
+        "bio": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
+        "links": { "type": "ARRY", "itemType": "SVAL", "optional": true }
+      }
+    },
+    "COLLECTION": {
+      "description": "A curated group of works, often mapped from a folder",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "title": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
+        "works": { "type": "ARRY", "itemType": "PNTR", "target": "WORK" },
+        "presentation_notes": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true }
+      }
+    },
+    "WORK": {
+      "description": "A single artwork or page (v1: one image per work)",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "title": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
+        "images": { "type": "ARRY", "itemType": "SVAL" },
+        "medium": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
+        "year": { "type": "SVAL", "dataType": "number", "function": "display", "optional": true },
+        "description": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
+        "tags": { "type": "ARRY", "itemType": "SVAL", "optional": true },
+        "status": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
+        "visibility": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true }
+      }
+    }
+  },
+  "dependencies": []
+}

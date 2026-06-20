@@ -23,7 +23,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { buildCollections, writeManifest, ROOT } = require('./build-manifest.js');
+const { buildCollections, ROOT } = require('./build-manifest.js');
+const { writeContent } = require('./build-content.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -77,10 +78,23 @@ const server = http.createServer(async (req, res) => {
     return sendJSON(res, 200, { collections: buildCollections() });
   }
 
+  if (pathname === '/api/content-model' && req.method === 'GET') {
+    const { buildContentModel } = require('./build-content.js');
+    let textOverrides = {};
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'content.json'), 'utf8'));
+      textOverrides = raw?.text || {};
+    } catch (e) {
+      // no overrides yet
+    }
+    const content = buildContentModel(buildCollections(), textOverrides);
+    return sendJSON(res, 200, content);
+  }
+
   if (pathname === '/api/rebuild' && req.method === 'POST') {
-    const collections = writeManifest();
-    console.log(`[rebuild] ${collections.length} collection(s) written to manifest.json`);
-    return sendJSON(res, 200, { collections, written: true });
+    const { content, manifest } = writeContent();
+    console.log(`[rebuild] ${manifest.collections.length} collection(s) — content model + manifest written`);
+    return sendJSON(res, 200, { collections: manifest.collections, content, written: true });
   }
 
   if (pathname === '/api/theme' && req.method === 'POST') {

@@ -3,6 +3,7 @@ window.PORTFOLIO_LAYOUTS = [
   {
     id: 1,
     key: 'grid',
+    presentationId: 'grid',
     name: 'Grid',
     file: 'ver1.html',
     examplePrompt:
@@ -11,6 +12,7 @@ window.PORTFOLIO_LAYOUTS = [
   {
     id: 2,
     key: 'clothesline',
+    presentationId: 'clothesline',
     name: 'Clothesline',
     file: 'ver2.html',
     examplePrompt:
@@ -19,6 +21,7 @@ window.PORTFOLIO_LAYOUTS = [
   {
     id: 3,
     key: 'desk',
+    presentationId: 'desk',
     name: 'Desk',
     file: 'ver3.html',
     examplePrompt:

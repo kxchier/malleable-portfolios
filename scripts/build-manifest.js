@@ -63,7 +63,8 @@ module.exports = { buildCollections, writeManifest, OUTPUT_FILE, ROOT };
 
 // Run as a CLI (GitHub Actions, or `node scripts/build-manifest.js`)
 if (require.main === module) {
-  const collections = writeManifest();
+  const { writeContent } = require('./build-content.js');
+  const { manifest } = writeContent();
   console.log('Manifest built:', OUTPUT_FILE);
-  console.log('Collections:', collections.map(c => `${c.name} (${c.images.length} images)`).join(', ') || '(none)');
+  console.log('Collections:', manifest.collections.map((c) => `${c.name} (${c.images.length} images)`).join(', ') || '(none)');
 }

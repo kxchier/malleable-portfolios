@@ -25,8 +25,8 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build manifest
-        run: node scripts/build-manifest.js
+      - name: Build content model
+        run: node scripts/build-content.js
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2

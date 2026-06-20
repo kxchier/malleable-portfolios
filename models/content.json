@@ -1,0 +1,239 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Comics / Fall Chilly",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Comics / vanishing",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3",
+        "work_1_4",
+        "work_1_5",
+        "work_1_6",
+        "work_1_7"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "VTubers",
+      "works": [
+        "work_2_0",
+        "work_2_1",
+        "work_2_2",
+        "work_2_3",
+        "work_2_4"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "photography",
+      "works": [
+        "work_3_0"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "00",
+      "images": [
+        "Art/Comics/Fall Chilly/00.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "01",
+      "images": [
+        "Art/Comics/Fall Chilly/01.jpg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "02",
+      "images": [
+        "Art/Comics/Fall Chilly/02.jpg"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "03",
+      "images": [
+        "Art/Comics/Fall Chilly/03.jpg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "04",
+      "images": [
+        "Art/Comics/Fall Chilly/04.jpg"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "05",
+      "images": [
+        "Art/Comics/Fall Chilly/05.jpg"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "06",
+      "images": [
+        "Art/Comics/Fall Chilly/06.jpg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "07",
+      "images": [
+        "Art/Comics/Fall Chilly/07.jpg"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "08",
+      "images": [
+        "Art/Comics/Fall Chilly/08.jpg"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "09",
+      "images": [
+        "Art/Comics/Fall Chilly/09.jpg"
+      ]
+    },
+    {
+      "id": "work_1_0",
+      "title": "OBJECT PERMANENCE01",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE01.jpg"
+      ]
+    },
+    {
+      "id": "work_1_1",
+      "title": "OBJECT PERMANENCE02",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE02.jpg"
+      ]
+    },
+    {
+      "id": "work_1_2",
+      "title": "OBJECT PERMANENCE03",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE03.jpg"
+      ]
+    },
+    {
+      "id": "work_1_3",
+      "title": "OBJECT PERMANENCE04",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE04.jpg"
+      ]
+    },
+    {
+      "id": "work_1_4",
+      "title": "OBJECT PERMANENCE05",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE05.jpg"
+      ]
+    },
+    {
+      "id": "work_1_5",
+      "title": "OBJECT PERMANENCE06",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE06.jpg"
+      ]
+    },
+    {
+      "id": "work_1_6",
+      "title": "OBJECT PERMANENCE07",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE07.jpg"
+      ]
+    },
+    {
+      "id": "work_1_7",
+      "title": "OBJECT PERMANENCE08",
+      "images": [
+        "Art/Comics/vanishing/OBJECT_PERMANENCE08.jpg"
+      ]
+    },
+    {
+      "id": "work_2_0",
+      "title": "Doodlezone",
+      "images": [
+        "Art/VTubers/Doodlezone_.jpg"
+      ]
+    },
+    {
+      "id": "work_2_1",
+      "title": "Kyle",
+      "images": [
+        "Art/VTubers/Kyle.jpg"
+      ]
+    },
+    {
+      "id": "work_2_2",
+      "title": "Mouseydog1",
+      "images": [
+        "Art/VTubers/Mouseydog1.png"
+      ]
+    },
+    {
+      "id": "work_2_3",
+      "title": "Quinn",
+      "images": [
+        "Art/VTubers/Quinn.jpg"
+      ]
+    },
+    {
+      "id": "work_2_4",
+      "title": "Yin",
+      "images": [
+        "Art/VTubers/Yin_.jpg"
+      ]
+    },
+    {
+      "id": "work_3_0",
+      "title": "IMG 8506",
+      "images": [
+        "Art/photography/IMG_8506.jpg"
+      ]
+    }
+  ]
+}

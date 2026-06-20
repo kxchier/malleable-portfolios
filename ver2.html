@@ -8,6 +8,9 @@
   <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
   <script src="./scripts/organization.js"></script>
+  <script src="./scripts/component-registry.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/render.js"></script>
 </head>
 <body>
   <header>
@@ -20,51 +23,17 @@
   </main>
 
   <script>
-    window.appData.then(({ manifest, theme, content }) => {
-      const root = document.getElementById('content');
-
-      function renderCollections(collections) {
-        root.innerHTML = '';
-
-        collections.forEach((collection) => {
-          const section = document.createElement('section');
-          section.className = 'collection-strip';
-
-          const h2 = document.createElement('h2');
-          h2.className = 'strip-title';
-          if (collection.originalIndex == null) {
-            h2.textContent = collection.name;
-          } else {
-            const cid = PortfolioContent.collectionId(collection.originalIndex);
-            h2.dataset.textId = cid;
-            h2.dataset.textRole = 'collection.title';
-            h2.dataset.textFallback = collection.name;
-          }
-          section.appendChild(h2);
-
-          const scrollContainer = document.createElement('div');
-          scrollContainer.className = 'images-scroll';
-
-          collection.images.forEach(img => {
-            const item = document.createElement('div');
-            item.className = 'scroll-item';
-            item.innerHTML = `<img src="${img}" alt="artwork" onerror="this.remove()">`;
-            scrollContainer.appendChild(item);
-          });
-
-          section.appendChild(scrollContainer);
-          root.appendChild(section);
-        });
-
-        PortfolioContent.applyPageText(manifest, theme, content, 'clothesline');
-      }
-
-      const controls = PortfolioOrganization.createControls({
-        manifest,
-        content,
-        onChange: renderCollections,
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('clothesline', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
       });
-      root.parentNode.insertBefore(controls, root);
+      await PortfolioRender.mount({
+        root: document.getElementById('content'),
+        presentationId: 'clothesline',
+        models,
+      });
     });
   </script>
 </body>

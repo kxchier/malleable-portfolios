@@ -1,0 +1,55 @@
+{
+  "id": "desk",
+  "layout_family": "surface_scatter",
+  "metaphor": "desk",
+  "visual_language": {
+    "abstract_to_skeuomorphic": 0.45,
+    "materials": ["paper", "wood", "soft shadows"],
+    "density": "medium"
+  },
+  "encounter": {
+    "fast_discovery_to_deep_encounter": 0.3,
+    "navigation": "surface",
+    "progressive_disclosure": true,
+    "hiddenness": "medium",
+    "organization_modes": ["all", "single", "flat"]
+  },
+  "intent": {
+    "professional_legibility": 0.35,
+    "personal_archive": 0.5,
+    "social_encounter": 0.15
+  },
+  "components": [
+    "portfolio_header",
+    "organization_controls",
+    "collection_section",
+    "desk_surface",
+    "draggable_tile"
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true }
+    },
+    "COLLECTION": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true },
+      "works": {
+        "render": "expanded",
+        "item": { "type": "__WORK__", "thumbnail": ["images"] }
+      }
+    },
+    "WORK": {
+      "images": { "render": "expanded", "item": { "render": "image" } }
+    }
+  },
+  "layout_engine": {
+    "collection_container": "vertical_stack",
+    "work_container": "desk_surface",
+    "work_tile": { "aspect": "square", "border": "none", "rotation": true, "draggable": true },
+    "desk": {
+      "cols": 3,
+      "padding": 24,
+      "tileSize": 220,
+      "rotationSlack": 28
+    }
+  }
+}

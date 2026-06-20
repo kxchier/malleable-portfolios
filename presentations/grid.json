@@ -1,0 +1,48 @@
+{
+  "id": "grid",
+  "layout_family": "grid_view",
+  "metaphor": "gallery_wall",
+  "visual_language": {
+    "abstract_to_skeuomorphic": 0.1,
+    "materials": ["mat", "border"],
+    "density": "medium"
+  },
+  "encounter": {
+    "fast_discovery_to_deep_encounter": 0.8,
+    "navigation": "scroll",
+    "progressive_disclosure": false,
+    "hiddenness": "low",
+    "organization_modes": ["all", "single", "flat"]
+  },
+  "intent": {
+    "professional_legibility": 0.7,
+    "personal_archive": 0.2,
+    "social_encounter": 0.1
+  },
+  "components": [
+    "portfolio_header",
+    "organization_controls",
+    "collection_section",
+    "image_grid"
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true }
+    },
+    "COLLECTION": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true },
+      "works": {
+        "render": "expanded",
+        "item": { "type": "__WORK__", "thumbnail": ["images"] }
+      }
+    },
+    "WORK": {
+      "images": { "render": "expanded", "item": { "render": "image" } }
+    }
+  },
+  "layout_engine": {
+    "collection_container": "vertical_stack",
+    "work_container": "css_grid",
+    "work_tile": { "aspect": "square", "border": "chunky" }
+  }
+}

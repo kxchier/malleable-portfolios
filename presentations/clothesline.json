@@ -1,0 +1,48 @@
+{
+  "id": "clothesline",
+  "layout_family": "horizontal_strip",
+  "metaphor": "clothesline",
+  "visual_language": {
+    "abstract_to_skeuomorphic": 0.25,
+    "materials": ["string", "clip", "paper"],
+    "density": "medium"
+  },
+  "encounter": {
+    "fast_discovery_to_deep_encounter": 0.55,
+    "navigation": "horizontal_scroll",
+    "progressive_disclosure": false,
+    "hiddenness": "low",
+    "organization_modes": ["all", "single", "flat"]
+  },
+  "intent": {
+    "professional_legibility": 0.45,
+    "personal_archive": 0.4,
+    "social_encounter": 0.15
+  },
+  "components": [
+    "portfolio_header",
+    "organization_controls",
+    "collection_section",
+    "horizontal_strip"
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true }
+    },
+    "COLLECTION": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true },
+      "works": {
+        "render": "expanded",
+        "item": { "type": "__WORK__", "thumbnail": ["images"] }
+      }
+    },
+    "WORK": {
+      "images": { "render": "expanded", "item": { "render": "image" } }
+    }
+  },
+  "layout_engine": {
+    "collection_container": "vertical_stack",
+    "work_container": "horizontal_scroll",
+    "work_tile": { "aspect": "natural", "border": "clip" }
+  }
+}

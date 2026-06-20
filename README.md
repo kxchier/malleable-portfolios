@@ -1,183 +1,220 @@
 # GitHub Pages Art Portfolio Template
-HI GUYZ~! :D
-This is a mockup of a malleable, editable art portfolio template site, designed for GitHub Pages. It includes a "Portfolio Editor" program (intended to run locally) that allows both direct manipulation and AI-powered generation of static html representations of a portfolio site, that could then be hosted by github pages. It looks for art collections and subcollections inside the "Art" folder. 
 
+HI GUYZ~! :D
+
+This is a mockup of a malleable, editable art portfolio template site, designed for GitHub Pages. It includes a **Portfolio Editor** (run locally) for direct manipulation and (eventually) AI-powered generation of portfolio presentations. Art lives in the `Art/` folder; the site renders it through multiple **presentation formats** (Grid, Clothesline, Desk) from a single shared **content model**.
+
+Built as a prototype for [Walo](https://doi.org/10.1145/3803784.3816824) — separating *what the work is* from *how it is encountered* — using a task-driven data model inspired by [Jelly](https://doi.org/10.1145/3706598.3713285).
 
 ## Quick Start
 
-(HOW PEOPLE WOULD USE THIS)
 ### Run the editor locally
 
 1. Clone this repo:
    ```bash
    git clone <repo-url>
-   cd gh-pages-art-portfolio-template
+   cd malleable-portfolios
    ```
 
-2. Add your artwork to `Art/`, organized by collection. Nested folders that contains images each become a collection. I've included some of my art to work as an example, but actually i think in practice this folder would be git ignored.
+2. Add your artwork to `Art/`, organized by collection. Nested folders that contain images each become a collection (example art may be included; in practice this folder might be gitignored):
    ```
    Art/VTubers/Kyle.jpg
    Art/Comics/Fall Chilly/00.jpg     →  collection "Comics / Fall Chilly"
    ```
 
-3. Start the app by double clicking PortfolioEditor or running:
+3. Build the content model (optional if using the local server — Save rebuilds automatically):
+   ```bash
+   node scripts/build-content.js
+   ```
 
+4. Start the app by double-clicking `PortfolioEditor` or running:
    ```bash
    node scripts/serve.js
    ```
+   Restart the server after pulling updates so new API routes (e.g. `/api/content-model`) are available.
 
-4. Visit in your browser (the PortfolioEditor script should open a browser automatically):
+5. Visit in your browser (`PortfolioEditor` should open one automatically):
    - **Edit mode**: http://localhost:8080/edit.html
    - **Grid view**: http://localhost:8080/ver1.html
    - **Clothesline view**: http://localhost:8080/ver2.html
    - **Desk view**: http://localhost:8080/ver3.html
 
-   The views read your `Art/` folder live, so newly added art shows up on refresh.
-   Hit **Save** in the editor to write the static files for deploy.
+   With the local server running, views read `Art/` live via `/api/content-model` — newly added art shows up on refresh. Hit **Save** in the editor to write static files for deploy.
 
+> **Static-only fallback:** You can open the site with any static server (e.g. `python3 -m http.server`), but then it reads committed `models/content.json` / `manifest.json` instead of scanning live, and Save won't have a backend. Run `node scripts/build-content.js` manually to refresh those files.
 
-THE FOLLOWING ARE NOTES FOR THE FUTURE MOSTLY (thanks claude)
+### Verify it's working
 
-> Tip: you can still open the site with any static server (e.g. `python3 -m http.server`),
-> but then it reads the committed `manifest.json` instead of scanning live, and Save
-> won't have a backend to write to. Run `node scripts/build-manifest.js` manually to
-> refresh the manifest in that case.
+```bash
+node scripts/build-content.js          # should print collections + work count
+curl -s http://localhost:8080/api/content-model | head -c 200   # JSON with portfolio, collections, works
+```
 
-### Theme Customization
+In the browser: all three layout URLs should show the same art, laid out differently (grid vs horizontal strips vs scattered desk). Open the console on a view page — no errors from `PortfolioModels` or `PortfolioRender`.
+
+## Data model (Walo)
+
+The site is driven by three layers:
+
+| Layer | Location | What it describes |
+|-------|----------|-------------------|
+| **Schema** | `models/schema.json` | Entity types (Portfolio, Artist, Collection, Work) and relationships |
+| **Content** | `models/content.json` | Your actual art — built from `Art/` (one image = one work in v1) |
+| **Presentation** | `presentations/*.json` | How work is encountered — layout, metaphor, navigation, UI spec |
+
+Shared styling and text overrides still live in `theme.json` and `content.json`.
+
+```
+Art/  →  build-content.js  →  models/content.json
+                                    ↓
+presentations/grid.json  ──→  scripts/render.js  →  ver1.html (thin shell)
+presentations/clothesline.json                    →  ver2.html
+presentations/desk.json                           →  ver3.html
+theme.json ────────────────────────────────────────┘
+```
+
+`manifest.json` is kept as a **legacy shim** (`{ collections: [{ name, images }] }`) for static hosting compatibility. New code should prefer `models/content.json`.
+
+### Theme customization
 
 Edit `theme.json` to control:
-- **Colors**: primary, secondary, accent, background
-- **Typography**: heading1, heading2, body font sizes
+- **Colors**: primary, secondary, accent, background, paper
+- **Typography**: heading1, heading2, body (global + per-layout under `versions`)
 - **Spacing**: gridGap, imagePadding
 
-Changes to `theme.json` are immediately visible in all views.
+Changes are visible in all views when using the editor or after saving.
 
 ### Built-in layouts
 
-| Layout | File | Example prompt |
-|--------|------|----------------|
-| **Grid** | `ver1.html` | A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders. |
-| **Clothesline** | `ver2.html` | Horizontal scroll strips per collection, like prints clipped on a clothesline — peek and swipe sideways. |
-| **Desk** | `ver3.html` | A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps. |
+Each layout is a thin HTML shell plus a presentation spec. All three read the same content model.
 
-Prompts live in `scripts/layouts.js` and appear as chips in the editor's **+ Create New** modal (hover a layout button in edit mode to see its prompt).
+| Layout | File | Presentation spec | Metaphor |
+|--------|------|-------------------|----------|
+| **Grid** | `ver1.html` | `presentations/grid.json` | Gallery wall — high discoverability |
+| **Clothesline** | `ver2.html` | `presentations/clothesline.json` | Horizontal scroll strips |
+| **Desk** | `ver3.html` | `presentations/desk.json` | Scattered surface, draggable tiles |
 
-### Adding New Representations
+Example AI prompts for each layout live in `scripts/layouts.js` and appear as chips in the editor's **+ Create New** modal.
 
-1. Create a new HTML file (e.g., `ver4.html`)
-2. Load manifest and theme using `loader.js`
-3. Render your custom layout reading from `manifest.collections`
-4. Add an entry to `scripts/layouts.js` and a button in `edit.html`
+### Adding a new representation
+
+1. Add `presentations/my-layout.json` — layout family, encounter settings, `ui_spec`, and `layout_engine` (see existing specs for structure).
+2. Create a thin HTML shell (e.g. `ver4.html`) that loads `loader.js`, `model-loader.js`, `component-registry.js`, `render.js`, and calls:
+   ```js
+   PortfolioRender.mount({ root: document.getElementById('content'), presentationId: 'my-layout' });
+   ```
+3. Register the layout in `scripts/layouts.js` and add a button in `edit.html`.
+
+Renderer logic lives in `scripts/render.js`; component types are listed in `scripts/component-registry.js`.
 
 ### Deploy to GitHub Pages
 
 1. Push this repo to GitHub
 2. Go to **Settings → Pages**
 3. Set source to "GitHub Actions"
-4. Push any commit to `main`—the workflow will auto-deploy
+4. Push any commit to `main` — the workflow auto-deploys
 
-The `.github/workflows/deploy.yml` automatically:
-- Runs `build-manifest.js` to scan your Art/ folder
-- Generates fresh `manifest.json`
-- Deploys everything to GitHub Pages
+`.github/workflows/deploy.yml` runs `node scripts/build-content.js`, which writes `models/content.json` and `manifest.json`, then deploys the site.
 
-Visit `https://yourusername.github.io/repo-name/ver1.html` to see your portfolio!
+Visit `https://yourusername.github.io/repo-name/ver1.html` to see your portfolio.
 
-## Edit Mode Features
+## Edit mode features
 
 In `/edit.html`, you can:
 
-- **Switch representations**: Toggle between different portfolio views
-- **Edit properties**: Change title, colors, spacing in real-time
+- **Switch representations**: Toggle between Grid, Clothesline, and Desk previews
+- **Edit properties**: Change title, colors, spacing in real time
 - **Live preview**: See changes instantly in the preview pane
-- **Save changes**: Writes `theme.json` and rebuilds `manifest.json` from `Art/`
-  (requires the local server — `node scripts/serve.js`)
-- **Preview static**: Open static view in new tab
+- **Save changes**: Writes `theme.json`, `content.json`, and rebuilds `models/content.json` + `manifest.json` from `Art/` (requires `node scripts/serve.js`)
+- **Preview static**: Open the current layout in a new tab
 
 ### Direct text editing
 
 In the edit preview, **click any heading** (portfolio title or section title) to open a floating toolbar:
 
-- **Text** — change the wording
-- **Font** — pick a font family
-- **Size** — adjust font size with a slider
+- **Text** — change the wording (saved to `content.json`)
+- **Font / Size** — **Apply to** lets you target this heading only, all section titles, or all headings on the current layout. Per-layout typography lives in `theme.json` under `versions`.
 
-- **Text** — always applies to the heading you clicked (`content.json`)
-- **Font / Size** — **Apply to** lets you target this heading only, all section titles, or all headings **on the current layout** (Grid / Clothesline / Desk). Each layout keeps its own typography in `theme.json` under `versions`; per-heading overrides live in `content.json`.
+### Palette swatches
 
-Both files are written when you hit **Save**.
-
-### Palette swatches (direct manipulation)
-
-Above the preview, click a palette swatch to open a color pad and adjust that color live:
+Above the preview, click a palette swatch to open a color pad:
 
 - **↔ horizontal** — shift hue
 - **↕ vertical** — lighter (up) or darker (down)
 
-Swatches: Background, Primary, Hover (edit outlines & nav link hover), Desk (surface), and Border (artwork mat). **Gap** slider adjusts image spacing. Click the portfolio title or any heading in the preview to edit text. Changes save to `theme.json` and `content.json`.
+Swatches: Background, Primary, Hover, Desk (surface), and Border (artwork mat). The **Gap** slider adjusts image spacing.
 
-### Direct Manipulation Coming Soon
+### Coming soon
 
-- Generate new representations with AI prompts
+- AI-generated presentation specs from the **+ Create New** modal
+- Click-to-edit art tiles (captions, scope: this piece / collection / all)
+- Schema inspect panel in the editor
+
+## Key files
+
+| Path | Role |
+|------|------|
+| `Art/` | Source images (folder structure → collections) |
+| `models/schema.json` | Walo entity schema |
+| `models/content.json` | Structured art data (generated) |
+| `presentations/*.json` | Per-layout presentation models |
+| `theme.json` | Colors, typography, spacing |
+| `content.json` | Text overrides for headings |
+| `manifest.json` | Legacy collection list (generated shim) |
+| `scripts/build-content.js` | Scan `Art/` → content model + manifest |
+| `scripts/render.js` | Model-driven layout renderer |
+| `scripts/model-loader.js` | Load schema, content, presentation, theme |
+| `scripts/serve.js` | Local editor server + APIs |
+
+### Local server APIs
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/content-model` | GET | Live content model from `Art/` |
+| `/api/manifest` | GET | Legacy manifest view |
+| `/api/rebuild` | POST | Rebuild content model + manifest on disk |
+| `/api/theme` | POST | Save `theme.json` (+ optional `content.json`) |
+| `/api/content` | POST | Save `content.json` |
 
 ## Packaging as a double-click app
 
-Instead of `node scripts/serve.js` in a terminal, the editor can ship as a **self-contained,
-double-click app** with no Node install and no command line — ideal for non-technical users
-(e.g. study participants). This is **purely a packaging step**; the app code is unchanged
-apart from anchoring its working folder to the executable's location and auto-opening the
-browser when run as a packaged app. The binary bundles the Node runtime + the server, sits
-inside the portfolio folder, and on launch serves that folder and opens the editor — keeping
-the same local filesystem access that scans `Art/` and writes `manifest.json` / `theme.json`.
+Instead of `node scripts/serve.js` in a terminal, the editor can ship as a **self-contained double-click app** with no Node install — ideal for study participants. The binary bundles the Node runtime + server, sits in the portfolio folder, and on launch serves that folder and opens the editor (same filesystem access to scan `Art/` and write `models/content.json`, `manifest.json`, `theme.json`).
 
 ### Build it
 
-A working build script is included (macOS; uses Node SEA — official, built into Node 20+):
+macOS (Node SEA, Node 20+):
 
 ```bash
 bash scripts/pack.sh          # produces ./PortfolioEditor (gitignored, ~105 MB)
-./PortfolioEditor             # or double-click it in Finder
+./PortfolioEditor             # or double-click in Finder
 ```
 
-Under the hood `pack.sh` does the standard Node SEA flow: bundle `serve.js` +
-`build-manifest.js` into one file with `esbuild` → generate a blob from `sea-config.json`
-via `node --experimental-sea-config` → copy the `node` binary → inject the blob with
-`postject` → ad-hoc code-sign. (Alternative: `bun build --compile` does this in one command.
-Avoid `vercel/pkg` — it's deprecated/archived.)
+Under the hood `pack.sh` bundles `serve.js` + `build-content.js` via `esbuild` → Node SEA blob → `postject` → ad-hoc code-sign.
 
-> The binary must sit **in the portfolio folder** (next to `Art/`, `edit.html`, etc.) — it
-> serves whatever folder it lives in.
-
-### Two tweaks to make it feel like an app
-
-- **Auto-open the browser** on launch: have `serve.js` spawn the OS "open" command after
-  `server.listen()` — `open` (macOS), `start` (Windows), `xdg-open` (Linux).
-- **No terminal window** (macOS): wrap the binary in a minimal `.app` bundle so Finder
-  launches it without a Terminal window.
+> The binary must sit **in the portfolio folder** (next to `Art/`, `edit.html`, etc.).
 
 ### Caveats
 
-- **Per-OS builds**: the binary is native — build separately for macOS, Windows, Linux (and
-  per-arch on macOS, arm64 vs x64). `pack.sh` currently targets macOS.
-- **Terminal flash on double-click (macOS)**: Finder runs a bare Unix executable inside a
-  Terminal window. To launch with no terminal, wrap the binary in a minimal `.app` bundle —
-  a small future polish.
-- **Code signing / Gatekeeper**: `pack.sh` ad-hoc signs (runs fine on the machine that built
-  it). To distribute to other Macs without "cannot verify developer" warnings, sign +
-  notarize; Windows needs its own signing to avoid SmartScreen.
-- The **Publish to GitHub** step is unaffected — it stays mocked (or becomes a real GitHub
-  API call later) regardless of packaging.
+- **Per-OS builds**: build separately for macOS, Windows, Linux
+- **macOS terminal flash**: wrap in a minimal `.app` bundle for a cleaner launch
+- **Code signing**: ad-hoc signed by default; notarize for wider distribution
+- **Publish to GitHub** in the editor UI is still mocked
 
-## Next Steps
+## Next steps
 
 - [ ] Package as a double-click app (Node SEA) — see above
 - [ ] Add image upload/reordering in edit mode
-- [ ] Implement AI representation generator
-- [ ] Add save/sync to backend (Firebase, Netlify, etc.)
-- [x] Create ver3+ custom layouts (Desk view + example prompts in `scripts/layouts.js`)
+- [ ] Implement AI presentation generator (`presentations/*.json` from prompts)
+- [ ] Richer content model (medium, tags, visibility, multi-image works)
+- [ ] Schema inspect panel in edit mode
+- [ ] Persist desk tile positions in the content model
+- [ ] Desktop Archive layout (`ver4`)
+- [x] Task-driven data model (content + presentation specs)
+- [x] Shared renderer for Grid / Clothesline / Desk
+- [x] Desk view + example prompts in `scripts/layouts.js`
 - [ ] Add dark mode toggle
 - [ ] Mobile-optimized edit interface
 
 ---
 
-Built as a prototype for malleable, generative design. Extend it however you like!
+Built as a prototype for malleable, generative art presentation. Extend it however you like!

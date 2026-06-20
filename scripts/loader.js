@@ -1,9 +1,9 @@
-// Load manifest, theme, and content on page init.
+// Load manifest, theme, content, and Walo models on page init.
 //
-// When the local editor (scripts/serve.js) is running, we read the manifest LIVE
-// from /api/manifest so the page always reflects the current Art/ folder. When
+// When the local editor (scripts/serve.js) is running, we read the content model LIVE
+// from /api/content-model so the page always reflects the current Art/ folder. When
 // deployed to GitHub Pages (static, no server) that call 404s and we fall back to
-// the committed manifest.json.
+// models/content.json or manifest.json.
 async function fetchManifest() {
   try {
     const res = await fetch('/api/manifest');
@@ -11,12 +11,12 @@ async function fetchManifest() {
   } catch (e) {
     // local server not running — fall through to the static file
   }
-  return fetch('./manifest.json').then(r => r.json());
+  return fetch('./manifest.json').then((r) => r.json());
 }
 
 async function fetchContent(theme) {
   try {
-    const file = await fetch('./content.json').then(r => r.json());
+    const file = await fetch('./content.json').then((r) => r.json());
     if (file?.text && Object.keys(file.text).length > 0) return file;
   } catch (e) {
     // fall through
@@ -25,11 +25,52 @@ async function fetchContent(theme) {
   return { text: {} };
 }
 
+async function fetchContentModel() {
+  if (window.PortfolioModels) {
+    return PortfolioModels.fetchContentModel();
+  }
+  try {
+    const res = await fetch('/api/content-model');
+    if (res.ok) return await res.json();
+  } catch (e) {
+    // fall through
+  }
+  try {
+    return await fetch('./models/content.json').then((r) => r.json());
+  } catch (e) {
+    return null;
+  }
+}
+
+function toManifestFromContent(content) {
+  const worksById = Object.fromEntries((content.works || []).map((w) => [w.id, w]));
+  return {
+    collections: (content.collections || []).map((col) => ({
+      name: col.title,
+      images: (col.works || []).flatMap((wid) => worksById[wid]?.images || []),
+    })),
+  };
+}
+
 async function loadData() {
-  const [manifest, themeRaw] = await Promise.all([
-    fetchManifest(),
-    fetch('./theme.json').then(r => r.json()),
+  const [themeRaw, contentModel] = await Promise.all([
+    fetch('./theme.json').then((r) => r.json()),
+    fetchContentModel(),
   ]);
+
+  let manifest;
+  let contentModelResolved = contentModel;
+
+  if (contentModelResolved) {
+    manifest = toManifestFromContent(contentModelResolved);
+  } else {
+    manifest = await fetchManifest();
+    if (window.PortfolioModels) {
+      contentModelResolved = PortfolioModels.manifestToContentStub?.(manifest)
+        || null;
+    }
+  }
+
   const rawContent = await fetchContent(themeRaw);
   const theme = { ...themeRaw };
   delete theme.content;
@@ -55,7 +96,7 @@ async function loadData() {
     root.style.setProperty(`--space-${key}`, value);
   });
 
-  return { manifest, theme, content };
+  return { manifest, theme, content, contentModel: contentModelResolved };
 }
 
 // Store in window for access from other scripts
