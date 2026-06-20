@@ -2,6 +2,8 @@
 let currentVersion = 1;
 let editedTheme = {};
 let editedContent = { text: {} };
+let contentModel = null;
+let inspectController = null;
 let previewIframe = null;
 const DEFAULT_THEME_COLORS = {
   background: '#bdb6aa',
@@ -10,7 +12,8 @@ const DEFAULT_THEME_COLORS = {
 };
 
 async function initEditMode() {
-  const { manifest, theme, content } = await window.appData;
+  const { manifest, theme, content, contentModel: loadedContent } = await window.appData;
+  contentModel = loadedContent;
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
 
@@ -34,6 +37,43 @@ async function initEditMode() {
   setupPublish();
   setupCreateModal();
   setupDeviceToggle();
+  setupInspectModel();
+}
+
+function getCurrentPresentationId() {
+  const layout = getLayout(currentVersion);
+  return layout?.presentationId || layout?.key || 'grid';
+}
+
+function refreshInspectModel() {
+  inspectController?.refresh();
+}
+
+function setupInspectModel() {
+  const panel = document.getElementById('inspect-panel');
+  const toggleBtn = document.getElementById('inspect-btn');
+  const container = document.getElementById('edit-container');
+  if (!panel || !toggleBtn || !window.PortfolioInspect) return;
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    container.classList.toggle('inspect-open', open);
+    toggleBtn.classList.toggle('active', open);
+    toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) refreshInspectModel();
+  };
+
+  inspectController = PortfolioInspect.mount(panel, {
+    getState: () => ({
+      contentModel,
+      contentOverrides: editedContent,
+      theme: editedTheme,
+      presentationId: getCurrentPresentationId(),
+    }),
+  });
+
+  toggleBtn.addEventListener('click', () => setOpen(panel.hidden));
+  panel.addEventListener('inspect-close', () => setOpen(false));
 }
 
 function getCurrentVersionKey() {
@@ -76,6 +116,7 @@ function handleTextEditChange({ id, role, scope, property, value }) {
     }
   }
   patchPreview();
+  refreshInspectModel();
 }
 
 function patchPreview() {
@@ -214,6 +255,7 @@ function setupVersionButtons() {
       btn.classList.add('active');
       currentVersion = parseInt(btn.dataset.version);
       updatePreview();
+      refreshInspectModel();
     });
   });
 }
@@ -224,6 +266,7 @@ function setThemeColor(key, value, { rebuild = false } = {}) {
   syncPaletteSwatches();
   if (rebuild) updatePreview();
   else patchPreviewColors();
+  refreshInspectModel();
 }
 
 function patchPreviewColors() {
@@ -444,6 +487,7 @@ function setupGridGapListener() {
     document.documentElement.style.setProperty('--space-gridGap', value + 'px');
     document.getElementById('grid-gap-display').textContent = value + 'px';
     updatePreview();
+    refreshInspectModel();
   });
 }
 
@@ -486,7 +530,10 @@ async function saveChanges() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editedContent),
     }).catch(() => {});
-    const { collections } = await rebuildRes.json();
+    const rebuildData = await rebuildRes.json();
+    const { collections, content } = rebuildData;
+    if (content) contentModel = content;
+    refreshInspectModel();
     btn.textContent = `Saved ✓ (${collections.length} collections)`;
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
   } catch (e) {

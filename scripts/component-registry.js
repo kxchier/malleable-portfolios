@@ -26,8 +26,11 @@ window.PortfolioComponents = (() => {
     },
     horizontal_strip: {
       role: 'image',
-      containerClass: 'images-scroll',
+      containerClass: 'images-scroll clothesline-scroll',
+      innerClass: 'clothesline-rig',
+      itemsClass: 'clothesline-items',
       tileClass: 'scroll-item',
+      pieceClass: 'clothesline-piece',
       sectionClass: 'collection-strip',
       editable: ['caption'],
       defaultScope: { style: 'layout' },

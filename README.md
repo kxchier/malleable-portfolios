@@ -4,7 +4,7 @@ HI GUYZ~! :D
 
 This is a mockup of a malleable, editable art portfolio template site, designed for GitHub Pages. It includes a **Portfolio Editor** (run locally) for direct manipulation and (eventually) AI-powered generation of portfolio presentations. Art lives in the `Art/` folder; the site renders it through multiple **presentation formats** (Grid, Clothesline, Desk) from a single shared **content model**.
 
-Built as a prototype for [Walo](https://doi.org/10.1145/3803784.3816824) — separating *what the work is* from *how it is encountered* — using a task-driven data model inspired by [Jelly](https://doi.org/10.1145/3706598.3713285).
+Built as a prototype for [Walo] — separating *what the work is* from *how it is encountered* — using a task-driven data model inspired by [Jelly](https://doi.org/10.1145/3706598.3713285).
 
 ## Quick Start
 
@@ -91,7 +91,7 @@ Each layout is a thin HTML shell plus a presentation spec. All three read the sa
 | Layout | File | Presentation spec | Metaphor |
 |--------|------|-------------------|----------|
 | **Grid** | `ver1.html` | `presentations/grid.json` | Gallery wall — high discoverability |
-| **Clothesline** | `ver2.html` | `presentations/clothesline.json` | Horizontal scroll strips |
+| **Clothesline** | `ver2.html` | `presentations/clothesline.json` | Prints on a sagging line with clothespins |
 | **Desk** | `ver3.html` | `presentations/desk.json` | Scattered surface, draggable tiles |
 
 Example AI prompts for each layout live in `scripts/layouts.js` and appear as chips in the editor's **+ Create New** modal.
@@ -144,11 +144,23 @@ Above the preview, click a palette swatch to open a color pad:
 
 Swatches: Background, Primary, Hover, Desk (surface), and Border (artwork mat). The **Gap** slider adjusts image spacing.
 
+### Inspect model
+
+Click **Inspect model** in the editor toolbar to open a side panel showing the data behind the preview:
+
+| Tab | What you see |
+|-----|----------------|
+| **Content** | Live content model with text overrides applied |
+| **Presentation** | Current layout spec (`presentations/*.json`) |
+| **Schema** | Entity types (`models/schema.json`) |
+| **Theme** | Edited colors, typography, spacing |
+
+Use **Copy JSON** to export any tab. Updates when you switch layouts, edit, or save.
+
 ### Coming soon
 
 - AI-generated presentation specs from the **+ Create New** modal
 - Click-to-edit art tiles (captions, scope: this piece / collection / all)
-- Schema inspect panel in the editor
 
 ## Key files
 
@@ -163,6 +175,7 @@ Swatches: Background, Primary, Hover, Desk (surface), and Border (artwork mat). 
 | `manifest.json` | Legacy collection list (generated shim) |
 | `scripts/build-content.js` | Scan `Art/` → content model + manifest |
 | `scripts/render.js` | Model-driven layout renderer |
+| `scripts/inspect-model.js` | Edit-mode model inspector panel |
 | `scripts/model-loader.js` | Load schema, content, presentation, theme |
 | `scripts/serve.js` | Local editor server + APIs |
 
@@ -206,11 +219,11 @@ Under the hood `pack.sh` bundles `serve.js` + `build-content.js` via `esbuild` �
 - [ ] Add image upload/reordering in edit mode
 - [ ] Implement AI presentation generator (`presentations/*.json` from prompts)
 - [ ] Richer content model (medium, tags, visibility, multi-image works)
-- [ ] Schema inspect panel in edit mode
 - [ ] Persist desk tile positions in the content model
 - [ ] Desktop Archive layout (`ver4`)
 - [x] Task-driven data model (content + presentation specs)
 - [x] Shared renderer for Grid / Clothesline / Desk
+- [x] Inspect model panel in edit mode
 - [x] Desk view + example prompts in `scripts/layouts.js`
 - [ ] Add dark mode toggle
 - [ ] Mobile-optimized edit interface

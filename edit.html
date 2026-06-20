@@ -22,6 +22,7 @@
           <button class="version-btn create-btn">+ Create New</button>
         </div>
         <div class="edit-controls">
+          <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
           <button id="save-btn">Save Changes</button>
           <button id="preview-btn">Preview</button>
           <button id="publish-btn" class="publish-btn">Publish to GitHub ↑</button>
@@ -38,7 +39,8 @@
     </div>
   </header>
 
-  <main class="edit-container">
+  <main class="edit-container" id="edit-container">
+    <div class="edit-workspace">
     <div class="preview-toolbar">
       <span class="preview-label">Click title or headings in the preview to edit</span>
       <div class="palette-strip" id="palette-strip" title="Click a swatch to open the color pad — drag for hue &amp; lightness, or use sliders."></div>
@@ -61,6 +63,10 @@
         <div id="preview-frame"></div>
       </div>
     </section>
+    </div>
+
+    <aside id="inspect-panel" class="inspect-panel" hidden aria-label="Model inspector">
+    </aside>
   </main>
 
   <!-- Create a new version (mock) — only shown when "+ Create New" is clicked -->
@@ -98,6 +104,7 @@
   </div>
 
   <script src="./scripts/layouts.js"></script>
+  <script src="./scripts/inspect-model.js"></script>
   <script src="./scripts/edit-mode.js"></script>
 </body>
 </html>
