@@ -174,40 +174,12 @@ window.PortfolioRender = (() => {
     }
   }
 
-  function insertOrganizationControls(root, models, onChange) {
-    if (!window.PortfolioOrganization) {
-      onChange(
-        models.manifest.collections.map((col, index) => ({
-          id: PortfolioContent.collectionId(index),
-          originalIndex: index,
-          ...col,
-        }))
-      );
-      return;
-    }
-
-    const parent = root.parentNode;
-    const existing = parent.querySelector('.organization-controls');
-    if (existing) existing.remove();
-
-    const modes = models.presentation.encounter?.organization_modes;
-    if (!modes || modes.length === 0) {
-      onChange(
-        models.manifest.collections.map((col, index) => ({
-          id: PortfolioContent.collectionId(index),
-          originalIndex: index,
-          ...col,
-        }))
-      );
-      return;
-    }
-
-    const controls = PortfolioOrganization.createControls({
-      manifest: models.manifest,
-      content: models.contentOverrides,
-      onChange,
-    });
-    parent.insertBefore(controls, root);
+  function allCollections(manifest) {
+    return manifest.collections.map((col, index) => ({
+      id: PortfolioContent.collectionId(index),
+      originalIndex: index,
+      ...col,
+    }));
   }
 
   async function mount({ root, presentationId, models: providedModels, previewState }) {
@@ -221,7 +193,7 @@ window.PortfolioRender = (() => {
     document.body.classList.add(`view-${presentationId}`);
 
     const render = (collections) => renderCollections(root, collections, models);
-    insertOrganizationControls(root, models, render);
+    render(allCollections(models.manifest));
   }
 
   return {

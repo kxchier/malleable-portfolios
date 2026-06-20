@@ -1,24 +1,32 @@
 {
   "colors": {
-    "primary": "#24092f",
-    "secondary": "#ece6da",
-    "accent": "#fffde5",
-    "green": "#9aab84",
-    "background": "#f4f3f1",
-    "paper": "#b5cda9"
+    "primary": "#1a1816",
+    "secondary": "#e8e4de",
+    "accent": "#8b7355",
+    "background": "#f8f6f3",
+    "paper": "#ffffff",
+    "panel": "#f0ede8"
   },
   "typography": {
-    "heading1": "2.5rem",
-    "heading2": {
-      "fontFamily": "system-ui",
-      "fontSize": "1.5rem",
-      "fontWeight": "800"
+    "heading1": {
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
+      "fontSize": "2.75rem",
+      "fontWeight": "400"
     },
-    "body": "1rem"
+    "heading2": {
+      "fontFamily": "DM Sans, system-ui, sans-serif",
+      "fontSize": "0.72rem",
+      "fontWeight": "500"
+    },
+    "body": {
+      "fontFamily": "DM Sans, system-ui, sans-serif",
+      "fontSize": "1rem",
+      "fontWeight": "400"
+    }
   },
   "spacing": {
-    "gridGap": "40px",
-    "artSize": "169px",
-    "imagePadding": "1rem"
+    "gridGap": "32px",
+    "artSize": "220px",
+    "imagePadding": "0.75rem"
   }
 }

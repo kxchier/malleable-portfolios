@@ -11,8 +11,7 @@
     "fast_discovery_to_deep_encounter": 0.3,
     "navigation": "surface",
     "progressive_disclosure": true,
-    "hiddenness": "medium",
-    "organization_modes": ["all", "single", "flat"]
+    "hiddenness": "medium"
   },
   "intent": {
     "professional_legibility": 0.35,
@@ -21,7 +20,6 @@
   },
   "components": [
     "portfolio_header",
-    "organization_controls",
     "collection_section",
     "desk_surface",
     "draggable_tile"

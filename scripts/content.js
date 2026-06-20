@@ -6,14 +6,16 @@ window.PortfolioContent = (() => {
   };
 
   const DEFAULT_TYPO = {
-    heading1: { fontFamily: 'Trebuchet MS', fontSize: '2.5rem', fontWeight: '800' },
-    heading2: { fontFamily: 'Trebuchet MS', fontSize: '1.5rem', fontWeight: '800' },
-    body: { fontFamily: 'Trebuchet MS', fontSize: '1rem', fontWeight: '400' },
+    heading1: { fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.75rem', fontWeight: '400' },
+    heading2: { fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: '0.72rem', fontWeight: '500' },
+    body: { fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: '1rem', fontWeight: '400' },
   };
 
   const FONT_OPTIONS = [
-    'Trebuchet MS',
+    'Cormorant Garamond',
+    'DM Sans',
     'Georgia',
+    'Trebuchet MS',
     'Arial',
     'Courier New',
     'Times New Roman',

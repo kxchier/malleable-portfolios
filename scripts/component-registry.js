@@ -8,10 +8,6 @@ window.PortfolioComponents = (() => {
       editable: ['content', 'font', 'size'],
       defaultScope: { content: 'instance', style: 'layout' },
     },
-    organization_controls: {
-      role: 'chrome',
-      editable: [],
-    },
     collection_section: {
       role: 'section',
       editable: ['title'],

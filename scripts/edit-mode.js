@@ -5,10 +5,13 @@ let editedContent = { text: {} };
 let contentModel = null;
 let inspectController = null;
 let previewIframe = null;
+let closePalettePopover = null;
+let renderPaletteForLayout = null;
 const DEFAULT_THEME_COLORS = {
-  background: '#bdb6aa',
-  secondary: '#ece6da',
-  paper: '#f4f1ec',
+  background: '#f8f6f3',
+  secondary: '#e8e4de',
+  paper: '#ffffff',
+  panel: '#f0ede8',
 };
 
 async function initEditMode() {
@@ -19,6 +22,8 @@ async function initEditMode() {
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
   if (!editedTheme.colors.background) editedTheme.colors.background = DEFAULT_THEME_COLORS.background;
+  if (!editedTheme.colors.paper) editedTheme.colors.paper = DEFAULT_THEME_COLORS.paper;
+  if (!editedTheme.colors.panel) editedTheme.colors.panel = DEFAULT_THEME_COLORS.panel;
 
   const gridGapSlider = document.getElementById('grid-gap');
   const gridGapPx = Math.min(40, Math.max(8, Math.round(parseSpacingPx(editedTheme.spacing.gridGap))));
@@ -256,12 +261,17 @@ function setupPublish() {
   });
 }
 
+function syncPaletteVisibility() {
+  renderPaletteForLayout?.();
+}
+
 function setupVersionButtons() {
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.version-btn:not(.create-btn)').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentVersion = parseInt(btn.dataset.version);
+      syncPaletteVisibility();
       updatePreview();
       refreshInspectModel();
     });
@@ -427,6 +437,7 @@ function setupPaletteDrag() {
     document.querySelectorAll('.palette-swatch--open').forEach((b) => b.classList.remove('palette-swatch--open'));
     patchPreviewColorFocus(null);
   }
+  closePalettePopover = closePopover;
 
   function padFromEvent(e) {
     const rect = pad.getBoundingClientRect();
@@ -464,20 +475,26 @@ function setupPaletteDrag() {
 
   popover.querySelector('.palette-popover-close').addEventListener('click', closePopover);
 
-  PaletteColors.SWATCHES.forEach(({ key, label }) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'palette-swatch';
-    btn.dataset.colorKey = key;
-    btn.title = `${label} — click to fine-tune`;
-    btn.innerHTML = `<span class="palette-swatch-fill"></span><span class="palette-swatch-label">${label}</span>`;
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (activeKey === key && !popover.hidden) closePopover();
-      else openPopover(key, btn);
+  function renderSwatches() {
+    closePopover();
+    strip.replaceChildren();
+    PaletteColors.forLayout(getCurrentVersionKey()).forEach(({ key, label }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'palette-swatch';
+      btn.dataset.colorKey = key;
+      btn.title = `${label} — click to fine-tune`;
+      btn.innerHTML = `<span class="palette-swatch-fill"></span><span class="palette-swatch-label">${label}</span>`;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (activeKey === key && !popover.hidden) closePopover();
+        else openPopover(key, btn);
+      });
+      strip.appendChild(btn);
     });
-    strip.appendChild(btn);
-  });
+    syncPaletteSwatches();
+  }
+  renderPaletteForLayout = renderSwatches;
 
   document.addEventListener('click', (e) => {
     if (!popover.hidden && !popover.contains(e.target) && !e.target.closest('.palette-swatch')) {
@@ -485,7 +502,7 @@ function setupPaletteDrag() {
     }
   });
 
-  syncPaletteSwatches();
+  renderSwatches();
 }
 
 function setupGridGapListener() {
@@ -628,6 +645,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       --color-background: ${editedTheme.colors.background};
       --color-secondary: ${editedTheme.colors.secondary || '#ece6da'};
       --color-paper: ${editedTheme.colors.paper || DEFAULT_THEME_COLORS.paper};
+      --color-panel: ${editedTheme.colors.panel || DEFAULT_THEME_COLORS.panel};
       --space-gridGap: ${editedTheme.spacing.gridGap};
       --space-artSize: ${editedTheme.spacing.artSize || '190px'};
     }
@@ -649,6 +667,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     body.color-focus-paper .desk-item,
     body.color-focus-paper .grid-item,
     body.color-focus-paper .scroll-item { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+    body.color-focus-panel .clothesline-scroll { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
     .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
@@ -664,13 +683,11 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     ${buildPreviewNav(layout)}
   </header>
   <main class="container">
-    <div id="preview-organization"></div>
     <div id="preview-content"></div>
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
   <script src="./scripts/content.js"><\/script>
-  <script src="./scripts/organization.js"><\/script>
   <script src="./scripts/component-registry.js"><\/script>
   <script src="./scripts/model-loader.js"><\/script>
   ${deskScripts}
@@ -685,28 +702,16 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     });
 
     const previewRoot = document.getElementById('preview-content');
-    const orgHost = document.getElementById('preview-organization');
 
-    if (window.PortfolioOrganization && models.presentation.encounter?.organization_modes?.length) {
-      const controls = PortfolioOrganization.createControls({
-        manifest: models.manifest,
-        content: models.contentOverrides,
-        onChange: (collections) => {
-          PortfolioRender.renderCollections(previewRoot, collections, models);
-        },
-      });
-      orgHost.appendChild(controls);
-    } else {
-      PortfolioRender.renderCollections(
-        previewRoot,
-        models.manifest.collections.map((col, index) => ({
-          id: PortfolioContent.collectionId(index),
-          originalIndex: index,
-          ...col,
-        })),
-        models
-      );
-    }
+    PortfolioRender.renderCollections(
+      previewRoot,
+      models.manifest.collections.map((col, index) => ({
+        id: PortfolioContent.collectionId(index),
+        originalIndex: index,
+        ...col,
+      })),
+      models
+    );
   })();
 
   window.addEventListener('message', (e) => {
@@ -717,7 +722,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       });
     }
     if (e.data.type === 'color-focus') {
-      document.body.classList.remove('color-focus-background', 'color-focus-primary', 'color-focus-accent', 'color-focus-secondary', 'color-focus-paper');
+      document.body.classList.remove('color-focus-background', 'color-focus-primary', 'color-focus-accent', 'color-focus-secondary', 'color-focus-paper', 'color-focus-panel');
       if (e.data.key) document.body.classList.add('color-focus-' + e.data.key);
     }
   });

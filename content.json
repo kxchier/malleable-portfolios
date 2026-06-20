@@ -1,7 +1,18 @@
 {
   "text": {
     "portfolio.title": {
-      "content": "My Art Portfolio"
+      "content": "My Art Portfolio",
+      "versions": {
+        "desk": {
+          "fontFamily": "Georgia"
+        },
+        "clothesline": {
+          "fontFamily": "Georgia"
+        },
+        "grid": {
+          "fontFamily": "Georgia"
+        }
+      }
     },
     "collection.0": {
       "content": "Comics / Fall Chilly"

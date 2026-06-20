@@ -4,9 +4,14 @@ window.PaletteColors = (() => {
     { key: 'background', label: 'Background', hint: 'Page behind your art' },
     { key: 'primary', label: 'Primary', hint: 'Headings, text, borders' },
     { key: 'accent', label: 'Hover', hint: 'Edit outlines & nav link hover' },
-    { key: 'secondary', label: 'Desk', hint: 'Desk surface color' },
-    { key: 'paper', label: 'Border', hint: 'Artwork border / mat color' },
+    { key: 'paper', label: 'Border', hint: 'Artwork mat / frame color' },
+    { key: 'panel', label: 'Line panel', hint: 'Clothesline background behind hung art', layout: 'clothesline' },
+    { key: 'secondary', label: 'Desk', hint: 'Desk surface color', layout: 'desk' },
   ];
+
+  function forLayout(layoutKey) {
+    return SWATCHES.filter((swatch) => !swatch.layout || swatch.layout === layoutKey);
+  }
 
   function parseHex(hex) {
     const h = String(hex || '#888888').replace('#', '');
@@ -80,5 +85,5 @@ window.PaletteColors = (() => {
     };
   }
 
-  return { SWATCHES, hexToHsl, hslToHex, fromPad, padPosition, toHex, parseHex };
+  return { SWATCHES, forLayout, hexToHsl, hslToHex, fromPad, padPosition, toHex, parseHex };
 })();

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -5,51 +7,53 @@
 }
 
 :root {
-  --color-primary: #262320;
-  --color-secondary: #ece6da;
-  --color-accent: #cf9355;
-  --color-background: #bdb6aa;
-  --color-paper: color-mix(in srgb, var(--color-background) 10%, white);
-  --color-muted: color-mix(in srgb, var(--color-primary) 55%, var(--color-background));
-  --color-shadow: #1c1917;
-  --font-heading1: 2.5rem;
-  --font-heading2: 1.5rem;
+  --color-primary: #1a1816;
+  --color-secondary: #e8e4de;
+  --color-accent: #8b7355;
+  --color-background: #f8f6f3;
+  --color-paper: #ffffff;
+  --color-panel: #f0ede8;
+  --color-muted: color-mix(in srgb, var(--color-primary) 42%, var(--color-background));
+  --color-shadow: #141210;
+  --font-heading1: clamp(2rem, 5vw, 2.75rem);
+  --font-heading2: 0.72rem;
   --font-body: 1rem;
-  --space-gridGap: 1.5rem;
-  --space-artSize: 190px;
-  --space-imagePadding: 1rem;
+  --space-gridGap: 2rem;
+  --space-artSize: 220px;
+  --space-imagePadding: 0.75rem;
 }
 
 body {
-  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-body-family, 'DM Sans', system-ui, sans-serif);
+  font-size: var(--font-body);
+  font-weight: var(--font-body-weight, 400);
   min-height: 100vh;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--color-paper) 55%, transparent), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 100%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent),
-    var(--color-background);
+  background: var(--color-background);
   color: var(--color-primary);
-  line-height: 1.5;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ---- Header / nav ---- */
 header {
-  max-width: 1240px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem 1.75rem;
+  padding: 4rem 2rem 2.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 h1 {
-  font-family: var(--font-heading1-family, 'Trebuchet MS', system-ui, sans-serif);
-  font-size: clamp(2.2rem, 6vw, 5rem);
-  font-weight: var(--font-heading1-weight, 800);
-  letter-spacing: -0.055em;
-  line-height: 0.9;
+  font-family: var(--font-heading1-family, 'Cormorant Garamond', Georgia, serif);
+  font-size: clamp(1.85rem, 4.5vw, var(--font-heading1, 2.75rem));
+  font-weight: var(--font-heading1-weight, 400);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
   max-width: none;
-  margin-bottom: 1.35rem;
+  margin-bottom: 1.5rem;
   white-space: nowrap;
 }
 
-/* Keep editable headings in the layout when their text is cleared */
 h1[data-text-id],
 h2[data-text-id] {
   min-height: 1em;
@@ -57,180 +61,105 @@ h2[data-text-id] {
 }
 
 header p {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
+  gap: 0.15rem 1.35rem;
+  padding: 0;
+  font-family: var(--font-body-family, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  background: var(--color-paper);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
-  border-radius: 999px;
+  color: var(--color-muted);
+  background: none;
+  border: none;
 }
 
 header a {
-  color: var(--color-primary);
+  color: inherit;
   text-decoration: none;
-  padding: 0.3rem 0.55rem;
-  border-radius: 999px;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.active-view {
-  color: var(--color-paper);
-  background: var(--color-primary);
-  padding: 0.3rem 0.65rem;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 0;
+  transition: color 0.2s ease;
 }
 
 header a:hover {
   color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-accent) 52%, white);
+}
+
+.active-view {
+  color: var(--color-primary);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-weight: 600;
+  box-shadow: inset 0 -1px 0 currentColor;
 }
 
 h2 {
-  font-family: var(--font-heading2-family, 'Trebuchet MS', system-ui, sans-serif);
-  font-size: clamp(1.3rem, 3vw, var(--font-heading2, 1.5rem));
-  font-weight: var(--font-heading2-weight, 800);
-  letter-spacing: -0.02em;
-  margin: 0 0 1.35rem;
+  font-family: var(--font-heading2-family, 'DM Sans', system-ui, sans-serif);
+  font-size: var(--font-heading2, 0.72rem);
+  font-weight: var(--font-heading2-weight, 500);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0 0 1.75rem;
+  color: var(--color-muted);
 }
 
-/* Gallery placard labels */
+/* Collection section labels */
 .gallery-section > h2,
 .strip-title,
 .desk-title {
-  display: inline-block;
-  margin-bottom: 1.5rem;
-  padding: 0.55rem 1.35rem 0.55rem 1rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: none;
+  border-left: none;
+  box-shadow: none;
   color: var(--color-primary);
-  background: var(--color-paper);
-  border-left: 3px solid var(--color-primary);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, white 60%, transparent),
-    0 4px 14px color-mix(in srgb, var(--color-shadow) 8%, transparent);
 }
 
 .container {
-  max-width: 1240px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 1rem 1.5rem 4rem;
-}
-
-/* ---- Folder organization controls ---- */
-.organization-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1rem;
-  justify-content: space-between;
-  margin: 0.25rem 0 2.5rem;
-  padding: 0.75rem;
-  background: var(--color-paper);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
-  border-radius: 999px;
-}
-
-.organization-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.organization-label {
-  margin-left: 0.5rem;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.organization-btn,
-.organization-step,
-.organization-select {
-  font: inherit;
-  color: var(--color-primary);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-}
-
-.organization-btn,
-.organization-step {
-  padding: 0.45rem 0.75rem;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
-}
-
-.organization-btn.active {
-  color: var(--color-paper);
-  background: var(--color-primary);
-}
-
-.organization-btn:hover,
-.organization-step:hover {
-  background: color-mix(in srgb, var(--color-accent) 42%, white);
-  transform: translateY(-1px);
-}
-
-.organization-select {
-  min-width: min(260px, 64vw);
-  padding: 0.45rem 0.75rem;
-  background: color-mix(in srgb, var(--color-secondary) 86%, white);
-  border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  padding: 2.5rem 2rem 5rem;
 }
 
 #content > section {
-  margin-bottom: 3.5rem;
+  margin-bottom: 4.5rem;
 }
 
-/* ---- Shared framed artwork ---- */
+#content > section:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Shared artwork tiles ---- */
 .grid-item,
 .scroll-item {
   position: relative;
   aspect-ratio: 1;
-  background: #faf8f5;
-  padding: 9px 9px 13px;
+  background: var(--color-paper);
+  padding: var(--space-imagePadding);
   border: none;
-  border-radius: 1px;
+  border-radius: 2px;
   cursor: pointer;
   overflow: hidden;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    inset 0 0 0 4px #ebe7df,
-    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 18%, transparent),
-    2px 3px 0 color-mix(in srgb, var(--color-shadow) 6%, transparent),
-    4px 8px 18px color-mix(in srgb, var(--color-shadow) 14%, transparent);
-  transition: transform 0.28s ease, box-shadow 0.28s ease;
-}
-
-.grid-item::after,
-.scroll-item::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, color-mix(in srgb, white 22%, transparent) 0%, transparent 42%);
-  pointer-events: none;
-  z-index: 2;
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-shadow) 4%, transparent),
+    0 8px 28px color-mix(in srgb, var(--color-shadow) 7%, transparent);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .grid-item:hover,
 .images-scroll:not(.clothesline-scroll) .scroll-item:hover {
-  transform: translateY(-6px) scale(1.015);
+  transform: translateY(-5px);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    inset 0 0 0 4px #ebe7df,
-    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 18%, transparent),
-    3px 5px 0 color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    8px 16px 28px color-mix(in srgb, var(--color-shadow) 18%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 6%, transparent),
+    0 4px 12px color-mix(in srgb, var(--color-shadow) 6%, transparent),
+    0 20px 48px color-mix(in srgb, var(--color-shadow) 10%, transparent);
 }
 
 .grid-item img,
@@ -243,41 +172,27 @@ h2 {
   z-index: 1;
 }
 
-/* ---- Grid View (gallery wall) ---- */
+/* ---- Grid View ---- */
 .gallery-section {
   position: relative;
-  padding: 2.25rem 2rem 2.75rem;
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--color-paper) 35%, var(--color-background)) 0%,
-      color-mix(in srgb, var(--color-background) 92%, var(--color-primary) 8%) 100%);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-radius: 4px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
-    0 12px 36px color-mix(in srgb, var(--color-shadow) 6%, transparent);
-}
-
-.gallery-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 70% 45% at 50% 0%, color-mix(in srgb, white 18%, transparent), transparent 70%);
-  pointer-events: none;
-  border-radius: inherit;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .view-grid .gallery-section + .gallery-section {
-  margin-top: 1rem;
+  margin-top: 0;
+  padding-top: 1rem;
 }
 
 .grid-view {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--space-artSize));
   gap: var(--space-gridGap);
-  padding: 0.25rem 0 0.5rem;
-  justify-content: center;
+  padding: 0;
+  justify-content: start;
 }
 
 .grid-item {
@@ -285,30 +200,25 @@ h2 {
   height: auto;
 }
 
-/* ---- Clothesline View (studio drying line) ---- */
+/* ---- Clothesline View ---- */
 .collection-strip {
   position: relative;
-  margin: 2rem 0 3.5rem;
-  padding: 2rem 1.75rem 2.25rem;
-  background:
-    linear-gradient(165deg,
-      color-mix(in srgb, var(--color-secondary) 70%, var(--color-paper)) 0%,
-      color-mix(in srgb, var(--color-background) 85%, var(--color-secondary)) 100%);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border-radius: 6px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 40%, transparent),
-    0 10px 32px color-mix(in srgb, var(--color-shadow) 7%, transparent);
+  margin: 0 0 4.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .images-scroll {
   display: flex;
   gap: var(--space-gridGap);
   overflow-x: auto;
-  padding: 0.35rem 0 1.6rem;
+  padding: 0.5rem 0 1.25rem;
   scroll-behavior: smooth;
-  scrollbar-color: var(--color-primary) transparent;
   scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 20%, transparent) transparent;
 }
 
 .scroll-item {
@@ -317,13 +227,12 @@ h2 {
   height: var(--space-artSize);
 }
 
-/* Clothesline rig — wire + hangers + clips */
 .clothesline-scroll {
-  padding-top: 0.5rem;
-  margin-top: 0.75rem;
-  background: color-mix(in srgb, var(--color-paper) 55%, transparent);
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 8%, transparent);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  background: var(--color-panel);
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
 .clothesline-rig {
@@ -347,18 +256,17 @@ h2 {
 
 .clothesline-wire path {
   fill: none;
-  stroke: #3d3832;
-  stroke-width: 3;
+  stroke: color-mix(in srgb, var(--color-primary) 55%, var(--color-accent));
+  stroke-width: 2;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 1px 0 color-mix(in srgb, white 35%, transparent));
 }
 
 .clothesline-items {
   display: flex;
   gap: var(--space-gridGap);
   align-items: flex-start;
-  padding: calc(var(--clothesline-wire-y) + var(--clothesline-wire-h) + 2rem) 0.75rem 0.75rem;
+  padding: calc(var(--clothesline-wire-y) + var(--clothesline-wire-h) + 2rem) 1rem 1rem;
 }
 
 .clothesline-piece {
@@ -381,10 +289,10 @@ h2 {
 
 .clothesline-string {
   display: block;
-  width: 1.5px;
+  width: 1px;
   height: calc(var(--clothesline-wire-h) + 0.3rem);
   margin-top: 0;
-  background: linear-gradient(180deg, #4a453e 0%, #6a645c 100%);
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -396,7 +304,7 @@ h2 {
   width: 100%;
   transform: rotate(var(--clothesline-tilt, 0deg));
   transform-origin: top center;
-  transition: transform 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .clothesline-clip {
@@ -407,7 +315,7 @@ h2 {
   margin-bottom: -0.35rem;
   flex-shrink: 0;
   z-index: 2;
-  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-shadow) 12%, transparent));
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-shadow) 8%, transparent));
 }
 
 .clothesline-clip-svg {
@@ -417,10 +325,6 @@ h2 {
   overflow: visible;
 }
 
-.clothesline-clip-spring-band {
-  filter: drop-shadow(0 0.5px 0 color-mix(in srgb, white 35%, transparent));
-}
-
 .clothesline-piece .scroll-item {
   position: relative;
   width: 100%;
@@ -428,47 +332,31 @@ h2 {
   flex: none;
   margin-top: -0.5rem;
   z-index: 1;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    inset 0 0 0 4px #ebe7df,
-    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 16%, transparent),
-    2px 4px 0 color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    6px 14px 22px color-mix(in srgb, var(--color-shadow) 16%, transparent);
-  transition: box-shadow 0.28s ease, transform 0.28s ease;
 }
 
 .clothesline-piece:hover .clothesline-suspend {
   transform: rotate(0deg) translateY(-4px);
 }
 
-.clothesline-piece:hover .scroll-item {
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    inset 0 0 0 4px #ebe7df,
-    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 16%, transparent),
-    3px 6px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    10px 20px 28px color-mix(in srgb, var(--color-shadow) 20%, transparent);
-}
-
-/* ---- Desk View (artist's work table) ---- */
+/* ---- Desk View ---- */
 .desk-collection {
-  margin: 2rem 0 3.5rem;
-  padding: 0 0.25rem;
+  margin: 0 0 4.5rem;
+  padding: 0;
 }
 
 .desk-scene {
   position: relative;
-  padding: 0 0 2.5rem;
+  padding: 0 0 2rem;
 }
 
 .desk-scene::before {
   content: '';
   position: absolute;
   bottom: 0.5rem;
-  left: 8%;
-  right: 8%;
-  height: 28px;
-  background: radial-gradient(ellipse, color-mix(in srgb, var(--color-shadow) 18%, transparent), transparent 72%);
+  left: 10%;
+  right: 10%;
+  height: 24px;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--color-shadow) 12%, transparent), transparent 72%);
   pointer-events: none;
 }
 
@@ -476,14 +364,12 @@ h2 {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 3%;
-  right: 3%;
-  height: 14px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--color-primary) 22%, #4a3528),
-    color-mix(in srgb, var(--color-primary) 35%, #2e2118));
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-shadow) 22%, transparent);
+  left: 4%;
+  right: 4%;
+  height: 10px;
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-accent));
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-shadow) 14%, transparent);
 }
 
 .desk-surface {
@@ -494,17 +380,15 @@ h2 {
   overflow: hidden;
   background:
     linear-gradient(180deg,
-      color-mix(in srgb, #c4a574 18%, var(--color-secondary)) 0%,
-      var(--color-secondary) 6%,
-      color-mix(in srgb, var(--color-primary) 6%, var(--color-secondary)) 100%);
+      color-mix(in srgb, var(--color-accent) 12%, var(--color-secondary)) 0%,
+      var(--color-secondary) 8%,
+      color-mix(in srgb, var(--color-primary) 4%, var(--color-secondary)) 100%);
   border: none;
-  border-radius: 10px 10px 4px 4px;
+  border-radius: 6px 6px 2px 2px;
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
-    inset 0 -3px 12px color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    0 2px 0 color-mix(in srgb, var(--color-primary) 20%, #6b4f35),
-    0 6px 0 color-mix(in srgb, var(--color-primary) 15%, #4a3528),
-    0 14px 32px color-mix(in srgb, var(--color-shadow) 18%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-primary) 12%, var(--color-accent)),
+    0 8px 24px color-mix(in srgb, var(--color-shadow) 10%, transparent);
 }
 
 .desk-surface::before {
@@ -515,32 +399,31 @@ h2 {
     repeating-linear-gradient(
       92deg,
       transparent,
-      transparent 72px,
-      color-mix(in srgb, var(--color-shadow) 3%, transparent) 72px,
-      color-mix(in srgb, var(--color-shadow) 3%, transparent) 73px
+      transparent 80px,
+      color-mix(in srgb, var(--color-shadow) 2%, transparent) 80px,
+      color-mix(in srgb, var(--color-shadow) 2%, transparent) 81px
     );
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.7;
+  opacity: 0.5;
 }
 
 .desk-item {
   position: absolute;
   aspect-ratio: 1;
-  background: #faf8f5;
-  padding: 7px 7px 10px;
+  background: var(--color-paper);
+  padding: 7px;
   border: none;
-  border-radius: 1px;
+  border-radius: 2px;
   cursor: grab;
   touch-action: none;
   user-select: none;
   overflow: hidden;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    1px 2px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent),
-    3px 6px 14px color-mix(in srgb, var(--color-shadow) 16%, transparent),
-    0 10px 20px color-mix(in srgb, var(--color-shadow) 10%, transparent);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 5%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    0 12px 24px color-mix(in srgb, var(--color-shadow) 10%, transparent);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
 }
 
 .desk-item--dragging {
@@ -549,19 +432,18 @@ h2 {
   transform: rotate(var(--desk-rotate, 0deg)) !important;
   z-index: 1000 !important;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    4px 8px 0 color-mix(in srgb, var(--color-shadow) 12%, transparent),
-    12px 24px 32px color-mix(in srgb, var(--color-shadow) 22%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 6%, transparent),
+    0 8px 24px color-mix(in srgb, var(--color-shadow) 16%, transparent),
+    0 24px 48px color-mix(in srgb, var(--color-shadow) 14%, transparent);
 }
 
 .desk-item:hover {
-  transform: rotate(0deg) translate(-3px, -4px) scale(1.04) !important;
+  transform: rotate(0deg) translate(-2px, -4px) scale(1.03) !important;
   z-index: 200 !important;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
-    2px 4px 0 color-mix(in srgb, var(--color-shadow) 12%, transparent),
-    6px 12px 20px color-mix(in srgb, var(--color-shadow) 20%, transparent),
-    0 16px 28px color-mix(in srgb, var(--color-shadow) 14%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 6%, transparent),
+    0 6px 16px color-mix(in srgb, var(--color-shadow) 12%, transparent),
+    0 20px 40px color-mix(in srgb, var(--color-shadow) 12%, transparent);
 }
 
 .desk-item img {
@@ -576,43 +458,29 @@ h2 {
 
 @media (max-width: 680px) {
   header {
-    padding-top: 2.25rem;
+    padding: 2.5rem 1.25rem 1.75rem;
   }
 
-  header p,
-  .organization-controls {
-    border-radius: 24px;
-  }
-
-  .organization-controls {
-    align-items: stretch;
-  }
-
-  .organization-row {
-    width: 100%;
-  }
-
-  .organization-btn {
-    flex: 1 1 auto;
-  }
-
-  .grid-view {
-    grid-template-columns: repeat(auto-fill, var(--space-artSize));
-    justify-content: center;
-  }
-
-  .gallery-section,
-  .collection-strip {
-    padding: 1.5rem 1.25rem 1.75rem;
+  .container {
+    padding: 2rem 1.25rem 3.5rem;
   }
 
   h1 {
     white-space: normal;
   }
 
-  .grid-item,
-  .scroll-item,
-  .desk-item {
-    padding: 6px 6px 9px;
+  header p {
+    gap: 0.15rem 1rem;
+    letter-spacing: 0.12em;
+  }
+
+  .grid-view {
+    grid-template-columns: repeat(auto-fill, min(var(--space-artSize), calc(50vw - 2rem)));
+    justify-content: center;
+    gap: 1.25rem;
+  }
+
+  #content > section {
+    margin-bottom: 3rem;
   }
 }

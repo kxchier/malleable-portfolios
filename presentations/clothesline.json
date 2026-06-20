@@ -11,8 +11,7 @@
     "fast_discovery_to_deep_encounter": 0.55,
     "navigation": "horizontal_scroll",
     "progressive_disclosure": false,
-    "hiddenness": "low",
-    "organization_modes": ["all", "single", "flat"]
+    "hiddenness": "low"
   },
   "intent": {
     "professional_legibility": 0.45,
@@ -21,7 +20,6 @@
   },
   "components": [
     "portfolio_header",
-    "organization_controls",
     "collection_section",
     "horizontal_strip"
   ],

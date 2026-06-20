@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* ============================================================
    Editor chrome — intentionally its OWN look, cool + neutral, so it
    never reads as part of the (warm) art site. The site is shown FRAMED
@@ -16,8 +18,30 @@
   --ed-accent: #4f7cff;    /* editor blue — deliberately NOT the art orange/green */
   --ed-btn: #393a42;
   --ed-line: #1b1c20;
+  --ed-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--ed-bg);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ed-text);
+  font-family: var(--ed-font);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep portfolio styles.css from applying site typography to editor chrome */
+.edit-mode h1,
+.edit-mode h2,
+.edit-mode p,
+.edit-mode label,
+.edit-mode button,
+.edit-mode input,
+.edit-mode select,
+.edit-mode textarea,
+.edit-mode .modal,
+.edit-mode .preview-toolbar,
+.edit-mode .palette-popover,
+.edit-mode .inspect-panel {
+  font-family: var(--ed-font);
 }
 
 /* ---- Top toolbar ---- */
@@ -46,6 +70,7 @@
 
 .edit-toolbar h1 {
   color: var(--ed-text);
+  font-family: var(--ed-font);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -53,6 +78,7 @@
   margin: 0;
   white-space: nowrap;
   opacity: 0.85;
+  line-height: 1.2;
 }
 
 /* Version switcher */
@@ -227,6 +253,10 @@
   user-select: none;
 }
 
+.palette-swatch[hidden] {
+  display: none !important;
+}
+
 .palette-swatch-fill {
   width: 34px;
   height: 34px;
@@ -370,9 +400,26 @@
   content: '';
   width: 42px;
   height: 42px;
-  background: var(--sample-secondary);
+  background: var(--sample-bg);
   border: 10px solid var(--sample-color);
-  border-radius: 8px;
+  border-radius: 2px;
+}
+
+.palette-popover-sample[data-sample-key="panel"] {
+  background: var(--sample-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+}
+
+.palette-popover-sample[data-sample-key="panel"]::after {
+  content: '';
+  width: 100%;
+  height: 52px;
+  background: var(--sample-color);
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--sample-primary) 12%, transparent);
 }
 
 .palette-popover-hex {
@@ -605,7 +652,14 @@
   width: 100%;
 }
 
-.modal h2 { margin: 0 0 0.9rem; font-size: 1.25rem; font-weight: 800; }
+.modal h2 {
+  margin: 0 0 0.9rem;
+  font-family: var(--ed-font);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
 .modal p { font-size: 0.92rem; line-height: 1.5; }
 
 .prompt-examples {
