@@ -1,11 +1,11 @@
 {
   "colors": {
-    "primary": "#61177c",
+    "primary": "#24092f",
     "secondary": "#ece6da",
     "accent": "#fffde5",
     "green": "#9aab84",
-    "background": "#bdb6aa",
-    "paper": "#f4f1ec"
+    "background": "#f4f3f1",
+    "paper": "#b5cda9"
   },
   "typography": {
     "heading1": "2.5rem",
@@ -18,7 +18,7 @@
   },
   "spacing": {
     "gridGap": "40px",
-    "artSize": "190px",
+    "artSize": "169px",
     "imagePadding": "1rem"
   }
 }

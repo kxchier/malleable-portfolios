@@ -96,7 +96,7 @@ window.PortfolioRender = (() => {
     wire.setAttribute('viewBox', '0 0 100 12');
     wire.setAttribute('preserveAspectRatio', 'none');
     wire.setAttribute('aria-hidden', 'true');
-    wire.innerHTML = '<path d="M0 4 Q50 10 100 4" />';
+    wire.innerHTML = '<path d="M0 5 Q25 11 50 6 T100 5" /><path d="M0 5 Q25 11 50 6 T100 5" stroke-width="1.2" opacity="0.35" transform="translate(0,2)" />';
 
     const items = document.createElement('div');
     items.className = 'clothesline-items';
@@ -123,9 +123,12 @@ window.PortfolioRender = (() => {
     if (!component) return;
 
     if (engine === 'desk_surface') {
+      const scene = document.createElement('div');
+      scene.className = 'desk-scene';
       const surface = document.createElement('div');
       surface.className = component.containerClass;
-      section.appendChild(surface);
+      scene.appendChild(surface);
+      section.appendChild(scene);
       requestAnimationFrame(() => {
         if (typeof layoutDeskSurface === 'function') {
           layoutDeskSurface(surface, collection.images);
@@ -213,6 +216,9 @@ window.PortfolioRender = (() => {
       contentOverrides: previewState?.content,
       contentModel: previewState?.contentModel,
     });
+
+    document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk');
+    document.body.classList.add(`view-${presentationId}`);
 
     const render = (collections) => renderCollections(root, collections, models);
     insertOrganizationControls(root, models, render);

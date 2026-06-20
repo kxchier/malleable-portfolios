@@ -23,7 +23,10 @@
 body {
   font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   min-height: 100vh;
-  background: var(--color-background);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--color-paper) 55%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent),
+    var(--color-background);
   color: var(--color-primary);
   line-height: 1.5;
 }
@@ -92,7 +95,26 @@ h2 {
   font-size: clamp(1.3rem, 3vw, var(--font-heading2, 1.5rem));
   font-weight: var(--font-heading2-weight, 800);
   letter-spacing: -0.02em;
-  margin: 3rem 0 1rem;
+  margin: 0 0 1.35rem;
+}
+
+/* Gallery placard labels */
+.gallery-section > h2,
+.strip-title,
+.desk-title {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.55rem 1.35rem 0.55rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: var(--color-paper);
+  border-left: 3px solid var(--color-primary);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 60%, transparent),
+    0 4px 14px color-mix(in srgb, var(--color-shadow) 8%, transparent);
 }
 
 .container {
@@ -167,24 +189,48 @@ h2 {
 }
 
 #content > section {
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
 }
 
-/* ---- Shared image cards ---- */
+/* ---- Shared framed artwork ---- */
 .grid-item,
 .scroll-item {
+  position: relative;
   aspect-ratio: 1;
-  background: var(--color-paper);
-  border: 10px solid var(--color-paper);
-  border-radius: 18px;
+  background: #faf8f5;
+  padding: 9px 9px 13px;
+  border: none;
+  border-radius: 1px;
   cursor: pointer;
-  transition: transform 0.22s ease;
   overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    inset 0 0 0 4px #ebe7df,
+    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 18%, transparent),
+    2px 3px 0 color-mix(in srgb, var(--color-shadow) 6%, transparent),
+    4px 8px 18px color-mix(in srgb, var(--color-shadow) 14%, transparent);
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.grid-item::after,
+.scroll-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, color-mix(in srgb, white 22%, transparent) 0%, transparent 42%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .grid-item:hover,
 .images-scroll:not(.clothesline-scroll) .scroll-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px) scale(1.015);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    inset 0 0 0 4px #ebe7df,
+    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 18%, transparent),
+    3px 5px 0 color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    8px 16px 28px color-mix(in srgb, var(--color-shadow) 18%, transparent);
 }
 
 .grid-item img,
@@ -193,14 +239,45 @@ h2 {
   height: 100%;
   object-fit: cover;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
-/* ---- Grid View ---- */
+/* ---- Grid View (gallery wall) ---- */
+.gallery-section {
+  position: relative;
+  padding: 2.25rem 2rem 2.75rem;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--color-paper) 35%, var(--color-background)) 0%,
+      color-mix(in srgb, var(--color-background) 92%, var(--color-primary) 8%) 100%);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
+    0 12px 36px color-mix(in srgb, var(--color-shadow) 6%, transparent);
+}
+
+.gallery-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, color-mix(in srgb, white 18%, transparent), transparent 70%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.view-grid .gallery-section + .gallery-section {
+  margin-top: 1rem;
+}
+
 .grid-view {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--space-artSize));
   gap: var(--space-gridGap);
-  padding: 0.5rem 0 2.5rem;
+  padding: 0.25rem 0 0.5rem;
+  justify-content: center;
 }
 
 .grid-item {
@@ -208,16 +285,20 @@ h2 {
   height: auto;
 }
 
-/* ---- Clothesline View ---- */
+/* ---- Clothesline View (studio drying line) ---- */
 .collection-strip {
-  margin: 2.5rem 0 3.5rem;
-}
-
-.strip-title {
-  font-family: var(--font-heading2-family, 'Trebuchet MS', system-ui, sans-serif);
-  font-size: var(--font-heading2, 1.5rem);
-  font-weight: var(--font-heading2-weight, 800);
-  margin-bottom: 1rem;
+  position: relative;
+  margin: 2rem 0 3.5rem;
+  padding: 2rem 1.75rem 2.25rem;
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--color-secondary) 70%, var(--color-paper)) 0%,
+      color-mix(in srgb, var(--color-background) 85%, var(--color-secondary)) 100%);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 40%, transparent),
+    0 10px 32px color-mix(in srgb, var(--color-shadow) 7%, transparent);
 }
 
 .images-scroll {
@@ -227,6 +308,7 @@ h2 {
   padding: 0.35rem 0 1.6rem;
   scroll-behavior: smooth;
   scrollbar-color: var(--color-primary) transparent;
+  scrollbar-width: thin;
 }
 
 .scroll-item {
@@ -237,7 +319,11 @@ h2 {
 
 /* Clothesline rig — wire + hangers + clips */
 .clothesline-scroll {
-  padding-top: 0.25rem;
+  padding-top: 0.5rem;
+  margin-top: 0.75rem;
+  background: color-mix(in srgb, var(--color-paper) 55%, transparent);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .clothesline-rig {
@@ -245,8 +331,8 @@ h2 {
   display: inline-block;
   min-width: 100%;
   vertical-align: top;
-  --clothesline-wire-y: 0.5rem;
-  --clothesline-wire-h: 0.7rem;
+  --clothesline-wire-y: 0.65rem;
+  --clothesline-wire-h: 0.85rem;
 }
 
 .clothesline-wire {
@@ -261,18 +347,18 @@ h2 {
 
 .clothesline-wire path {
   fill: none;
-  stroke: #4a453e;
-  stroke-width: 2.4;
+  stroke: #3d3832;
+  stroke-width: 3;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 1px 0 color-mix(in srgb, white 40%, transparent));
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, white 35%, transparent));
 }
 
 .clothesline-items {
   display: flex;
   gap: var(--space-gridGap);
   align-items: flex-start;
-  padding: calc(var(--clothesline-wire-y) + var(--clothesline-wire-h) + 1.85rem) 0.35rem 0.35rem;
+  padding: calc(var(--clothesline-wire-y) + var(--clothesline-wire-h) + 2rem) 0.75rem 0.75rem;
 }
 
 .clothesline-piece {
@@ -343,31 +429,61 @@ h2 {
   margin-top: -0.5rem;
   z-index: 1;
   box-shadow:
-    0 10px 18px color-mix(in srgb, var(--color-shadow) 14%, transparent),
-    0 2px 4px color-mix(in srgb, var(--color-shadow) 8%, transparent);
-  transition: box-shadow 0.25s ease;
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    inset 0 0 0 4px #ebe7df,
+    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 16%, transparent),
+    2px 4px 0 color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    6px 14px 22px color-mix(in srgb, var(--color-shadow) 16%, transparent);
+  transition: box-shadow 0.28s ease, transform 0.28s ease;
 }
 
 .clothesline-piece:hover .clothesline-suspend {
-  transform: rotate(0deg);
+  transform: rotate(0deg) translateY(-4px);
 }
 
 .clothesline-piece:hover .scroll-item {
   box-shadow:
-    0 14px 22px color-mix(in srgb, var(--color-shadow) 18%, transparent),
-    0 3px 6px color-mix(in srgb, var(--color-shadow) 10%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    inset 0 0 0 4px #ebe7df,
+    inset 0 0 0 5px color-mix(in srgb, var(--color-shadow) 16%, transparent),
+    3px 6px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    10px 20px 28px color-mix(in srgb, var(--color-shadow) 20%, transparent);
 }
 
-/* ---- Desk View ---- */
+/* ---- Desk View (artist's work table) ---- */
 .desk-collection {
-  margin: 2.5rem 0 3.5rem;
+  margin: 2rem 0 3.5rem;
+  padding: 0 0.25rem;
 }
 
-.desk-title {
-  font-family: var(--font-heading2-family, 'Trebuchet MS', system-ui, sans-serif);
-  font-size: var(--font-heading2, 1.5rem);
-  font-weight: var(--font-heading2-weight, 800);
-  margin-bottom: 1rem;
+.desk-scene {
+  position: relative;
+  padding: 0 0 2.5rem;
+}
+
+.desk-scene::before {
+  content: '';
+  position: absolute;
+  bottom: 0.5rem;
+  left: 8%;
+  right: 8%;
+  height: 28px;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--color-shadow) 18%, transparent), transparent 72%);
+  pointer-events: none;
+}
+
+.desk-scene::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 3%;
+  right: 3%;
+  height: 14px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-primary) 22%, #4a3528),
+    color-mix(in srgb, var(--color-primary) 35%, #2e2118));
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-shadow) 22%, transparent);
 }
 
 .desk-surface {
@@ -376,22 +492,55 @@ h2 {
   min-height: 120px;
   padding: 0;
   overflow: hidden;
-  background: var(--color-secondary);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
-  border-radius: 26px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, #c4a574 18%, var(--color-secondary)) 0%,
+      var(--color-secondary) 6%,
+      color-mix(in srgb, var(--color-primary) 6%, var(--color-secondary)) 100%);
+  border: none;
+  border-radius: 10px 10px 4px 4px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+    inset 0 -3px 12px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    0 2px 0 color-mix(in srgb, var(--color-primary) 20%, #6b4f35),
+    0 6px 0 color-mix(in srgb, var(--color-primary) 15%, #4a3528),
+    0 14px 32px color-mix(in srgb, var(--color-shadow) 18%, transparent);
+}
+
+.desk-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      92deg,
+      transparent,
+      transparent 72px,
+      color-mix(in srgb, var(--color-shadow) 3%, transparent) 72px,
+      color-mix(in srgb, var(--color-shadow) 3%, transparent) 73px
+    );
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.7;
 }
 
 .desk-item {
   position: absolute;
   aspect-ratio: 1;
-  background: var(--color-paper);
-  border: 10px solid var(--color-paper);
-  border-radius: 14px;
+  background: #faf8f5;
+  padding: 7px 7px 10px;
+  border: none;
+  border-radius: 1px;
   cursor: grab;
   touch-action: none;
   user-select: none;
-  transition: transform 0.15s ease;
   overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    1px 2px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    3px 6px 14px color-mix(in srgb, var(--color-shadow) 16%, transparent),
+    0 10px 20px color-mix(in srgb, var(--color-shadow) 10%, transparent);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
 .desk-item--dragging {
@@ -399,11 +548,20 @@ h2 {
   transition: none;
   transform: rotate(var(--desk-rotate, 0deg)) !important;
   z-index: 1000 !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    4px 8px 0 color-mix(in srgb, var(--color-shadow) 12%, transparent),
+    12px 24px 32px color-mix(in srgb, var(--color-shadow) 22%, transparent);
 }
 
 .desk-item:hover {
-  transform: rotate(0deg) translate(-2px, -2px) scale(1.03) !important;
-  z-index: 100 !important;
+  transform: rotate(0deg) translate(-3px, -4px) scale(1.04) !important;
+  z-index: 200 !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    2px 4px 0 color-mix(in srgb, var(--color-shadow) 12%, transparent),
+    6px 12px 20px color-mix(in srgb, var(--color-shadow) 20%, transparent),
+    0 16px 28px color-mix(in srgb, var(--color-shadow) 14%, transparent);
 }
 
 .desk-item img {
@@ -439,7 +597,13 @@ h2 {
   }
 
   .grid-view {
-    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    grid-template-columns: repeat(auto-fill, var(--space-artSize));
+    justify-content: center;
+  }
+
+  .gallery-section,
+  .collection-strip {
+    padding: 1.5rem 1.25rem 1.75rem;
   }
 
   h1 {
@@ -449,7 +613,6 @@ h2 {
   .grid-item,
   .scroll-item,
   .desk-item {
-    border-width: 7px;
-    border-radius: 14px;
+    padding: 6px 6px 9px;
   }
 }

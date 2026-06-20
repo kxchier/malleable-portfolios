@@ -31,9 +31,34 @@ window.PORTFOLIO_LAYOUTS = [
 
 window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
 
-const DESK_COLS = 3;
-const DESK_PADDING = 24;
-const DESK_ROTATION_SLACK = 28;
+const DESK_PADDING = 32;
+const DESK_ROTATION_SLACK = 36;
+const DESK_MAX_COLS = 8;
+
+/** Small nudges for a casual desk feel — not enough to pile prints on each other. */
+const DESK_SCATTER_X = [0, 10, -8, 12, -6, 9, -10, 7, 5, -7, 8, -5];
+const DESK_SCATTER_Y = [0, 8, -6, 10, 5, -8, 7, -5, 9, -6, 4, -4];
+const DESK_ROTATIONS = [-6, 5, -4, 7, -3, 5, -5, 3, -4, 4, -3, 6];
+
+function deskSteps(itemSize, gap) {
+  return {
+    hStep: itemSize + gap * 0.55,
+    vStep: itemSize + gap * 0.45,
+    maxScatterX: Math.max(...DESK_SCATTER_X.map(Math.abs)),
+    maxScatterY: Math.max(...DESK_SCATTER_Y.map(Math.abs)),
+  };
+}
+
+/** Fit as many columns as the desk width allows (respecting art size + gap). */
+function deskColumnCount(innerWidth, itemSize, gap, imageCount, surfaceWidth) {
+  const { hStep, maxScatterX } = deskSteps(itemSize, gap);
+  const maxFit = Math.max(1, Math.floor((innerWidth - itemSize - maxScatterX) / hStep) + 1);
+  const capped = Math.min(DESK_MAX_COLS, maxFit);
+  if (surfaceWidth < 520) {
+    return Math.max(1, Math.min(imageCount, Math.min(capped, 3)));
+  }
+  return Math.max(1, Math.min(imageCount, capped));
+}
 
 /** Parse theme spacing values (px or rem) to pixels. */
 window.parseSpacingPx = (value, rootPx = 16) => {
@@ -62,30 +87,48 @@ window.getArtSizePx = () => {
 /** Compute desk surface size. Grid gap controls horizontal and vertical spacing between tiles. */
 window.deskSurfaceLayout = (imageCount, surfaceWidth = 1100, gridGapPx = getGridGapPx(), artSizePx = getArtSizePx()) => {
   const gap = Math.max(0, gridGapPx);
-  const cols = surfaceWidth < 520 ? 2 : DESK_COLS;
-  const rows = Math.ceil(imageCount / cols) || 1;
   const innerWidth = Math.max(240, surfaceWidth - DESK_PADDING * 2);
-  const itemSize = Math.min(artSizePx, Math.max(80, Math.floor(innerWidth / cols)));
-  const contentHeight = rows * itemSize + (rows - 1) * gap;
+  const itemSize = Math.max(80, Math.min(artSizePx, innerWidth));
+  const { hStep, vStep, maxScatterX, maxScatterY } = deskSteps(itemSize, gap);
+  const cols = deskColumnCount(innerWidth, itemSize, gap, imageCount, surfaceWidth);
+  const rows = Math.ceil(imageCount / cols) || 1;
+  const contentWidth = (cols - 1) * hStep + itemSize + maxScatterX;
+  const contentHeight = (rows - 1) * vStep + itemSize + maxScatterY;
+  const layoutOffsetX = Math.max(0, (innerWidth - contentWidth) / 2);
   const height = DESK_PADDING * 2 + contentHeight + DESK_ROTATION_SLACK;
-  const contentWidth = cols * itemSize + (cols - 1) * gap;
 
-  return { cols, rows, itemSize, innerWidth, contentWidth, height, padding: DESK_PADDING, gap };
+  return {
+    cols,
+    rows,
+    itemSize,
+    innerWidth,
+    contentWidth,
+    contentHeight,
+    height,
+    padding: DESK_PADDING,
+    gap,
+    hStep,
+    vStep,
+    maxScatterX,
+    maxScatterY,
+    layoutOffsetX,
+  };
 };
 
 window.deskSurfaceMinHeight = (imageCount, surfaceWidth, gridGapPx) =>
   deskSurfaceLayout(imageCount, surfaceWidth, gridGapPx).height;
 
 window.deskItemStyle = (index, layout) => {
-  const { cols, itemSize, padding, gap } = layout;
+  const { cols, itemSize, padding, hStep, vStep, layoutOffsetX = 0 } = layout;
   const col = index % cols;
   const row = Math.floor(index / cols);
-  const rotations = [-5, 4, -3, 6, -2, 5, -4, 3];
+  const scatterX = DESK_SCATTER_X[index % DESK_SCATTER_X.length];
+  const scatterY = DESK_SCATTER_Y[index % DESK_SCATTER_Y.length];
+  const rotate = `${DESK_ROTATIONS[index % DESK_ROTATIONS.length]}deg`;
 
-  const rotate = `${rotations[index % rotations.length]}deg`;
   return {
-    left: `${padding + col * (itemSize + gap)}px`,
-    top: `${padding + row * (itemSize + gap)}px`,
+    left: `${padding + layoutOffsetX + col * hStep + scatterX}px`,
+    top: `${padding + row * vStep + scatterY}px`,
     width: `${itemSize}px`,
     height: `${itemSize}px`,
     '--desk-rotate': rotate,

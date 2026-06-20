@@ -21,6 +21,7 @@ window.PortfolioComponents = (() => {
       role: 'image',
       containerClass: 'grid-view',
       tileClass: 'grid-item',
+      sectionClass: 'gallery-section',
       editable: ['caption', 'border'],
       defaultScope: { style: 'type' },
     },
@@ -64,8 +65,10 @@ window.PortfolioComponents = (() => {
   }
 
   function sectionClassForPresentation(presentationId) {
+    const grid = get('image_grid');
     const strip = get('horizontal_strip');
     const desk = get('desk_surface');
+    if (presentationId === 'grid') return grid.sectionClass;
     if (presentationId === 'clothesline') return strip.sectionClass;
     if (presentationId === 'desk') return desk.sectionClass;
     return '';
