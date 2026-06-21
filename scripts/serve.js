@@ -213,6 +213,7 @@ server.listen(PORT, () => {
   console.log(`    http://localhost:${PORT}/ver1.html   (grid view)`);
   console.log(`    http://localhost:${PORT}/ver2.html   (clothesline view)`);
   console.log(`    http://localhost:${PORT}/ver3.html   (desk view)`);
+  console.log(`    http://localhost:${PORT}/ver4.html   (directory view)`);
   console.log(`\n  Edits to Art/ show up live. Hit Save in the editor to write the static files.\n`);
   // As a double-click app there's no terminal to copy a URL from, so open it for them.
   if (isSea) openBrowser(editorUrl);

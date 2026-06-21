@@ -11,6 +11,9 @@
         },
         "grid": {
           "fontFamily": "Georgia"
+        },
+        "directory": {
+          "fontFamily": "Georgia"
         }
       }
     },

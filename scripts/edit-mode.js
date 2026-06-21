@@ -224,6 +224,15 @@ function applyLayoutMetadata() {
   });
 }
 
+function syncDeviceFrameLayoutClass() {
+  const layout = getLayout(currentVersion);
+  const isDirectory = layout?.key === 'directory';
+  const frame = document.getElementById('device-frame');
+  const previewArea = document.querySelector('.preview-area');
+  if (frame) frame.classList.toggle('preview-directory', isDirectory);
+  if (previewArea) previewArea.classList.toggle('preview-directory', isDirectory);
+}
+
 function selectVersion(versionId) {
   currentVersion = versionId;
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
@@ -743,10 +752,12 @@ async function saveChanges() {
 function updatePreview() {
   const container = document.getElementById('preview-frame');
   container.innerHTML = '';
+  syncDeviceFrameLayoutClass();
   const iframe = document.createElement('iframe');
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
+  iframe.scrolling = 'no';
   iframe.sandbox.add('allow-same-origin', 'allow-scripts');
   container.appendChild(iframe);
   previewIframe = iframe;
@@ -756,6 +767,16 @@ function updatePreview() {
     const iframeDoc = iframe.contentDocument;
     iframeDoc.write(html);
     iframeDoc.close();
+    const relayoutPreview = () => {
+      try {
+        iframe.contentWindow?.PortfolioRender?.layoutDirectoryViewport?.();
+      } catch (e) {
+        // preview not ready
+      }
+    };
+    iframe.onload = relayoutPreview;
+    requestAnimationFrame(relayoutPreview);
+    window.setTimeout(relayoutPreview, 120);
   });
 }
 
@@ -790,6 +811,41 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
   const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
+  const directoryViewClass = layout.key === 'directory' ? ' view-directory' : '';
+  const directoryInlineStyles = layout.key === 'directory'
+    ? `
+    html.view-directory, body.view-directory {
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: 100% !important;
+      overflow: hidden !important;
+    }
+    .view-directory .container {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding-bottom: 0.75rem;
+    }
+    .view-directory #preview-content,
+    .view-directory #content {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .directory-browser {
+      flex: 1;
+      min-height: 0;
+      max-height: 100%;
+      grid-template-rows: minmax(0, 1fr);
+    }
+    .directory-tree { overflow-y: auto; overflow-x: hidden; }
+    .directory-viewer { overflow: hidden; }
+    .directory-preview { min-height: 0; overflow: hidden; }
+    .directory-preview img { max-height: 100%; object-fit: contain; }
+    `
+    : '';
 
   const deskScripts = layout.key === 'desk'
     ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js"><\/script>`
@@ -844,10 +900,13 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       })),
       models
     );
+    if (window.__PREVIEW_PRESENTATION_ID__ === 'directory') {
+      PortfolioRender.layoutDirectoryViewport();
+    }
   })();`;
 
   return `<!DOCTYPE html>
-<html>
+<html class="${directoryViewClass.trim()}">
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="./styles.css">
@@ -863,6 +922,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       --space-gridGap: ${editedTheme.spacing.gridGap};
       --space-artSize: ${editedTheme.spacing.artSize || '190px'};
     }
+    ${directoryInlineStyles}
     h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
     [data-text-id] { cursor: text; }
     [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
@@ -883,7 +943,9 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     body.color-focus-paper .scroll-item,
     body.color-focus-paper .generated-work-tile { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     body.color-focus-panel .clothesline-scroll,
-    body.color-focus-panel .images-scroll { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+    body.color-focus-panel .images-scroll,
+    body.color-focus-panel .directory-tree,
+    body.color-focus-panel .directory-viewer { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
     .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
@@ -893,7 +955,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
   </style>
 </head>
-<body data-edit-mode="1">
+<body data-edit-mode="1" class="${directoryViewClass.trim()}">
   <header>
     ${titleHeading}
     ${buildPreviewNav(layout)}

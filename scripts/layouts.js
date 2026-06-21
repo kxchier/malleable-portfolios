@@ -33,6 +33,17 @@ window.PORTFOLIO_LAYOUTS = [
     examplePrompt:
       'A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps.',
   },
+  {
+    id: 4,
+    key: 'directory',
+    presentationId: 'directory',
+    name: 'Directory',
+    file: 'ver4.html',
+    generated: false,
+    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
+    examplePrompt:
+      'A split-pane file browser — collections as folders on the left, click a file to preview the artwork on the right.',
+  },
 ];
 
 window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);

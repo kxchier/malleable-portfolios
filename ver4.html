@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Art Portfolio — Grid View</title>
+  <title>Art Portfolio — Directory View</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./scripts/content.js"></script>
   <script src="./scripts/loader.js"></script>
@@ -14,7 +14,7 @@
 <body>
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p><span class="active-view">Grid</span><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><a href="./ver4.html">Directory</a><a href="./edit.html">Edit</a></p>
+    <p><a href="./ver1.html">Grid</a><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><span class="active-view">Directory</span><a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container">
@@ -23,14 +23,14 @@
 
   <script>
     window.appData.then(async (data) => {
-      const models = await PortfolioModels.load('grid', {
+      const models = await PortfolioModels.load('directory', {
         theme: data.theme,
         contentOverrides: data.content,
         contentModel: data.contentModel,
       });
       await PortfolioRender.mount({
         root: document.getElementById('content'),
-        presentationId: 'grid',
+        presentationId: 'directory',
         models,
       });
     });

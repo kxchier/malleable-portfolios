@@ -41,6 +41,15 @@ window.PortfolioComponents = (() => {
       editable: ['color', 'position'],
       defaultScope: { style: 'layout' },
     },
+    directory_browser: {
+      role: 'navigation',
+      containerClass: 'directory-browser',
+      treeClass: 'directory-tree',
+      previewClass: 'directory-viewer',
+      sectionClass: 'directory-layout',
+      editable: ['caption'],
+      defaultScope: { style: 'layout' },
+    },
     draggable_tile: {
       role: 'image',
       tileClass: 'desk-item',
@@ -57,6 +66,7 @@ window.PortfolioComponents = (() => {
   function titleClassForPresentation(presentationId) {
     if (presentationId === 'clothesline') return 'strip-title';
     if (presentationId === 'desk') return 'desk-title';
+    if (presentationId === 'directory') return 'directory-title';
     return '';
   }
 
@@ -64,9 +74,11 @@ window.PortfolioComponents = (() => {
     const grid = get('image_grid');
     const strip = get('horizontal_strip');
     const desk = get('desk_surface');
+    const directory = get('directory_browser');
     if (presentationId === 'grid') return grid.sectionClass;
     if (presentationId === 'clothesline') return strip.sectionClass;
     if (presentationId === 'desk') return desk.sectionClass;
+    if (presentationId === 'directory') return directory.sectionClass;
     return '';
   }
 
@@ -74,6 +86,7 @@ window.PortfolioComponents = (() => {
     if (engine === 'css_grid') return get('image_grid');
     if (engine === 'horizontal_scroll') return get('horizontal_strip');
     if (engine === 'desk_surface') return get('desk_surface');
+    if (engine === 'file_preview' || engine === 'directory_tree') return get('directory_browser');
     return get('image_grid');
   }
 

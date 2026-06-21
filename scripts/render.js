@@ -75,6 +75,210 @@ window.PortfolioRender = (() => {
     parent.appendChild(piece);
   }
 
+  function folderIconMarkup() {
+    return `<svg class="directory-icon directory-icon--folder" viewBox="0 0 16 14" aria-hidden="true">
+      <path d="M1 3.25A1.75 1.75 0 0 1 2.75 1.5h3.35l1.4 1.4h5.5A1.75 1.75 0 0 1 14.75 4.65v8.1A1.75 1.75 0 0 1 13 14.5H3A1.75 1.75 0 0 1 1.25 12.75V3.25Z" fill="currentColor"/>
+    </svg>`;
+  }
+
+  function fileIconMarkup() {
+    return `<svg class="directory-icon directory-icon--file" viewBox="0 0 14 16" aria-hidden="true">
+      <path d="M3.25.75h5.5l3.5 3.5v10.5a.75.75 0 0 1-.75.75H3.25a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 .75-.75Z" fill="var(--color-paper)" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M8.75.75v3.5h3.5" fill="none" stroke="currentColor" stroke-width="1.1"/>
+    </svg>`;
+  }
+
+  function imageBasename(imgPath) {
+    const name = String(imgPath || '').split('/').pop() || 'untitled';
+    return name.replace(/\.[^.]+$/, '');
+  }
+
+  function buildDirectoryFolderLabel(collection, presentationId) {
+    const label = buildCollectionHeading(collection, presentationId);
+    label.className = 'directory-folder-label';
+    return label;
+  }
+
+  function selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collectionName) {
+    browser.querySelectorAll('.directory-file').forEach((btn) => {
+      btn.classList.toggle('is-selected', btn === fileButton);
+      btn.setAttribute('aria-selected', btn === fileButton ? 'true' : 'false');
+    });
+
+    const previewImg = browser.querySelector('.directory-preview img');
+    const title = browser.querySelector('.directory-file-title');
+    const collectionLabel = browser.querySelector('.directory-collection-label');
+    if (previewImg) {
+      previewImg.src = imgPath;
+      previewImg.alt = fileLabel;
+    }
+    if (title) title.textContent = fileLabel;
+    if (collectionLabel) collectionLabel.textContent = collectionName;
+  }
+
+  function renderDirectoryBrowser(root, collections, presentation) {
+    const browser = document.createElement('div');
+    browser.className = 'directory-browser';
+
+    const tree = document.createElement('aside');
+    tree.className = 'directory-tree';
+    tree.setAttribute('aria-label', 'Collections');
+
+    const treeList = document.createElement('ul');
+    treeList.className = 'directory-root';
+    treeList.setAttribute('role', 'tree');
+
+    let firstFileButton = null;
+    let firstSelection = null;
+
+    collections.forEach((collection) => {
+      if (!collection.images?.length) return;
+
+      const folderItem = document.createElement('li');
+      folderItem.className = 'directory-folder';
+      folderItem.setAttribute('role', 'treeitem');
+      folderItem.setAttribute('aria-expanded', 'true');
+
+      const folderRow = document.createElement('div');
+      folderRow.className = 'directory-folder-row';
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'directory-folder-toggle';
+      toggle.setAttribute('aria-label', `Toggle ${collection.name}`);
+      toggle.innerHTML = folderIconMarkup();
+
+      toggle.addEventListener('click', () => {
+        const expanded = folderItem.getAttribute('aria-expanded') !== 'true';
+        folderItem.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        folderItem.classList.toggle('is-collapsed', !expanded);
+      });
+
+      folderRow.append(toggle, buildDirectoryFolderLabel(collection, presentation.id));
+
+      const fileList = document.createElement('ul');
+      fileList.className = 'directory-files';
+      fileList.setAttribute('role', 'group');
+
+      collection.images.forEach((imgPath) => {
+        const fileItem = document.createElement('li');
+        fileItem.className = 'directory-file-item';
+        fileItem.setAttribute('role', 'none');
+
+        const fileButton = document.createElement('button');
+        fileButton.type = 'button';
+        fileButton.className = 'directory-file';
+        fileButton.setAttribute('role', 'treeitem');
+        fileButton.setAttribute('aria-selected', 'false');
+        const fileLabel = imageBasename(imgPath);
+        fileButton.innerHTML = fileIconMarkup();
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'directory-file-name';
+        nameSpan.textContent = fileLabel;
+        fileButton.appendChild(nameSpan);
+
+        fileButton.addEventListener('click', () => {
+          selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collection.name);
+        });
+
+        fileItem.appendChild(fileButton);
+        fileList.appendChild(fileItem);
+
+        if (!firstFileButton) {
+          firstFileButton = fileButton;
+          firstSelection = { imgPath, fileLabel, collectionName: collection.name };
+        }
+      });
+
+      folderItem.append(folderRow, fileList);
+      treeList.appendChild(folderItem);
+    });
+
+    tree.appendChild(treeList);
+
+    const viewer = document.createElement('section');
+    viewer.className = 'directory-viewer';
+    viewer.setAttribute('aria-label', 'Preview');
+
+    const preview = document.createElement('div');
+    preview.className = 'directory-preview';
+    const image = document.createElement('img');
+    image.alt = 'artwork';
+    image.draggable = false;
+    image.onerror = () => image.remove();
+    preview.appendChild(image);
+
+    const meta = document.createElement('div');
+    meta.className = 'directory-meta';
+
+    const fileTitle = document.createElement('h2');
+    fileTitle.className = 'directory-file-title directory-title';
+    const collectionLabel = document.createElement('p');
+    collectionLabel.className = 'directory-collection-label';
+
+    meta.append(fileTitle, collectionLabel);
+    viewer.append(preview, meta);
+    browser.append(tree, viewer);
+    root.appendChild(browser);
+
+    if (firstFileButton && firstSelection) {
+      selectDirectoryFile(
+        browser,
+        firstFileButton,
+        firstSelection.imgPath,
+        firstSelection.fileLabel,
+        firstSelection.collectionName
+      );
+    }
+
+    layoutDirectoryViewport();
+  }
+
+  let directoryFrameObserver = null;
+
+  function layoutDirectoryViewport() {
+    if (!document.body.classList.contains('view-directory')) return;
+
+    const browser = document.querySelector('.directory-browser');
+    const content = document.getElementById('preview-content') || document.getElementById('content');
+    if (!browser || !content) return;
+
+    const apply = () => {
+      const frame = window.frameElement;
+      const docHeight = frame && frame.clientHeight > 0 ? frame.clientHeight : window.innerHeight;
+
+      document.documentElement.style.height = `${docHeight}px`;
+      document.body.style.height = `${docHeight}px`;
+
+      const contentTop = content.getBoundingClientRect().top;
+      const container = content.closest('.container');
+      const padBottom = container
+        ? parseFloat(getComputedStyle(container).paddingBottom) || 0
+        : 0;
+      const available = Math.floor(docHeight - contentTop - padBottom);
+
+      if (available > 120) {
+        content.style.height = `${available}px`;
+        content.style.maxHeight = `${available}px`;
+        browser.style.height = `${available}px`;
+        browser.style.maxHeight = `${available}px`;
+      }
+    };
+
+    apply();
+    requestAnimationFrame(apply);
+    window.setTimeout(apply, 60);
+
+    const frame = window.frameElement;
+    if (frame && typeof ResizeObserver !== 'undefined') {
+      if (!directoryFrameObserver) {
+        directoryFrameObserver = new ResizeObserver(() => layoutDirectoryViewport());
+      }
+      directoryFrameObserver.disconnect();
+      directoryFrameObserver.observe(frame);
+    }
+  }
+
   function layoutClotheslineRig(rig) {
     const wire = rig.querySelector('.clothesline-wire');
     const items = rig.querySelector('.clothesline-items');
@@ -161,13 +365,28 @@ window.PortfolioRender = (() => {
     root.appendChild(section);
   }
 
+  function isDirectoryPresentation(presentation) {
+    return presentation.id === 'directory' || presentation.metaphor === 'file_browser';
+  }
+
+  function setDirectoryViewActive(active) {
+    document.documentElement.classList.toggle('view-directory', active);
+    document.body.classList.toggle('view-directory', active);
+  }
+
   function renderCollections(root, collections, models) {
     const { presentation, manifest, theme, contentOverrides } = models;
     root.innerHTML = '';
 
-    collections.forEach((collection) => {
-      renderCollectionSection(root, collection, presentation);
-    });
+    if (isDirectoryPresentation(presentation)) {
+      setDirectoryViewActive(true);
+      renderDirectoryBrowser(root, collections, presentation);
+    } else {
+      setDirectoryViewActive(false);
+      collections.forEach((collection) => {
+        renderCollectionSection(root, collection, presentation);
+      });
+    }
 
     if (window.PortfolioContent) {
       PortfolioContent.applyPageText(manifest, theme, contentOverrides, presentation.id);
@@ -189,8 +408,12 @@ window.PortfolioRender = (() => {
       contentModel: previewState?.contentModel,
     });
 
-    document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk');
+    document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk', 'view-directory');
+    document.documentElement.classList.remove('view-directory');
     document.body.classList.add(`view-${presentationId}`);
+    if (presentationId === 'directory') {
+      document.documentElement.classList.add('view-directory');
+    }
 
     const render = (collections) => renderCollections(root, collections, models);
     render(allCollections(models.manifest));
@@ -200,5 +423,7 @@ window.PortfolioRender = (() => {
     mount,
     renderCollections,
     renderCollectionSection,
+    renderDirectoryBrowser,
+    layoutDirectoryViewport,
   };
 })();

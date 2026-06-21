@@ -134,7 +134,7 @@ window.GeneratedRuntime = (() => {
       return resolvedModels;
     }
 
-    document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk');
+    document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk', 'view-directory');
     document.querySelectorAll('[class^="view-"]').forEach(() => {});
     document.body.classList.add(`view-${layoutKey}`);
 

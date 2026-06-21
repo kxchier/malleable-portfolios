@@ -1,0 +1,46 @@
+{
+  "id": "directory",
+  "layout_family": "split_pane",
+  "metaphor": "file_browser",
+  "visual_language": {
+    "abstract_to_skeuomorphic": 0.35,
+    "materials": ["panel", "folder", "document"],
+    "density": "medium"
+  },
+  "encounter": {
+    "fast_discovery_to_deep_encounter": 0.45,
+    "navigation": "tree_select",
+    "progressive_disclosure": true,
+    "hiddenness": "medium"
+  },
+  "intent": {
+    "professional_legibility": 0.55,
+    "personal_archive": 0.4,
+    "social_encounter": 0.05
+  },
+  "components": [
+    "portfolio_header",
+    "directory_browser",
+    "file_preview"
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true }
+    },
+    "COLLECTION": {
+      "title": { "function": "publicIdentifier", "render": "shortText", "editable": true },
+      "works": {
+        "render": "expanded",
+        "item": { "type": "__WORK__", "thumbnail": ["images"] }
+      }
+    },
+    "WORK": {
+      "images": { "render": "expanded", "item": { "render": "image" } }
+    }
+  },
+  "layout_engine": {
+    "collection_container": "directory_tree",
+    "work_container": "file_preview",
+    "work_tile": { "aspect": "natural", "border": "none" }
+  }
+}
