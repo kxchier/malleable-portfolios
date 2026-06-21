@@ -30,6 +30,10 @@ window.GeneratedRuntime = (() => {
       const section = document.createElement('section');
       section.className = 'generated-collection';
       section.dataset.collectionIndex = String(collectionIndex);
+      section.dataset.modelKind = 'collection';
+      section.dataset.modelPath = `collections.${collection.originalIndex ?? collectionIndex}`;
+      section.dataset.collectionId = `collection_${collection.originalIndex ?? collectionIndex}`;
+      section.dataset.modelLabel = collection.name;
 
       const h2 = document.createElement('h2');
       if (collection.originalIndex != null && PC) {
@@ -54,11 +58,24 @@ window.GeneratedRuntime = (() => {
       const tile = document.createElement('div');
       tile.className = opts.className || 'generated-work-tile scroll-item';
       if (opts.draggable !== false) tile.dataset.canvasDraggable = 'true';
+      if (opts.fixedSize === true) tile.dataset.fixedSize = 'true';
+      if (opts.collectionIndex != null || opts.workIndex != null) {
+        const ci = opts.collectionIndex ?? 0;
+        const wi = opts.workIndex ?? 0;
+        tile.dataset.modelKind = 'work';
+        tile.dataset.modelPath = `collections.${ci}.works.${wi}`;
+        tile.dataset.collectionIndex = String(ci);
+        tile.dataset.workIndex = String(wi);
+        tile.dataset.workId = opts.workId || `work_${ci}_${wi}`;
+        tile.dataset.modelLabel = opts.label || imgPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+      }
 
       const image = document.createElement('img');
       image.src = imgPath;
       image.alt = opts.alt || 'artwork';
       image.draggable = false;
+      image.dataset.generatedArtworkImage = 'true';
+      image.classList.add('generated-artwork-image');
       image.onerror = () => image.remove();
       tile.appendChild(image);
       return tile;
@@ -69,6 +86,69 @@ window.GeneratedRuntime = (() => {
     }
 
     return { collectionSection, workTile, inlineAsset };
+  }
+
+  function bindCollectionHeading(el, collection, models, versionKey) {
+    const PC = window.PortfolioContent;
+    if (!el || !collection || !PC || el.dataset.textId) return;
+    const originalIndex = collection.originalIndex;
+    if (originalIndex == null) return;
+    const cid = PC.collectionId(originalIndex);
+    el.dataset.textId = cid;
+    el.dataset.textRole = 'collection.title';
+    el.dataset.textFallback = collection.name;
+    el.dataset.modelKind = 'text';
+    el.dataset.modelPath = `content.text.${cid}`;
+    el.dataset.modelLabel = `${collection.name} title`;
+    el.textContent = PC.getText(models.contentOverrides, cid, collection.name);
+    const style = PC.styleToCss(
+      PC.getElementStyle(models.theme, models.contentOverrides, cid, 'collection.title', versionKey)
+    );
+    if (style) el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
+  }
+
+  function bindGeneratedText(root, collections, models, versionKey) {
+    const PC = window.PortfolioContent;
+    if (!PC) return;
+
+    collections.forEach((collection, renderedIndex) => {
+      const selectors = [
+        `[data-collection-index="${renderedIndex}"]`,
+        `[data-collection-index="${collection.originalIndex}"]`,
+      ];
+      const containers = Array.from(root.querySelectorAll(selectors.join(',')));
+      containers.forEach((container) => {
+        const heading = container.matches('h1,h2,h3,h4,h5,h6')
+          ? container
+          : container.querySelector('h1,h2,h3,h4,h5,h6');
+        bindCollectionHeading(heading, collection, models, versionKey);
+      });
+    });
+
+    const textCandidates = Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,p,figcaption,blockquote,li,span,small,strong,em'))
+      .filter((el) => {
+        if (el.dataset.textId || el.closest('[data-text-id]')) return false;
+        if (el.closest('svg')) return false;
+        if (el.querySelector('img,svg,video,canvas,input,textarea,select,button')) return false;
+        return (el.textContent || '').trim().length > 0;
+      });
+
+    textCandidates.forEach((el, index) => {
+      const fallback = (el.textContent || '').trim();
+      const role = el.matches('h1') ? 'portfolio.title'
+        : el.matches('h2,h3,h4,h5,h6') ? 'collection.title'
+          : 'body';
+      const id = `generated.${versionKey}.${el.tagName.toLowerCase()}.${index}`;
+      el.dataset.textId = id;
+      el.dataset.textRole = role;
+      el.dataset.textFallback = fallback;
+      el.dataset.modelKind = 'text';
+      el.dataset.modelPath = `content.text.${id}`;
+      el.dataset.modelLabel = fallback.slice(0, 48);
+      el.textContent = PC.getText(models.contentOverrides, id, fallback);
+      const style = PC.styleToCss(PC.getElementStyle(models.theme, models.contentOverrides, id, role, versionKey));
+      if (style) el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
+    });
   }
 
   function bindCanvasDrag(root) {
@@ -139,10 +219,18 @@ window.GeneratedRuntime = (() => {
     document.body.classList.add(`view-${layoutKey}`);
 
     const assets = await fetchSvgAssets(layoutKey);
-    const collections = allCollections(resolvedModels.manifest);
+    const collections = allCollections(resolvedModels.manifest).filter((collection) => {
+      const id = window.PortfolioContent?.collectionId(collection.originalIndex) ?? `collection.${collection.originalIndex}`;
+      const hiddenIn = resolvedModels.contentOverrides?.visibility?.collections?.[id]?.hiddenIn || [];
+      return !hiddenIn.includes(layoutKey);
+    });
     const helpers = buildHelpers(resolvedModels, versionKey);
 
     root.innerHTML = '';
+    root.dataset.modelKind = 'presentation';
+    root.dataset.modelPath = `presentations.${layoutKey}`;
+    root.dataset.presentationId = layoutKey;
+    root.dataset.modelLabel = `${layoutKey} presentation`;
     layout.mount(root, {
       collections,
       theme: resolvedModels.theme,
@@ -152,6 +240,24 @@ window.GeneratedRuntime = (() => {
       helpers,
       layoutKey,
       versionKey,
+    });
+
+    bindGeneratedText(root, collections, resolvedModels, versionKey);
+
+    root.querySelectorAll('.generated-collection').forEach((section) => {
+      const ci = Number(section.dataset.collectionIndex || section.dataset.modelPath?.split('.')[1] || 0);
+      section.querySelectorAll('[data-canvas-draggable="true"]').forEach((tile, wi) => {
+        if (tile.dataset.modelKind) return;
+        tile.dataset.modelKind = 'work';
+        tile.dataset.modelPath = `collections.${ci}.works.${wi}`;
+        tile.dataset.collectionIndex = String(ci);
+        tile.dataset.workIndex = String(wi);
+        tile.dataset.workId = `work_${ci}_${wi}`;
+        const img = tile.querySelector('img');
+        tile.dataset.modelLabel = img?.alt && img.alt !== 'artwork'
+          ? img.alt
+          : img?.src?.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+      });
     });
 
     if (window.PortfolioContent) {

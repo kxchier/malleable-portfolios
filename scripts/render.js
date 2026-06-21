@@ -1,8 +1,30 @@
 /** Jelly-style rule-based renderer for Walo presentation models. */
 window.PortfolioRender = (() => {
-  function appendImage(parent, imgPath, tileClass, draggable) {
+  function modelPath(kind, collectionIndex, workIndex = null) {
+    if (kind === 'collection') return `collections.${collectionIndex}`;
+    if (kind === 'work') return `collections.${collectionIndex}.works.${workIndex}`;
+    return kind;
+  }
+
+  function bindModelTarget(el, target) {
+    if (!el || !target) return el;
+    Object.entries(target).forEach(([key, value]) => {
+      if (value != null) el.dataset[key] = String(value);
+    });
+    return el;
+  }
+
+  function appendImage(parent, imgPath, tileClass, draggable, target = {}) {
     const item = document.createElement('div');
     item.className = tileClass;
+    bindModelTarget(item, {
+      modelKind: 'work',
+      modelPath: modelPath('work', target.collectionIndex, target.workIndex),
+      collectionIndex: target.collectionIndex,
+      workIndex: target.workIndex,
+      workId: target.workId,
+      modelLabel: target.label || imageBasename(imgPath),
+    });
     const image = document.createElement('img');
     image.src = imgPath;
     image.alt = 'artwork';
@@ -40,9 +62,17 @@ window.PortfolioRender = (() => {
     </svg>`;
   }
 
-  function appendClotheslinePiece(parent, imgPath, index) {
+  function appendClotheslinePiece(parent, imgPath, index, collection) {
     const piece = document.createElement('div');
     piece.className = 'clothesline-piece';
+    bindModelTarget(piece, {
+      modelKind: 'work',
+      modelPath: modelPath('work', collection.originalIndex, index),
+      collectionIndex: collection.originalIndex,
+      workIndex: index,
+      workId: `work_${collection.originalIndex}_${index}`,
+      modelLabel: imageBasename(imgPath),
+    });
     const tilt = (index % 2 === 0 ? -1 : 1) * (2 + (index % 3));
     piece.style.setProperty('--clothesline-tilt', `${tilt}deg`);
 
@@ -99,15 +129,29 @@ window.PortfolioRender = (() => {
     return label;
   }
 
-  function selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collectionName) {
+  function directoryWorkTarget(collection, workIndex, imgPath, fileLabel) {
+    return {
+      modelKind: 'work',
+      modelPath: modelPath('work', collection.originalIndex, workIndex),
+      collectionIndex: collection.originalIndex,
+      workIndex,
+      workId: `work_${collection.originalIndex}_${workIndex}`,
+      modelLabel: fileLabel || imageBasename(imgPath),
+    };
+  }
+
+  function selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collectionName, target = {}) {
     browser.querySelectorAll('.directory-file').forEach((btn) => {
       btn.classList.toggle('is-selected', btn === fileButton);
       btn.setAttribute('aria-selected', btn === fileButton ? 'true' : 'false');
     });
 
+    const viewer = browser.querySelector('.directory-viewer');
+    const preview = browser.querySelector('.directory-preview');
     const previewImg = browser.querySelector('.directory-preview img');
     const title = browser.querySelector('.directory-file-title');
     const collectionLabel = browser.querySelector('.directory-collection-label');
+    [viewer, preview, previewImg, title].forEach((el) => bindModelTarget(el, target));
     if (previewImg) {
       previewImg.src = imgPath;
       previewImg.alt = fileLabel;
@@ -160,7 +204,7 @@ window.PortfolioRender = (() => {
       fileList.className = 'directory-files';
       fileList.setAttribute('role', 'group');
 
-      collection.images.forEach((imgPath) => {
+      collection.images.forEach((imgPath, workIndex) => {
         const fileItem = document.createElement('li');
         fileItem.className = 'directory-file-item';
         fileItem.setAttribute('role', 'none');
@@ -171,6 +215,10 @@ window.PortfolioRender = (() => {
         fileButton.setAttribute('role', 'treeitem');
         fileButton.setAttribute('aria-selected', 'false');
         const fileLabel = imageBasename(imgPath);
+        const target = directoryWorkTarget(collection, workIndex, imgPath, fileLabel);
+        bindModelTarget(fileButton, {
+          ...target,
+        });
         fileButton.innerHTML = fileIconMarkup();
         const nameSpan = document.createElement('span');
         nameSpan.className = 'directory-file-name';
@@ -178,7 +226,7 @@ window.PortfolioRender = (() => {
         fileButton.appendChild(nameSpan);
 
         fileButton.addEventListener('click', () => {
-          selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collection.name);
+          selectDirectoryFile(browser, fileButton, imgPath, fileLabel, collection.name, target);
         });
 
         fileItem.appendChild(fileButton);
@@ -186,7 +234,7 @@ window.PortfolioRender = (() => {
 
         if (!firstFileButton) {
           firstFileButton = fileButton;
-          firstSelection = { imgPath, fileLabel, collectionName: collection.name };
+          firstSelection = { imgPath, fileLabel, collectionName: collection.name, target };
         }
       });
 
@@ -227,7 +275,8 @@ window.PortfolioRender = (() => {
         firstFileButton,
         firstSelection.imgPath,
         firstSelection.fileLabel,
-        firstSelection.collectionName
+        firstSelection.collectionName,
+        firstSelection.target
       );
     }
 
@@ -306,7 +355,7 @@ window.PortfolioRender = (() => {
     items.className = 'clothesline-items';
 
     collection.images.forEach((img, index) => {
-      appendClotheslinePiece(items, img, index);
+      appendClotheslinePiece(items, img, index, collection);
     });
 
     rig.append(wire, items);
@@ -336,6 +385,17 @@ window.PortfolioRender = (() => {
       requestAnimationFrame(() => {
         if (typeof layoutDeskSurface === 'function') {
           layoutDeskSurface(surface, collection.images);
+          surface.querySelectorAll('.desk-item').forEach((item, index) => {
+            const img = collection.images[index];
+            bindModelTarget(item, {
+              modelKind: 'work',
+              modelPath: modelPath('work', collection.originalIndex, index),
+              collectionIndex: collection.originalIndex,
+              workIndex: index,
+              workId: `work_${collection.originalIndex}_${index}`,
+              modelLabel: imageBasename(img),
+            });
+          });
         }
       });
       return;
@@ -349,8 +409,13 @@ window.PortfolioRender = (() => {
     const container = document.createElement('div');
     container.className = component.containerClass;
     const draggable = component.draggable !== false ? undefined : false;
-    collection.images.forEach((img) => {
-      appendImage(container, img, component.tileClass, draggable);
+    collection.images.forEach((img, index) => {
+      appendImage(container, img, component.tileClass, draggable, {
+        collectionIndex: collection.originalIndex,
+        workIndex: index,
+        workId: `work_${collection.originalIndex}_${index}`,
+        label: imageBasename(img),
+      });
     });
     section.appendChild(container);
   }
@@ -359,6 +424,13 @@ window.PortfolioRender = (() => {
     const section = document.createElement('section');
     const sectionClass = PortfolioComponents.sectionClassForPresentation(presentation.id);
     if (sectionClass) section.className = sectionClass;
+    bindModelTarget(section, {
+      modelKind: 'collection',
+      modelPath: modelPath('collection', collection.originalIndex),
+      collectionIndex: collection.originalIndex,
+      collectionId: `collection_${collection.originalIndex}`,
+      modelLabel: collection.name,
+    });
 
     section.appendChild(buildCollectionHeading(collection, presentation.id));
     renderWorkContainer(section, collection, presentation);
@@ -377,13 +449,25 @@ window.PortfolioRender = (() => {
   function renderCollections(root, collections, models) {
     const { presentation, manifest, theme, contentOverrides } = models;
     root.innerHTML = '';
+    bindModelTarget(root, {
+      modelKind: 'presentation',
+      modelPath: `presentations.${presentation.id}`,
+      presentationId: presentation.id,
+      modelLabel: `${presentation.id} presentation`,
+    });
+
+    const visibleCollections = collections.filter((collection) => {
+      const id = PortfolioContent.collectionId(collection.originalIndex);
+      const hiddenIn = contentOverrides?.visibility?.collections?.[id]?.hiddenIn || [];
+      return !hiddenIn.includes(presentation.id);
+    });
 
     if (isDirectoryPresentation(presentation)) {
       setDirectoryViewActive(true);
-      renderDirectoryBrowser(root, collections, presentation);
+      renderDirectoryBrowser(root, visibleCollections, presentation);
     } else {
       setDirectoryViewActive(false);
-      collections.forEach((collection) => {
+      visibleCollections.forEach((collection) => {
         renderCollectionSection(root, collection, presentation);
       });
     }

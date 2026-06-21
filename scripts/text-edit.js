@@ -211,5 +211,7 @@
     if (e.data.type === 'patch') applyPatch(e.data);
   });
 
+  document.addEventListener('cursor-assistant-open-prompt', deselect);
+
   createToolbar();
 })();

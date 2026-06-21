@@ -58,6 +58,7 @@ const EXAMPLE_CSS = `body.view-museum_gallery {
 .museum-mat {
   background: var(--color-paper);
   padding: var(--space-imagePadding);
+  width: var(--space-artSize);
 }
 .images-scroll {
   overflow-x: auto;
@@ -151,10 +152,13 @@ css (CRITICAL — editor swatches depend on this):
 - Headings: var(--color-primary) or color-mix with var(--color-accent)
 - Frames/mats: var(--color-paper), var(--color-accent)
 - For darker/lighter variants use color-mix(in srgb, var(--color-accent) 70%, black) — NOT hardcoded hex for swatch colors
-- Spacing: var(--space-gridGap), var(--space-artSize), var(--space-imagePadding)
+- Spacing and sizing controls: generated layouts should respond to the editor sliders by default.
+  Use var(--space-gridGap) for gaps between works/sections and var(--space-artSize) for artwork tile or panel width/size.
+  Use var(--space-imagePadding) for mats/inner image padding.
+  Only use a fixed px/rem size for artwork panels when the user explicitly asks for a specific fixed-size object/metaphor.
 - Scope under body.view-{key} and unique class prefixes
 - Include .images-scroll { overflow-x: auto; display: flex; gap: var(--space-gridGap); } for scroll layouts
-- Work tiles: object-fit: cover on img
+- Work tiles: show the full artwork. Use object-fit: contain on img, object-position: center, and avoid cropping unless the user explicitly asks for cropped thumbnails.
 
 presentation:
 - Must include id (same as key), layout_family, metaphor, visual_language, encounter, intent, components, ui_spec, layout_engine.
@@ -164,9 +168,10 @@ renderScript:
 - MUST register: window.GeneratedLayouts = window.GeneratedLayouts || {};
 - MUST set window.GeneratedLayouts['KEY'] = { mount(root, ctx) { ... } };
 - ctx provides: collections (array with name, images, originalIndex), helpers, assets, presentation, theme.
-- helpers.collectionSection(col, collectionIndex) — returns <section> with editable h2.
-- helpers.workTile(imgPath, { className, alt }) — returns div with img for author artwork.
+- helpers.collectionSection(col, collectionIndex) — returns <section> with editable h2. Prefer this for collection sections so generated text keeps direct manipulation.
+- helpers.workTile(imgPath, { className, alt, fixedSize }) — returns div with img for author artwork. Leave fixedSize unset/false so the size slider controls it; use fixedSize: true only for explicitly fixed-size concepts.
 - helpers.portfolioTitle() — optional; headings are usually in the page shell.
+- Any generated portfolio/collection/work label text that should be editable must receive data-text-id, data-text-role, and data-text-fallback, or be created through the helper APIs.
 - Loop every collection and every image in col.images — NEVER skip artwork slots.
 - Mark draggable canvas elements with data-canvas-draggable="true" on work tiles when appropriate.
 - Mark collection sections with class matching metaphor (e.g. museum-collection).

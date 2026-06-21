@@ -17,6 +17,7 @@
  *   POST /api/content   -> write the posted JSON body to content.json
  *   GET  /api/layouts   -> built-in + AI-generated layout registry
  *   POST /api/layouts/delete -> remove a generated layout and its files
+ *   POST /api/operation -> Cerebras: parse cursor request into a local operation
  *   POST /api/generate  -> Cerebras: create new layout (presentation + CSS + JS + SVG assets)
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
  *   (anything else)     -> static file from the project root
@@ -30,6 +31,7 @@ const { buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
 const { generateTemplate } = require('./generate-template.js');
+const { parseCursorOperation } = require('./operation-parser.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -145,6 +147,36 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[layouts/delete]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/operation' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const collections = buildCollections();
+      let theme = {};
+      try {
+        theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
+      } catch {
+        // defaults
+      }
+      const result = await parseCursorOperation({
+        apiKey: body.apiKey,
+        target: body.target,
+        prompt: body.prompt,
+        scope: body.scope,
+        presentationId: body.presentationId,
+        context: {
+          contentSummary: {
+            collections: collections.map((col) => ({ name: col.name, count: col.images.length })),
+          },
+          theme: theme.colors || {},
+        },
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[operation]', e.message);
       return sendJSON(res, 400, { error: e.message });
     }
   }

@@ -22,6 +22,20 @@ window.PortfolioContent = (() => {
     'system-ui',
   ];
 
+  const TEXT_STYLE_PROPS = [
+    'fontFamily',
+    'fontSize',
+    'fontWeight',
+    'fontStyle',
+    'textAlign',
+    'letterSpacing',
+    'lineHeight',
+    'textDecoration',
+    'transform',
+    'transformOrigin',
+    'opacity',
+  ];
+
   function normalizeTypographyEntry(entry, token) {
     const base = { ...DEFAULT_TYPO[token] };
     if (!entry) return base;
@@ -73,22 +87,26 @@ window.PortfolioContent = (() => {
   function getVersionTextStyle(content, id, versionKey) {
     const override = getTextOverride(content, id);
     const versionStyle = override.versions?.[versionKey] || {};
-    return {
-      fontFamily: versionStyle.fontFamily ?? override.fontFamily,
-      fontSize: versionStyle.fontSize ?? override.fontSize,
-      fontWeight: versionStyle.fontWeight ?? override.fontWeight,
-    };
+    return Object.fromEntries(TEXT_STYLE_PROPS.map((prop) => [
+      prop,
+      versionStyle[prop] ?? override[prop],
+    ]));
   }
 
   function getElementStyle(theme, content, id, role, versionKey) {
     const token = ROLE_TOKENS[role] || 'body';
     const base = versionKey ? getVersionTypography(theme, versionKey, token) : getTokenStyle(theme, token);
     const textStyle = versionKey ? getVersionTextStyle(content, id, versionKey) : getTextOverride(content, id);
-    return {
+    const style = {
       fontFamily: textStyle.fontFamily || base.fontFamily,
       fontSize: textStyle.fontSize || base.fontSize,
       fontWeight: textStyle.fontWeight || base.fontWeight,
     };
+    TEXT_STYLE_PROPS.forEach((prop) => {
+      if (prop in style) return;
+      style[prop] = textStyle[prop] || base[prop] || '';
+    });
+    return style;
   }
 
   function idsForStyleScope(content, scope, role) {
@@ -109,15 +127,15 @@ window.PortfolioContent = (() => {
     const entry = content.text?.[id];
     if (!entry) return;
     const hasContent = Object.prototype.hasOwnProperty.call(entry, 'content');
-    const hasLegacyStyle = entry.fontFamily || entry.fontSize || entry.fontWeight;
+    const hasLegacyStyle = TEXT_STYLE_PROPS.some((prop) => entry[prop]);
     const hasVersionStyle = entry.versions && Object.values(entry.versions).some(
-      (v) => v && (v.fontFamily || v.fontSize || v.fontWeight)
+      (v) => v && TEXT_STYLE_PROPS.some((prop) => v[prop])
     );
     if (!hasContent && !hasLegacyStyle && !hasVersionStyle) delete content.text[id];
     if (entry.versions) {
       Object.keys(entry.versions).forEach((vk) => {
         const v = entry.versions[vk];
-        if (v && !v.fontFamily && !v.fontSize && !v.fontWeight) delete entry.versions[vk];
+        if (v && !TEXT_STYLE_PROPS.some((prop) => v[prop])) delete entry.versions[vk];
       });
       if (Object.keys(entry.versions).length === 0) delete entry.versions;
     }
@@ -140,7 +158,10 @@ window.PortfolioContent = (() => {
   }
 
   function styleToCss(style) {
-    return `font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight}`;
+    return TEXT_STYLE_PROPS
+      .filter((prop) => style[prop])
+      .map((prop) => `${prop.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}:${style[prop]}`)
+      .join(';');
   }
 
   function applyTypographyVars(theme, versionKey, root = document.documentElement) {
@@ -163,9 +184,9 @@ window.PortfolioContent = (() => {
     el.textContent = text;
     el.hidden = false;
     const style = getElementStyle(theme, content, id, role, versionKey);
-    el.style.fontFamily = style.fontFamily;
-    el.style.fontSize = style.fontSize;
-    el.style.fontWeight = style.fontWeight;
+    TEXT_STYLE_PROPS.forEach((prop) => {
+      el.style[prop] = style[prop] || '';
+    });
   }
 
   function applyPageText(manifest, theme, content, versionKey, root = document) {
@@ -210,12 +231,13 @@ window.PortfolioContent = (() => {
       if (!text[id]) text[id] = {};
       if (text[id].content == null) text[id].content = col.name;
     });
-    return { text };
+    return { ...(saved || {}), text };
   }
 
   return {
     ROLE_TOKENS,
     FONT_OPTIONS,
+    TEXT_STYLE_PROPS,
     normalizeTypographyEntry,
     getTokenStyle,
     getVersionTypography,

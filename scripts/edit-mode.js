@@ -165,9 +165,483 @@ function patchPreview() {
 
 function setupTextEditBridge() {
   window.addEventListener('message', (e) => {
-    if (!e.data || e.data.source !== 'portfolio-text-edit') return;
-    if (e.data.type === 'change') handleTextEditChange(e.data);
+    if (!e.data) return;
+    if (e.data.source === 'portfolio-text-edit') {
+      if (e.data.type === 'change') handleTextEditChange(e.data);
+      return;
+    }
+    if (e.data.source === 'portfolio-cursor-assistant') {
+      handleCursorAssistantMessage(e.data);
+    }
   });
+}
+
+function handleCursorAssistantMessage(msg) {
+  if (msg.type === 'request') {
+    proposeCursorOperation(msg)
+      .then((proposal) => {
+        if (previewIframe?.contentWindow) {
+          previewIframe.contentWindow.postMessage({
+            source: 'portfolio-editor',
+            type: 'cursor-proposal',
+            proposal,
+          }, '*');
+        }
+      })
+      .catch((error) => {
+        if (previewIframe?.contentWindow) {
+          previewIframe.contentWindow.postMessage({
+            source: 'portfolio-editor',
+            type: 'cursor-proposal',
+            proposal: proposalFor({ type: 'noop' }, error.message),
+          }, '*');
+        }
+      });
+  }
+  if (msg.type === 'apply') {
+    applyCursorOperation(msg.operation);
+  }
+}
+
+function textMatchesAny(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function fontFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  return PortfolioContent.FONT_OPTIONS.find((font) => lower.includes(font.toLowerCase()));
+}
+
+function textAlignFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  if (/left[-\s]?align|align (it |this )?left|flush left/.test(lower)) return 'left';
+  if (/right[-\s]?align|align (it |this )?right|flush right/.test(lower)) return 'right';
+  if (/center|centre|middle/.test(lower) && /align|text|title|heading|this/.test(lower)) return 'center';
+  return null;
+}
+
+function textRotationFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  if (!/rotate|rotation|tilt|slant|angle|crooked|askew/.test(lower)) return null;
+  const explicit = lower.match(/(-?\d{1,3})(?:\s?deg| degrees?)/);
+  if (explicit) return Math.max(-45, Math.min(45, parseInt(explicit[1], 10)));
+  if (/right|clockwise/.test(lower)) return 4;
+  if (/straight|reset|normal/.test(lower)) return 0;
+  return -4;
+}
+
+function textTranslationFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  if (!/move|shift|nudge|raise|lower|up|down|left|right/.test(lower)) return null;
+  if (!/text|title|heading|this|it/.test(lower)) return null;
+  const explicit = lower.match(/(-?\d{1,3})\s?(?:px|pixels?)/);
+  const amount = explicit ? Math.max(-80, Math.min(80, parseInt(explicit[1], 10))) : 6;
+  let x = 0;
+  let y = 0;
+  if (/up|raise|higher/.test(lower)) y = -Math.abs(amount);
+  if (/down|lower/.test(lower)) y = Math.abs(amount);
+  if (/left/.test(lower)) x = -Math.abs(amount);
+  if (/right/.test(lower)) x = Math.abs(amount);
+  if (x === 0 && y === 0) return null;
+  return { x, y };
+}
+
+function proposalFor(operation, message) {
+  return { operation, message };
+}
+
+async function proposeCursorOperation({ target, prompt, scope, presentationId }) {
+  const normalized = prompt.trim().toLowerCase();
+  const versionKey = getCurrentVersionKey();
+  const currentPresentation = presentationId || getCurrentPresentationId();
+
+  if (target?.kind === 'text') {
+    const translation = textTranslationFromPrompt(prompt);
+    if (translation) {
+      const transform = `translate(${translation.x}px, ${translation.y}px)`;
+      return proposalFor({
+        type: 'stylePatch',
+        target,
+        scope,
+        versionKey,
+        patch: { transform },
+      }, `Move ${target.label} ${translation.x}px horizontally and ${translation.y}px vertically in this presentation.`);
+    }
+
+    const rotation = textRotationFromPrompt(prompt);
+    if (rotation != null) {
+      return proposalFor({
+        type: 'stylePatch',
+        target,
+        scope,
+        versionKey,
+        patch: {
+          transform: rotation === 0 ? 'rotate(0deg)' : `rotate(${rotation}deg)`,
+          transformOrigin: 'left center',
+        },
+      }, rotation === 0 ? `Reset rotation for ${target.label}.` : `Rotate ${target.label} ${rotation} degrees in this presentation.`);
+    }
+
+    const textAlign = textAlignFromPrompt(prompt);
+    if (textAlign) {
+      const scopeLabel = scope === 'all' ? 'all heading text' : scope === 'presentation' ? 'this text in this view' : 'this text';
+      return proposalFor({
+        type: 'typography',
+        target,
+        scope,
+        versionKey,
+        property: 'textAlign',
+        value: textAlign,
+      }, `Align ${target.label} ${textAlign} for ${scopeLabel}.`);
+    }
+
+    const font = fontFromPrompt(prompt);
+    if (font || textMatchesAny(normalized, [/font/, /typeface/, /serif/, /sans/])) {
+      const fallbackFont = font || (normalized.includes('serif') ? 'Georgia' : 'DM Sans');
+      const scopeLabel = scope === 'all' ? 'all heading text' : scope === 'presentation' ? 'this text in this view' : 'this text';
+      return proposalFor({
+        type: 'typography',
+        target,
+        scope,
+        versionKey,
+        property: 'fontFamily',
+        value: fallbackFont,
+      }, `Change ${target.label} to ${fallbackFont} for ${scopeLabel}.`);
+    }
+
+    return parseOperationWithAI({ target, prompt, scope, presentationId: currentPresentation, versionKey });
+  }
+
+  const visibilityTarget = target?.kind === 'collection' ? target : collectionTargetFromText(target);
+  if (visibilityTarget && textMatchesAny(normalized, [
+    /hide/,
+    /don.?t want/,
+    /do not want/,
+    /not see/,
+    /remove.*(view|presentation|here)/,
+    /invisible/,
+  ])) {
+    return proposalFor({
+      type: 'collectionVisibility',
+      target: visibilityTarget,
+      presentationId: currentPresentation,
+      visible: false,
+    }, `Hide “${visibilityTarget.label}” in ${currentPresentation}. It will stay in the portfolio and other presentations.`);
+  }
+
+  if (textMatchesAny(normalized, [/less clutter/, /less crowded/, /more space/, /spread.*out/, /too crowded/])) {
+    const nextGap = Math.min(56, getEditedGridGapPx() + 8);
+    const artSize = parseSpacingPx(editedTheme.spacing.artSize || '190px');
+    const nextArtSize = Math.max(120, artSize - 10);
+    return proposalFor({
+      type: 'spacing',
+      target,
+      versionKey,
+      gridGap: `${nextGap}px`,
+      artSize: `${Math.round(nextArtSize)}px`,
+    }, `Make ${target?.label || 'this view'} less crowded by increasing spacing and slightly reducing artwork size.`);
+  }
+
+  if (target?.kind === 'work' && textMatchesAny(normalized, [/important/, /feature/, /bigger/, /larger/, /emphasize/])) {
+    const artSize = parseSpacingPx(editedTheme.spacing.artSize || '190px');
+    return proposalFor({
+      type: 'spacing',
+      target,
+      versionKey,
+      artSize: `${Math.min(360, Math.round(artSize + 24))}px`,
+      gridGap: editedTheme.spacing.gridGap,
+    }, `Make artwork tiles larger in this presentation to give “${target.label}” more presence.`);
+  }
+
+  return parseOperationWithAI({ target, prompt, scope, presentationId: currentPresentation, versionKey });
+}
+
+async function parseOperationWithAI({ target, prompt, scope, presentationId, versionKey }) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return proposalFor(
+      { type: 'noop' },
+      'Connect your Cerebras API key to interpret this as a flexible local edit. I will only generate a new interface when the parsed operation explicitly asks for one.'
+    );
+  }
+
+  const result = await fetchJson('/api/operation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      apiKey,
+      target,
+      prompt,
+      scope,
+      presentationId,
+    }),
+  });
+
+  const operation = validateCursorOperation(result.operation, { target, scope, prompt, presentationId, versionKey });
+  return proposalFor(operation, result.message || messageForOperation(operation));
+}
+
+const TEXT_STYLE_VALUE_PATTERNS = {
+  fontFamily: /^[a-zA-Z0-9 ,'"-]{1,80}$/,
+  fontSize: /^(\d{1,3}(\.\d+)?)(px|rem|em|%)$/,
+  fontWeight: /^(normal|bold|[1-9]00)$/,
+  fontStyle: /^(normal|italic|oblique)$/,
+  textAlign: /^(left|center|right)$/,
+  letterSpacing: /^-?\d{1,2}(\.\d+)?(px|em|rem)$/,
+  lineHeight: /^(\d(\.\d{1,2})?|\d{1,3}%)$/,
+  textDecoration: /^(none|underline|line-through|overline)$/,
+  transform: /^((rotate\(-?\d{1,3}(\.\d+)?deg\)|scale\(\d(\.\d{1,2})?\)|translate\(-?\d{1,3}px,\s?-?\d{1,3}px\))\s*){1,3}$/,
+  transformOrigin: /^(left|center|right|top|bottom)( (left|center|right|top|bottom))?$/,
+  opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
+};
+
+function normalizeStylePatch(patch) {
+  const normalized = { ...(patch || {}) };
+
+  const rotationValue = normalized.rotate ?? normalized.rotation ?? normalized.rotateDegrees ?? normalized.rotationDegrees ?? normalized.tilt;
+  if (rotationValue != null && normalized.transform == null) {
+    const str = String(rotationValue).trim();
+    const number = parseFloat(str);
+    if (Number.isFinite(number)) {
+      normalized.transform = `rotate(${Math.max(-45, Math.min(45, number))}deg)`;
+    } else if (/^rotate\(/.test(str)) {
+      normalized.transform = str;
+    }
+  }
+
+  const translateX = normalized.translateX ?? normalized.moveX ?? normalized.x ?? normalized.leftRight;
+  const translateY = normalized.translateY ?? normalized.moveY ?? normalized.y ?? normalized.upDown;
+  if ((translateX != null || translateY != null) && normalized.transform == null) {
+    const x = Number.parseFloat(String(translateX ?? 0));
+    const y = Number.parseFloat(String(translateY ?? 0));
+    if (Number.isFinite(x) || Number.isFinite(y)) {
+      const safeX = Math.max(-80, Math.min(80, Number.isFinite(x) ? x : 0));
+      const safeY = Math.max(-80, Math.min(80, Number.isFinite(y) ? y : 0));
+      normalized.transform = `translate(${safeX}px, ${safeY}px)`;
+    }
+  }
+
+  if (normalized.translate != null && normalized.transform == null) {
+    const str = String(normalized.translate).trim();
+    if (/^-?\d{1,3}(\.\d+)?px,\s?-?\d{1,3}(\.\d+)?px$/.test(str)) {
+      normalized.transform = `translate(${str})`;
+    } else if (/^translate\(/.test(str)) {
+      normalized.transform = str;
+    }
+  }
+
+  if (normalized.align != null && normalized.textAlign == null) {
+    normalized.textAlign = normalized.align;
+  }
+
+  if (normalized.spacing != null && normalized.letterSpacing == null) {
+    normalized.letterSpacing = normalized.spacing;
+  }
+
+  if (normalized.transform && normalized.transformOrigin == null && /rotate\(/.test(String(normalized.transform))) {
+    normalized.transformOrigin = 'left center';
+  }
+
+  return normalized;
+}
+
+function sanitizeStylePatch(patch) {
+  const clean = {};
+  const allowed = PortfolioContent.TEXT_STYLE_PROPS || [];
+  Object.entries(normalizeStylePatch(patch)).forEach(([prop, value]) => {
+    if (!allowed.includes(prop)) return;
+    const str = String(value).trim();
+    const pattern = TEXT_STYLE_VALUE_PATTERNS[prop];
+    if (!pattern || !pattern.test(str)) return;
+    clean[prop] = str;
+  });
+  return clean;
+}
+
+function normalizeGeneratedOperation(operation, fallback) {
+  if (operation.type === 'newRepresentation') {
+    return {
+      type: 'needsGeneration',
+      target: fallback.target,
+      scope: fallback.scope,
+      prompt: operation.prompt || fallback.prompt,
+      presentationId: fallback.presentationId,
+    };
+  }
+  return operation;
+}
+
+function validateCursorOperation(rawOperation, fallback) {
+  if (!rawOperation || typeof rawOperation !== 'object') {
+    throw new Error('The operation parser returned no editable operation.');
+  }
+
+  const operation = normalizeGeneratedOperation(rawOperation, fallback);
+  const target = operation.target || fallback.target;
+
+  if (operation.type === 'stylePatch') {
+    if (target?.kind !== 'text') {
+      return {
+        type: 'needsGeneration',
+        target,
+        scope: fallback.scope,
+        prompt: fallback.prompt,
+        presentationId: fallback.presentationId,
+      };
+    }
+    const patch = sanitizeStylePatch(operation.patch);
+    if (!Object.keys(patch).length) {
+      throw new Error('The operation parser did not return any safe style properties to apply.');
+    }
+    return {
+      type: 'stylePatch',
+      target,
+      scope: operation.scope || fallback.scope,
+      versionKey: fallback.versionKey,
+      patch,
+    };
+  }
+
+  if (operation.type === 'collectionVisibility') {
+    return {
+      type: 'collectionVisibility',
+      target: target?.kind === 'collection' ? target : collectionTargetFromText(target),
+      presentationId: fallback.presentationId,
+      visible: operation.visible !== false,
+    };
+  }
+
+  if (operation.type === 'spacing') {
+    return {
+      type: 'spacing',
+      target,
+      versionKey: fallback.versionKey,
+      gridGap: typeof operation.gridGap === 'string' ? operation.gridGap : undefined,
+      artSize: typeof operation.artSize === 'string' ? operation.artSize : undefined,
+    };
+  }
+
+  if (operation.type === 'needsGeneration') return operation;
+  throw new Error(`Unsupported operation type: ${operation.type}`);
+}
+
+function messageForOperation(operation) {
+  if (operation.type === 'stylePatch') {
+    return `Apply ${Object.keys(operation.patch).join(', ')} to ${operation.target?.label || 'this text'} in this presentation.`;
+  }
+  if (operation.type === 'needsGeneration') {
+    return `This request needs a new generated interface/spec for ${operation.target?.label || 'the selected object'}.`;
+  }
+  return 'Apply this local edit.';
+}
+
+function ensureContentVisibility() {
+  if (!editedContent.visibility) editedContent.visibility = {};
+  if (!editedContent.visibility.collections) editedContent.visibility.collections = {};
+}
+
+function collectionTextIdFromTarget(target) {
+  if (target?.kind !== 'collection') return null;
+  if (target.path?.startsWith('collections.')) return PortfolioContent.collectionId(parseInt(target.path.split('.')[1], 10));
+  if (target.collectionIndex != null) return PortfolioContent.collectionId(parseInt(target.collectionIndex, 10));
+  return null;
+}
+
+function collectionTargetFromText(target) {
+  if (target?.kind !== 'text' || !target.id?.startsWith('collection.')) return null;
+  const collectionIndex = parseInt(target.id.split('.')[1], 10);
+  if (!Number.isFinite(collectionIndex)) return null;
+  return {
+    kind: 'collection',
+    path: `collections.${collectionIndex}`,
+    collectionIndex: String(collectionIndex),
+    collectionId: `collection_${collectionIndex}`,
+    label: target.label,
+  };
+}
+
+function applyCursorOperation(operation) {
+  if (!operation) return;
+
+  if (operation.type === 'typography' && operation.target?.kind === 'text') {
+    const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'collection.title');
+    const textScope = operation.scope === 'all' ? 'all-headings' : operation.scope === 'presentation' ? 'this' : 'this';
+    handleTextEditChange({
+      id: operation.target.id,
+      role,
+      scope: textScope,
+      property: operation.property,
+      value: operation.value,
+    });
+    return;
+  }
+
+  if (operation.type === 'stylePatch' && operation.target?.kind === 'text') {
+    const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'collection.title');
+    const textScope = operation.scope === 'all' ? 'all-headings' : operation.scope === 'presentation' ? 'this' : 'this';
+    Object.entries(operation.patch || {}).forEach(([property, value]) => {
+      handleTextEditChange({
+        id: operation.target.id,
+        role,
+        scope: textScope,
+        property,
+        value,
+      });
+    });
+    return;
+  }
+
+  if (operation.type === 'collectionVisibility') {
+    const collectionTextId = collectionTextIdFromTarget(operation.target);
+    if (!collectionTextId) return;
+    ensureContentVisibility();
+    if (!editedContent.visibility.collections[collectionTextId]) {
+      editedContent.visibility.collections[collectionTextId] = { hiddenIn: [] };
+    }
+    const hiddenIn = editedContent.visibility.collections[collectionTextId].hiddenIn;
+    if (operation.visible === false && !hiddenIn.includes(operation.presentationId)) {
+      hiddenIn.push(operation.presentationId);
+    }
+    if (operation.visible !== false) {
+      editedContent.visibility.collections[collectionTextId].hiddenIn = hiddenIn.filter((id) => id !== operation.presentationId);
+    }
+    updatePreview();
+    refreshInspectModel();
+    return;
+  }
+
+  if (operation.type === 'spacing') {
+    if (operation.gridGap) {
+      editedTheme.spacing.gridGap = operation.gridGap;
+      const gridGapSlider = document.getElementById('grid-gap');
+      if (gridGapSlider) gridGapSlider.value = parseSpacingPx(operation.gridGap);
+      document.getElementById('grid-gap-display').textContent = operation.gridGap;
+      document.documentElement.style.setProperty('--space-gridGap', operation.gridGap);
+    }
+    if (operation.artSize) {
+      editedTheme.spacing.artSize = operation.artSize;
+      const artSizeSlider = document.getElementById('art-size');
+      if (artSizeSlider) artSizeSlider.value = parseSpacingPx(operation.artSize);
+      document.getElementById('art-size-display').textContent = operation.artSize;
+      document.documentElement.style.setProperty('--space-artSize', operation.artSize);
+    }
+    updatePreview();
+    refreshInspectModel();
+    return;
+  }
+
+  if (operation.type === 'noop') {
+    return;
+  }
+
+  if (operation.type === 'needsGeneration') {
+    const modal = document.getElementById('create-modal');
+    const prompt = document.getElementById('ai-prompt');
+    if (prompt) {
+      prompt.value = `${operation.prompt}\n\nTarget: ${operation.target?.kind || 'view'} ${operation.target?.label || ''}\nPresentation: ${operation.presentationId}`;
+    }
+    if (modal) modal.hidden = false;
+  }
 }
 
 function setupDeviceToggle() {
@@ -757,7 +1231,7 @@ function updatePreview() {
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
-  iframe.scrolling = 'no';
+  iframe.scrolling = getLayout(currentVersion)?.key === 'directory' ? 'no' : 'auto';
   iframe.sandbox.add('allow-same-origin', 'allow-scripts');
   container.appendChild(iframe);
   previewIframe = iframe;
@@ -784,7 +1258,10 @@ function buildTextHeading(tag, className, id, role, fallback, theme, content, ve
   const text = PortfolioContent.getText(content, id, fallback);
   const style = PortfolioContent.styleToCss(PortfolioContent.getElementStyle(theme, content, id, role, versionKey));
   const cls = className ? ` class="${className}"` : '';
-  return `<${tag}${cls} data-text-id="${id}" data-text-role="${role}" data-text-fallback="${PortfolioContent.escapeHtml(fallback)}" style="${style}">${PortfolioContent.escapeHtml(text)}</${tag}>`;
+  const modelAttrs = id === 'portfolio.title'
+    ? ' data-model-kind="text" data-model-path="content.text.portfolio.title" data-model-label="Portfolio title"'
+    : '';
+  return `<${tag}${cls} data-text-id="${id}" data-text-role="${role}" data-text-fallback="${PortfolioContent.escapeHtml(fallback)}"${modelAttrs} style="${style}">${PortfolioContent.escapeHtml(text)}</${tag}>`;
 }
 
 function buildPreviewNav(activeLayout) {
@@ -924,14 +1401,65 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     }
     ${directoryInlineStyles}
     h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
+    .generated-artwork-image,
+    [data-generated-artwork-image="true"] {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain !important;
+      object-position: center center !important;
+    }
+    .scroll-item:has(> .generated-artwork-image):not([data-fixed-size="true"]),
+    .scroll-item:has(> [data-generated-artwork-image="true"]):not([data-fixed-size="true"]),
+    .generated-work-tile:not([data-fixed-size="true"]) {
+      width: var(--space-artSize);
+      min-width: var(--space-artSize);
+      max-width: var(--space-artSize);
+    }
     [data-text-id] { cursor: text; }
     [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
     [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
     .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
-    .text-edit-toolbar { position: absolute; z-index: 2000; background: #fff; border: 2px solid var(--color-primary); border-radius: 8px; padding: 0.65rem 0.75rem; min-width: 220px; font-size: 0.82rem; }
+    .text-edit-toolbar {
+      --text-edit-ink: #111111;
+      --text-edit-muted: #5f5f5f;
+      --text-edit-paper: #ffffff;
+      --text-edit-panel: #f7f5ef;
+      --text-edit-line: rgba(17, 17, 17, 0.22);
+      --text-edit-hover: #eee8dc;
+      position: absolute;
+      z-index: 2000;
+      background: var(--text-edit-paper) !important;
+      border: 1px solid var(--text-edit-line);
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+      min-width: 220px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      color: var(--text-edit-ink) !important;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+    .text-edit-toolbar,
+    .text-edit-toolbar * {
+      color: var(--text-edit-ink) !important;
+      text-shadow: none !important;
+    }
     .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
-    .text-edit-props button { flex: 1; padding: 0.3rem 0.5rem; border: 1px solid var(--color-primary); background: #fff; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
-    .text-edit-props button.active { background: var(--color-primary); color: #fff; }
+    .text-edit-props button {
+      flex: 1;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--text-edit-line);
+      background: var(--text-edit-panel) !important;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+      font-size: 0.75rem;
+    }
+    .text-edit-props button:hover { background: var(--text-edit-hover) !important; }
+    .text-edit-props button.active { background: #111111 !important; color: #ffffff !important; }
+    .text-edit-props button.active * { color: #ffffff !important; }
     body.color-focus-background { outline: 4px solid var(--color-accent); outline-offset: -4px; }
     body.color-focus-primary header,
     body.color-focus-primary h1,
@@ -947,12 +1475,26 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     body.color-focus-panel .directory-tree,
     body.color-focus-panel .directory-viewer { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-    .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
-    .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
+    .text-edit-hint { font-size: 0.72rem; color: var(--text-edit-muted) !important; margin-bottom: 0.35rem; }
+    .text-edit-input, .text-edit-font {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid var(--text-edit-line);
+      border-radius: 4px;
+      font: inherit;
+      font-size: 0.85rem;
+      background: var(--text-edit-paper) !important;
+      color: var(--text-edit-ink) !important;
+      -webkit-text-fill-color: var(--text-edit-ink) !important;
+      caret-color: var(--text-edit-ink);
+      box-sizing: border-box;
+    }
     .text-edit-size { width: 100%; }
+    .text-edit-size { accent-color: var(--text-edit-ink); }
     .text-edit-scope { border: none; margin-top: 0.5rem; padding: 0; }
     .text-edit-scope legend { font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; }
     .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
+    .text-edit-scope input { accent-color: var(--text-edit-ink); }
   </style>
 </head>
 <body data-edit-mode="1" class="${directoryViewClass.trim()}">
@@ -960,7 +1502,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     ${titleHeading}
     ${buildPreviewNav(layout)}
   </header>
-  <main class="container">
+  <main class="container" data-model-kind="presentation" data-model-path="presentations.${presentationId}" data-presentation-id="${presentationId}" data-model-label="${PortfolioContent.escapeHtml(layout.name)} presentation">
     <div id="preview-content"></div>
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
@@ -988,6 +1530,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   });
   <\/script>
   <script src="./scripts/text-edit.js"><\/script>
+  <script src="./scripts/cursor-assistant.js"><\/script>
 </body>
 </html>`;
 }
