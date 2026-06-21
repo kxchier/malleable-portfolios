@@ -164,7 +164,13 @@ window.PortfolioInspect = (() => {
         presentationCache.set(presentationId, data);
         return data;
       } catch {
-        return { error: `Could not load presentations/${presentationId}.json` };
+        try {
+          const data = await fetch(`./generated/${presentationId}/presentation.json`).then((r) => r.json());
+          presentationCache.set(presentationId, data);
+          return data;
+        } catch {
+          return { error: `Could not load presentation for ${presentationId}` };
+        }
       }
     }
 

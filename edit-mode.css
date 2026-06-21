@@ -254,6 +254,18 @@
   border-color: #d4d2cc;
 }
 
+.delete-layout-btn[hidden] { display: none; }
+
+.delete-layout-btn {
+  color: #9a3b32;
+  border-color: color-mix(in srgb, #9a3b32 35%, var(--ed-line));
+}
+
+.delete-layout-btn:hover {
+  background: #fdf0ee;
+  border-color: #c98a82;
+}
+
 /* ============================================================
    Preview canvas — the art site sits FRAMED inside the editor
    ============================================================ */
@@ -793,6 +805,16 @@
   color: var(--ed-text);
 }
 .publish-result[hidden] { display: none; }
+
+.generate-status {
+  margin: 0.65rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.generate-status[hidden] { display: none; }
+.generate-status--busy { color: var(--ed-muted); }
+.generate-status--ok { color: #2a8f5c; font-weight: 600; }
+.generate-status--err { color: #b33; }
 
 /* ============================================================
    Inspect model panel (Jelly-style schema view)

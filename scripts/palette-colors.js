@@ -9,7 +9,12 @@ window.PaletteColors = (() => {
     { key: 'secondary', label: 'Desk', hint: 'Desk surface color', layout: 'desk' },
   ];
 
-  function forLayout(layoutKey) {
+  function forLayout(layoutKey, options = {}) {
+    const keys = options.colorKeys;
+    if (keys?.length) {
+      const allowed = new Set(keys);
+      return SWATCHES.filter((swatch) => allowed.has(swatch.key));
+    }
     return SWATCHES.filter((swatch) => !swatch.layout || swatch.layout === layoutKey);
   }
 

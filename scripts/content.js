@@ -43,6 +43,21 @@ window.PortfolioContent = (() => {
     return { ...base, ...versionEntry };
   }
 
+  /** Colors for a layout version: global theme.colors + per-version overrides. */
+  function getVersionColors(theme, versionKey) {
+    const base = { ...(theme?.colors || {}) };
+    if (!versionKey) return base;
+    const overrides = theme?.versions?.[versionKey]?.colors || {};
+    return { ...base, ...overrides };
+  }
+
+  function applyColorVars(theme, versionKey, root = document.documentElement) {
+    const colors = getVersionColors(theme, versionKey);
+    Object.entries(colors).forEach(([key, value]) => {
+      if (value != null) root.style.setProperty(`--color-${key}`, value);
+    });
+  }
+
   function getTextOverride(content, id) {
     return content?.text?.[id] || {};
   }
@@ -154,6 +169,7 @@ window.PortfolioContent = (() => {
   }
 
   function applyPageText(manifest, theme, content, versionKey, root = document) {
+    applyColorVars(theme, versionKey, root.documentElement);
     applyTypographyVars(theme, versionKey, root.documentElement);
 
     root.querySelectorAll('[data-text-id]').forEach((el) => {
@@ -203,10 +219,12 @@ window.PortfolioContent = (() => {
     normalizeTypographyEntry,
     getTokenStyle,
     getVersionTypography,
+    getVersionColors,
     getText,
     getElementStyle,
     clearStyleOverrides,
     styleToCss,
+    applyColorVars,
     applyTypographyVars,
     applyToElement,
     applyPageText,

@@ -6,6 +6,8 @@ window.PORTFOLIO_LAYOUTS = [
     presentationId: 'grid',
     name: 'Grid',
     file: 'ver1.html',
+    generated: false,
+    colorKeys: ['background', 'primary', 'accent', 'paper'],
     examplePrompt:
       'A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders.',
   },
@@ -15,6 +17,8 @@ window.PORTFOLIO_LAYOUTS = [
     presentationId: 'clothesline',
     name: 'Clothesline',
     file: 'ver2.html',
+    generated: false,
+    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
     examplePrompt:
       'Horizontal scroll strips per collection, like prints clipped on a clothesline — peek and swipe sideways.',
   },
@@ -24,12 +28,30 @@ window.PORTFOLIO_LAYOUTS = [
     presentationId: 'desk',
     name: 'Desk',
     file: 'ver3.html',
+    generated: false,
+    colorKeys: ['background', 'primary', 'accent', 'paper', 'secondary'],
     examplePrompt:
       'A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps.',
   },
 ];
 
 window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
+
+window.loadPortfolioLayouts = async function loadPortfolioLayouts() {
+  try {
+    const res = await fetch('/api/layouts');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.layouts) && data.layouts.length) {
+        window.PORTFOLIO_LAYOUTS = data.layouts;
+      }
+    }
+  } catch (e) {
+    // static fallback — built-ins only
+  }
+  window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
+  return window.PORTFOLIO_LAYOUTS;
+};
 
 const DESK_PADDING = 32;
 const DESK_ROTATION_SLACK = 36;

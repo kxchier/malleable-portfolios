@@ -15,6 +15,9 @@
  *   POST /api/rebuild   -> rescan Art/ and write manifest.json to disk
  *   POST /api/theme     -> write the posted JSON body to theme.json
  *   POST /api/content   -> write the posted JSON body to content.json
+ *   GET  /api/layouts   -> built-in + AI-generated layout registry
+ *   POST /api/layouts/delete -> remove a generated layout and its files
+ *   POST /api/generate  -> Cerebras: create new layout (presentation + CSS + JS + SVG assets)
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
  *   (anything else)     -> static file from the project root
  */
@@ -25,6 +28,8 @@ const path = require('path');
 const { exec } = require('child_process');
 const { buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
+const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
+const { generateTemplate } = require('./generate-template.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -124,6 +129,60 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { written: true });
     } catch (e) {
       return sendJSON(res, 400, { error: 'invalid content json: ' + e.message });
+    }
+  }
+
+  if (pathname === '/api/layouts' && req.method === 'GET') {
+    return sendJSON(res, 200, { layouts: listAllLayouts() });
+  }
+
+  if (pathname === '/api/layouts/delete' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const key = body.key || body.layoutKey;
+      if (!key) return sendJSON(res, 400, { error: 'missing layout key' });
+      const result = deleteGeneratedLayout(key);
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[layouts/delete]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/generate' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { buildContentModel } = require('./build-content.js');
+      let textOverrides = {};
+      try {
+        const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'content.json'), 'utf8'));
+        textOverrides = raw?.text || {};
+      } catch (e) {
+        // no overrides
+      }
+      const collections = buildCollections();
+      let theme = {};
+      try {
+        theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
+      } catch (e) {
+        // defaults
+      }
+
+      const { layout, versionColors } = await generateTemplate({
+        apiKey: body.apiKey,
+        prompt: body.prompt,
+        context: {
+          collections,
+          primary: theme.colors?.primary,
+          accent: theme.colors?.accent,
+          background: theme.colors?.background,
+        },
+      });
+
+      return sendJSON(res, 200, { layout, versionColors, layouts: listAllLayouts() });
+    } catch (e) {
+      console.error('[generate]', e.message);
+      return sendJSON(res, 400, { error: e.message });
     }
   }
 

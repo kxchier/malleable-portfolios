@@ -15,6 +15,8 @@ const DEFAULT_THEME_COLORS = {
 };
 
 async function initEditMode() {
+  if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
+
   const { manifest, theme, content, contentModel: loadedContent } = await window.appData;
   contentModel = loadedContent;
   editedTheme = JSON.parse(JSON.stringify(theme));
@@ -40,13 +42,14 @@ async function initEditMode() {
   document.getElementById('art-size-display').textContent = artSizePx + 'px';
 
   applyLayoutMetadata();
-  setupVersionButtons();
+  renderVersionButtons();
   setupGridGapListener();
   setupArtSizeListener();
   setupPaletteDrag();
   setupPreview();
   setupTextEditBridge();
   setupAI();
+  setupDeleteLayout();
   setupPublish();
   setupCreateModal();
   setupDeviceToggle();
@@ -95,13 +98,29 @@ function getCurrentVersionKey() {
 
 function ensureVersionTypographyObject(versionKey, token) {
   if (!editedTheme.versions) editedTheme.versions = {};
-  if (!editedTheme.versions[versionKey]) editedTheme.versions[versionKey] = { typography: {} };
+  if (!editedTheme.versions[versionKey]) editedTheme.versions[versionKey] = {};
   if (!editedTheme.versions[versionKey].typography) {
     editedTheme.versions[versionKey].typography = {};
   }
   if (!editedTheme.versions[versionKey].typography[token]) {
     editedTheme.versions[versionKey].typography[token] = {};
   }
+}
+
+function ensureVersionColorsObject(versionKey) {
+  if (!editedTheme.versions) editedTheme.versions = {};
+  if (!editedTheme.versions[versionKey]) editedTheme.versions[versionKey] = {};
+  if (!editedTheme.versions[versionKey].colors) {
+    editedTheme.versions[versionKey].colors = {};
+  }
+}
+
+function getVersionColorsForKey(versionKey) {
+  return PortfolioContent.getVersionColors(editedTheme, versionKey);
+}
+
+function getCurrentVersionColors() {
+  return getVersionColorsForKey(getCurrentVersionKey());
 }
 
 function handleTextEditChange({ id, role, scope, property, value }) {
@@ -177,19 +196,22 @@ function getPreviewWidth() {
 }
 
 function applyLayoutMetadata() {
-  PORTFOLIO_LAYOUTS.forEach((layout) => {
-    const btn = document.querySelector(`.version-btn[data-version="${layout.id}"]`);
-    if (btn) {
-      btn.textContent = layout.name;
-      btn.title = layout.examplePrompt;
-    }
-  });
+  renderVersionButtons();
 
   const examples = document.getElementById('prompt-examples');
   if (!examples) return;
 
   examples.innerHTML = '';
-  PORTFOLIO_LAYOUTS.forEach((layout) => {
+  const chips = [
+    ...PORTFOLIO_LAYOUTS.filter((l) => !l.generated).slice(0, 3),
+    {
+      name: 'Museum',
+      examplePrompt:
+        'A 2D skeuomorphic museum gallery — artwork in ornate gilded picture frames, horizontal scroll per collection, dark walnut walls.',
+    },
+  ];
+
+  chips.forEach((layout) => {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'prompt-example';
@@ -199,6 +221,88 @@ function applyLayoutMetadata() {
       document.getElementById('ai-prompt').value = layout.examplePrompt;
     });
     examples.appendChild(chip);
+  });
+}
+
+function selectVersion(versionId) {
+  currentVersion = versionId;
+  document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
+    b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
+  });
+  syncPaletteVisibility();
+  syncPaletteSwatches();
+  syncDeleteLayoutButton();
+  updatePreview();
+  refreshInspectModel();
+}
+
+function syncDeleteLayoutButton() {
+  const btn = document.getElementById('delete-layout-btn');
+  if (!btn) return;
+  const layout = getLayout(currentVersion);
+  btn.hidden = !layout?.generated;
+  btn.title = layout?.generated ? `Delete “${layout.name}” and remove its files` : '';
+}
+
+function renderVersionButtons() {
+  const container = document.getElementById('version-buttons');
+  if (!container) return;
+  const createBtn = container.querySelector('.create-btn');
+  container.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => b.remove());
+
+  PORTFOLIO_LAYOUTS.forEach((layout) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'version-btn' + (layout.id === currentVersion ? ' active' : '');
+    btn.dataset.version = String(layout.id);
+    btn.textContent = layout.generated ? `${layout.name} ✦` : layout.name;
+    btn.title = layout.examplePrompt || layout.prompt || layout.name;
+    btn.addEventListener('click', () => selectVersion(layout.id));
+    container.insertBefore(btn, createBtn);
+  });
+  syncDeleteLayoutButton();
+}
+
+function setupDeleteLayout() {
+  const btn = document.getElementById('delete-layout-btn');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    const layout = getLayout(currentVersion);
+    if (!layout?.generated) return;
+
+    const ok = confirm(
+      `Delete “${layout.name}”?\n\nThis removes ${layout.file}, generated/${layout.key}/, and its theme colors. Built-in layouts are not affected.`
+    );
+    if (!ok) return;
+
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Deleting…';
+
+    try {
+      const data = await fetchJson('/api/layouts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: layout.key }),
+      });
+
+      if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
+
+      if (editedTheme.versions?.[layout.key]) {
+        delete editedTheme.versions[layout.key];
+        if (Object.keys(editedTheme.versions).length === 0) delete editedTheme.versions;
+      }
+
+      applyLayoutMetadata();
+      selectVersion(1);
+    } catch (e) {
+      alert(`Could not delete layout:\n\n${e.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+      syncDeleteLayoutButton();
+    }
   });
 }
 
@@ -212,18 +316,42 @@ function setupCreateModal() {
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 }
 
-const AI_KEY_STORE = 'portfolio.claudeApiKey';
+const AI_KEY_STORE = 'portfolio.cerebrasApiKey';
+
+function getApiKey() {
+  return localStorage.getItem(AI_KEY_STORE) || '';
+}
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    if (res.status === 404) {
+      throw new Error(
+        'This action needs a newer local server. Stop the old one and run:\n\n    node scripts/serve.js\n\nthen reload the editor.'
+      );
+    }
+    throw new Error(text.trim().slice(0, 200) || `Request failed (${res.status})`);
+  }
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
 
 function setupAI() {
   const keyInput = document.getElementById('api-key-input');
   const status = document.getElementById('ai-status');
+  const generateBtn = document.getElementById('generate-btn');
+  const generateStatus = document.getElementById('generate-status');
 
   const setConnected = (connected) => {
     status.textContent = connected ? 'connected ✓' : 'not connected';
     status.className = 'ai-status ' + (connected ? 'ai-status--on' : 'ai-status--off');
   };
 
-  const saved = localStorage.getItem(AI_KEY_STORE);
+  const saved = getApiKey();
   if (saved) { keyInput.value = saved; setConnected(true); }
 
   document.getElementById('connect-ai-btn').addEventListener('click', () => {
@@ -233,14 +361,52 @@ function setupAI() {
     setConnected(true);
   });
 
-  document.getElementById('generate-btn').addEventListener('click', () => {
-    if (!localStorage.getItem(AI_KEY_STORE)) {
-      alert('Connect your Claude API key first — paste it in the toolbar at the top.');
+  generateBtn.addEventListener('click', async () => {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      alert('Connect your Cerebras API key first — paste it in the toolbar at the top.');
       return;
     }
-    const prompt = document.getElementById('ai-prompt').value.trim() || 'a new layout';
-    document.getElementById('create-modal').hidden = true;
-    alert(`[Mock] Claude would generate a new version from:\n\n  "${prompt}"\n\n…and add it as ver3.html alongside your existing views.`);
+
+    const prompt = document.getElementById('ai-prompt').value.trim();
+    if (!prompt) {
+      alert('Describe the layout you want first.');
+      return;
+    }
+
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating…';
+    generateStatus.hidden = false;
+    generateStatus.textContent = 'Cerebras is building your interface…';
+    generateStatus.className = 'generate-status generate-status--busy';
+
+    try {
+      const data = await fetchJson('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, prompt }),
+      });
+
+      if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
+      const layout = data.layout;
+      if (data.versionColors && layout?.key) {
+        ensureVersionColorsObject(layout.key);
+        editedTheme.versions[layout.key].colors = { ...data.versionColors };
+      }
+      document.getElementById('create-modal').hidden = true;
+      generateStatus.textContent = `Created "${layout.name}" — switching preview…`;
+      generateStatus.className = 'generate-status generate-status--ok';
+
+      applyLayoutMetadata();
+      selectVersion(layout.id);
+    } catch (e) {
+      generateStatus.textContent = e.message;
+      generateStatus.className = 'generate-status generate-status--err';
+      alert(`Generation failed:\n\n${e.message}`);
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.textContent = '✨ Generate version';
+    }
   });
 }
 
@@ -266,21 +432,13 @@ function syncPaletteVisibility() {
 }
 
 function setupVersionButtons() {
-  document.querySelectorAll('.version-btn:not(.create-btn)').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.version-btn:not(.create-btn)').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentVersion = parseInt(btn.dataset.version);
-      syncPaletteVisibility();
-      updatePreview();
-      refreshInspectModel();
-    });
-  });
+  /* version buttons rendered via renderVersionButtons() */
 }
 
 function setThemeColor(key, value, { rebuild = false } = {}) {
-  if (!editedTheme.colors) editedTheme.colors = {};
-  editedTheme.colors[key] = value;
+  const versionKey = getCurrentVersionKey();
+  ensureVersionColorsObject(versionKey);
+  editedTheme.versions[versionKey].colors[key] = value;
   syncPaletteSwatches();
   if (rebuild) updatePreview();
   else patchPreviewColors();
@@ -292,15 +450,16 @@ function patchPreviewColors() {
   previewIframe.contentWindow.postMessage({
     source: 'portfolio-editor',
     type: 'colors',
-    colors: editedTheme.colors,
+    colors: getCurrentVersionColors(),
   }, '*');
 }
 
 function syncPaletteSwatches() {
+  const colors = getCurrentVersionColors();
   document.querySelectorAll('.palette-swatch').forEach((btn) => {
     const key = btn.dataset.colorKey;
     const fill = btn.querySelector('.palette-swatch-fill');
-    const color = editedTheme.colors?.[key] || DEFAULT_THEME_COLORS[key];
+    const color = colors[key] || DEFAULT_THEME_COLORS[key];
     if (fill && color) fill.style.background = color;
   });
 }
@@ -378,11 +537,11 @@ function setupPaletteDrag() {
   }
 
   function getThemeColor(key) {
-    return editedTheme.colors[key] || DEFAULT_THEME_COLORS[key] || '#888888';
+    return getCurrentVersionColors()[key] || DEFAULT_THEME_COLORS[key] || '#888888';
   }
 
   function updateSample(key, hex) {
-    const colors = editedTheme.colors || {};
+    const colors = getCurrentVersionColors();
     sampleEl.dataset.sampleKey = key;
     sampleEl.style.setProperty('--sample-color', hex);
     sampleEl.style.setProperty('--sample-bg', getThemeColor('background'));
@@ -465,11 +624,11 @@ function setupPaletteDrag() {
   pad.addEventListener('pointercancel', endPadDrag);
 
   hueInput.addEventListener('input', () => {
-    const { l } = PaletteColors.hexToHsl(editedTheme.colors[activeKey] || '#888888');
+    const { l } = PaletteColors.hexToHsl(getThemeColor(activeKey));
     applyColor(PaletteColors.hslToHex(+hueInput.value, activeSat, l));
   });
   lightInput.addEventListener('input', () => {
-    const { h } = PaletteColors.hexToHsl(editedTheme.colors[activeKey] || '#888888');
+    const { h } = PaletteColors.hexToHsl(getThemeColor(activeKey));
     applyColor(PaletteColors.hslToHex(h, activeSat, +lightInput.value / 100));
   });
 
@@ -478,7 +637,9 @@ function setupPaletteDrag() {
   function renderSwatches() {
     closePopover();
     strip.replaceChildren();
-    PaletteColors.forLayout(getCurrentVersionKey()).forEach(({ key, label }) => {
+    PaletteColors.forLayout(getCurrentVersionKey(), {
+      colorKeys: getLayout(currentVersion)?.colorKeys,
+    }).forEach(({ key, label }) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'palette-swatch';
@@ -625,6 +786,7 @@ function buildPreviewNav(activeLayout) {
 function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layout = getLayout(version) || getLayout(1);
   const presentationId = layout.presentationId || layout.key;
+  const previewColors = getVersionColorsForKey(layout.key);
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
   const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
@@ -633,19 +795,71 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js"><\/script>`
     : '';
 
+  const generatedHead = layout.generated
+    ? `<link rel="stylesheet" href="./generated/${layout.key}/style.css">`
+    : '';
+
+  const generatedScripts = layout.generated
+    ? `<script src="./scripts/generated-runtime.js"><\/script>
+  <script src="./generated/${layout.key}/render.js"><\/script>`
+    : `<script src="./scripts/component-registry.js"><\/script>
+  <script src="./scripts/model-loader.js"><\/script>
+  ${deskScripts}
+  <script src="./scripts/render.js"><\/script>`;
+
+  const mountScript = layout.generated
+    ? `(async () => {
+    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
+    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
+      theme: window.__EDIT_STATE__.theme,
+      contentOverrides: window.__EDIT_STATE__.content,
+      contentModel,
+    });
+    const previewRoot = document.getElementById('preview-content');
+    await GeneratedRuntime.mount({
+      root: previewRoot,
+      layoutKey: window.__PREVIEW_PRESENTATION_ID__,
+      models,
+      previewState: {
+        theme: window.__EDIT_STATE__.theme,
+        content: window.__EDIT_STATE__.content,
+        versionKey: window.__EDIT_STATE__.versionKey,
+      },
+    });
+  })();`
+    : `(async () => {
+    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
+    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
+      theme: window.__EDIT_STATE__.theme,
+      contentOverrides: window.__EDIT_STATE__.content,
+      contentModel,
+    });
+    const previewRoot = document.getElementById('preview-content');
+    PortfolioRender.renderCollections(
+      previewRoot,
+      models.manifest.collections.map((col, index) => ({
+        id: PortfolioContent.collectionId(index),
+        originalIndex: index,
+        ...col,
+      })),
+      models
+    );
+  })();`;
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="./styles.css">
+  ${generatedHead}
   <style>
     :root {
-      --color-primary: ${editedTheme.colors.primary};
-      --color-accent: ${editedTheme.colors.accent};
-      --color-background: ${editedTheme.colors.background};
-      --color-secondary: ${editedTheme.colors.secondary || '#ece6da'};
-      --color-paper: ${editedTheme.colors.paper || DEFAULT_THEME_COLORS.paper};
-      --color-panel: ${editedTheme.colors.panel || DEFAULT_THEME_COLORS.panel};
+      --color-primary: ${previewColors.primary};
+      --color-accent: ${previewColors.accent};
+      --color-background: ${previewColors.background};
+      --color-secondary: ${previewColors.secondary || '#ece6da'};
+      --color-paper: ${previewColors.paper || DEFAULT_THEME_COLORS.paper};
+      --color-panel: ${previewColors.panel || DEFAULT_THEME_COLORS.panel};
       --space-gridGap: ${editedTheme.spacing.gridGap};
       --space-artSize: ${editedTheme.spacing.artSize || '190px'};
     }
@@ -666,8 +880,10 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     body.color-focus-secondary .desk-surface { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     body.color-focus-paper .desk-item,
     body.color-focus-paper .grid-item,
-    body.color-focus-paper .scroll-item { outline: 3px solid var(--color-accent); outline-offset: 3px; }
-    body.color-focus-panel .clothesline-scroll { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+    body.color-focus-paper .scroll-item,
+    body.color-focus-paper .generated-work-tile { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+    body.color-focus-panel .clothesline-scroll,
+    body.color-focus-panel .images-scroll { outline: 3px solid var(--color-accent); outline-offset: 3px; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .text-edit-hint { font-size: 0.72rem; color: #666; margin-bottom: 0.35rem; }
     .text-edit-input, .text-edit-font { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--color-primary); border-radius: 4px; font: inherit; font-size: 0.85rem; }
@@ -688,31 +904,10 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
   <script src="./scripts/content.js"><\/script>
-  <script src="./scripts/component-registry.js"><\/script>
   <script src="./scripts/model-loader.js"><\/script>
-  ${deskScripts}
-  <script src="./scripts/render.js"><\/script>
+  ${generatedScripts}
   <script>
-  (async () => {
-    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
-    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
-      theme: window.__EDIT_STATE__.theme,
-      contentOverrides: window.__EDIT_STATE__.content,
-      contentModel,
-    });
-
-    const previewRoot = document.getElementById('preview-content');
-
-    PortfolioRender.renderCollections(
-      previewRoot,
-      models.manifest.collections.map((col, index) => ({
-        id: PortfolioContent.collectionId(index),
-        originalIndex: index,
-        ...col,
-      })),
-      models
-    );
-  })();
+  ${mountScript}
 
   window.addEventListener('message', (e) => {
     if (!e.data || e.data.source !== 'portfolio-editor') return;

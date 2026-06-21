@@ -35,10 +35,20 @@ window.PortfolioModels = (() => {
     return { text: {} };
   }
 
+  async function fetchPresentation(presentationId) {
+    try {
+      const res = await fetch(`./presentations/${presentationId}.json`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      // fall through
+    }
+    return fetch(`./generated/${presentationId}/presentation.json`).then((r) => r.json());
+  }
+
   async function load(presentationId, options = {}) {
     const [contentModel, presentation, themeRaw, schema] = await Promise.all([
       options.contentModel ? Promise.resolve(options.contentModel) : fetchContentModel(),
-      fetch(`./presentations/${presentationId}.json`).then((r) => r.json()),
+      fetchPresentation(presentationId),
       options.theme
         ? Promise.resolve(options.theme)
         : fetch('./theme.json').then((r) => r.json()),

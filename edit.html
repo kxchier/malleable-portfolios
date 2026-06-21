@@ -22,6 +22,7 @@
           <button class="version-btn create-btn">+ Create New</button>
         </div>
         <div class="edit-controls">
+          <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
           <button id="save-btn">Save Changes</button>
           <button id="preview-btn">Preview</button>
@@ -30,8 +31,8 @@
       </div>
 
       <div class="toolbar-api-row">
-        <label class="toolbar-api-label" for="api-key-input">Claude API key <span class="mock-tag">mock</span></label>
-        <input type="password" id="api-key-input" class="toolbar-api-input" placeholder="sk-ant-…" autocomplete="off">
+        <label class="toolbar-api-label" for="api-key-input">Cerebras API key</label>
+        <input type="password" id="api-key-input" class="toolbar-api-input" placeholder="csk-…" autocomplete="off">
         <button id="connect-ai-btn" class="ghost-btn">Connect</button>
         <span id="ai-status" class="ai-status ai-status--off">not connected</span>
         <span class="toolbar-api-hint">Stored only in this browser</span>
@@ -74,14 +75,15 @@
     </aside>
   </main>
 
-  <!-- Create a new version (mock) — only shown when "+ Create New" is clicked -->
+  <!-- Create a new version — Cerebras generates Model + Canvas + assets -->
   <div id="create-modal" class="modal-overlay" hidden>
     <div class="modal">
-      <h2>Create a new version <span class="mock-tag">mock</span></h2>
-      <p>Describe the layout you want and Claude will generate it as a new version of your site.</p>
-      <p class="hint">Example prompts for built-in layouts:</p>
+      <h2>Create a new version</h2>
+      <p>Describe the layout you want. Cerebras generates a presentation spec, styles, decorative assets, and a live interface — with space for your artwork.</p>
+      <p class="hint">Example prompts:</p>
       <div class="prompt-examples" id="prompt-examples"></div>
-      <textarea id="ai-prompt" rows="3" placeholder="e.g. a dark, full-bleed scrapbook layout"></textarea>
+      <textarea id="ai-prompt" rows="3" placeholder="e.g. a 2D skeuomorphic museum with gilded picture frames, horizontal scroll per collection"></textarea>
+      <p id="generate-status" class="generate-status" hidden></p>
       <div class="modal-actions">
         <button id="create-cancel" class="ghost-btn">Cancel</button>
         <button id="generate-btn" class="publish-btn">✨ Generate version</button>
