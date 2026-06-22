@@ -35,7 +35,7 @@ Allowed operation types:
    {
      "type": "stylePatch",
      "target": target,
-     "scope": "this" | "presentation" | "all",
+     "scope": "this" | "role" | "all-headings",
      "patch": {
        "fontFamily": "Georgia",
        "fontSize": "32px",
@@ -51,22 +51,54 @@ Allowed operation types:
      }
    }
 
-2. collectionVisibility
+2. elementStylePatch
+   Use for local visual style edits to the selected non-text object only, especially clicked artworks/images/work tiles.
+   This is NOT arbitrary HTML/CSS rewriting. Return only safe style properties for the clicked target.
+   Shape:
+   {
+     "type": "elementStylePatch",
+     "target": target,
+     "scope": "this" | "all-images",
+     "patch": {
+       "borderRadius": "9999px",
+       "overflow": "hidden",
+       "aspectRatio": "1/1",
+       "border": "2px solid var(--color-accent)",
+       "boxShadow": "0 8px 24px rgba(0,0,0,0.2)",
+       "filter": "grayscale(100%)",
+       "opacity": "0.8",
+       "transform": "rotate(-4deg)"
+     },
+     "imagePatch": {
+       "borderRadius": "9999px",
+       "objectFit": "cover",
+       "objectPosition": "center"
+     }
+   }
+
+3. collectionVisibility
    Use when the user wants a collection hidden/shown in the current presentation.
    { "type": "collectionVisibility", "target": target, "visible": false }
 
-3. spacing
+4. spacing
    Use for making the current presentation less/more crowded.
    { "type": "spacing", "target": target, "gridGap": "40px", "artSize": "180px" }
 
-4. newRepresentation
-   Use ONLY when the user asks for a substantially new layout/view/representation.
-   { "type": "newRepresentation", "target": target, "prompt": "..." }
+5. noop
+   Use when the request cannot be safely represented as a local edit to the clicked target/current presentation.
+   { "type": "noop", "target": target }
 
 Rules:
 - Prefer stylePatch for text requests such as rotate, tilt, align, make italic, space letters, underline, fade, enlarge.
+- Prefer elementStylePatch for clicked image/work/object requests such as make this image a circle, round this, make this black and white, add a border, fade this, tilt this, make this artwork cropped/contained.
+- Scope is about similar objects in the current interface, not different templates/views.
+- For selected text: use "this" for only the clicked text, "role" for all section titles when the target role is collection.title, and "all-headings" for all portfolio/section headings.
+- For selected images/work tiles: use "this" for only the clicked image and "all-images" for all images in the current interface.
+- For "make this image a circle", use patch borderRadius 9999px, overflow hidden, aspectRatio 1/1 and imagePatch borderRadius 9999px, objectFit cover, objectPosition center.
 - Keep CSS values simple and safe. Use px, em, numeric line-height, opacity 0-1, and transform rotate/scale/translate only.
-- If the target is not text and the request is visual styling that cannot be represented by spacing or visibility, return newRepresentation.
+- If the target is not text and the request is visual styling of the clicked object, return elementStylePatch, not newRepresentation.
+- Never create or request a new layout/template from cursor-assistant edits.
+- If the request requires adding/removing/rearranging interface structure beyond the clicked object, return noop with a message that it cannot be safely applied as a local edit.
 - Reuse the provided target object exactly.`;
 }
 

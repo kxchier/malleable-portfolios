@@ -36,6 +36,31 @@ window.PortfolioContent = (() => {
     'opacity',
   ];
 
+  const ELEMENT_STYLE_PROPS = [
+    'aspectRatio',
+    'background',
+    'border',
+    'borderColor',
+    'borderRadius',
+    'borderStyle',
+    'borderWidth',
+    'boxShadow',
+    'clipPath',
+    'filter',
+    'height',
+    'maxHeight',
+    'maxWidth',
+    'objectFit',
+    'objectPosition',
+    'opacity',
+    'outline',
+    'overflow',
+    'padding',
+    'transform',
+    'transformOrigin',
+    'width',
+  ];
+
   function normalizeTypographyEntry(entry, token) {
     const base = { ...DEFAULT_TYPO[token] };
     if (!entry) return base;
@@ -189,6 +214,53 @@ window.PortfolioContent = (() => {
     });
   }
 
+  function styleIdForElement(el) {
+    if (!el) return null;
+    if (el.dataset.modelPath) return el.dataset.modelPath;
+    if (el.dataset.textId) return `text.${el.dataset.textId}`;
+    return null;
+  }
+
+  function applyStylePatchToElement(el, patch = {}) {
+    ELEMENT_STYLE_PROPS.forEach((prop) => {
+      if (patch[prop] != null) el.style[prop] = patch[prop];
+    });
+  }
+
+  function mergedElementStyle(content, versionKey, id) {
+    const globalStyle = content?.elementStyles?.all?.[id] || {};
+    const versionStyle = content?.elementStyles?.versions?.[versionKey]?.[id] || {};
+    return {
+      patch: { ...(globalStyle.patch || {}), ...(versionStyle.patch || {}) },
+      imagePatch: { ...(globalStyle.imagePatch || {}), ...(versionStyle.imagePatch || {}) },
+    };
+  }
+
+  function applyElementStyleOverrides(content, versionKey, root = document) {
+    const versionStyles = content?.elementStyles?.versions?.[versionKey] || {};
+    const allWorkStyle = versionStyles.__all_work__;
+    if (allWorkStyle) {
+      root.querySelectorAll('[data-model-kind="work"]').forEach((el) => {
+        applyStylePatchToElement(el, allWorkStyle.patch || {});
+        if (Object.keys(allWorkStyle.imagePatch || {}).length) {
+          const imageTargets = el.matches('img') ? [el] : Array.from(el.querySelectorAll('img'));
+          imageTargets.forEach((img) => applyStylePatchToElement(img, allWorkStyle.imagePatch));
+        }
+      });
+    }
+
+    root.querySelectorAll('[data-model-path], [data-text-id]').forEach((el) => {
+      const id = styleIdForElement(el);
+      if (!id) return;
+      const style = mergedElementStyle(content, versionKey, id);
+      applyStylePatchToElement(el, style.patch);
+      if (Object.keys(style.imagePatch).length) {
+        const imageTargets = el.matches('img') ? [el] : Array.from(el.querySelectorAll('img'));
+        imageTargets.forEach((img) => applyStylePatchToElement(img, style.imagePatch));
+      }
+    });
+  }
+
   function applyPageText(manifest, theme, content, versionKey, root = document) {
     applyColorVars(theme, versionKey, root.documentElement);
     applyTypographyVars(theme, versionKey, root.documentElement);
@@ -196,6 +268,8 @@ window.PortfolioContent = (() => {
     root.querySelectorAll('[data-text-id]').forEach((el) => {
       applyToElement(el, theme, content, versionKey);
     });
+
+    applyElementStyleOverrides(content, versionKey, root);
 
     const titleEl = root.querySelector('[data-text-id="portfolio.title"]');
     if (titleEl) {
@@ -238,6 +312,7 @@ window.PortfolioContent = (() => {
     ROLE_TOKENS,
     FONT_OPTIONS,
     TEXT_STYLE_PROPS,
+    ELEMENT_STYLE_PROPS,
     normalizeTypographyEntry,
     getTokenStyle,
     getVersionTypography,
@@ -249,6 +324,8 @@ window.PortfolioContent = (() => {
     applyColorVars,
     applyTypographyVars,
     applyToElement,
+    applyElementStyleOverrides,
+    styleIdForElement,
     applyPageText,
     escapeHtml,
     collectionId,

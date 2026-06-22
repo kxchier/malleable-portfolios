@@ -100,6 +100,8 @@ window.GeneratedLayouts['museum_gallery'] = {
         const mat = helpers.workTile(img, {
           className: 'museum-mat scroll-item',
           alt: 'artwork',
+          collectionIndex: col.originalIndex,
+          workIndex: wi,
         });
 
         frame.appendChild(mat);
@@ -169,7 +171,7 @@ renderScript:
 - MUST set window.GeneratedLayouts['KEY'] = { mount(root, ctx) { ... } };
 - ctx provides: collections (array with name, images, originalIndex), helpers, assets, presentation, theme.
 - helpers.collectionSection(col, collectionIndex) — returns <section> with editable h2. Prefer this for collection sections so generated text keeps direct manipulation.
-- helpers.workTile(imgPath, { className, alt, fixedSize }) — returns div with img for author artwork. Leave fixedSize unset/false so the size slider controls it; use fixedSize: true only for explicitly fixed-size concepts.
+- helpers.workTile(imgPath, { className, alt, collectionIndex, workIndex, fixedSize }) — returns div with img for author artwork. Always pass collectionIndex: col.originalIndex and workIndex: wi so clicked images can be edited directly. Leave fixedSize unset/false so the size slider controls it; use fixedSize: true only for explicitly fixed-size concepts.
 - helpers.portfolioTitle() — optional; headings are usually in the page shell.
 - Any generated portfolio/collection/work label text that should be editable must receive data-text-id, data-text-role, and data-text-fallback, or be created through the helper APIs.
 - Loop every collection and every image in col.images — NEVER skip artwork slots.

@@ -45,6 +45,42 @@
     return target.label || target.kind;
   }
 
+  function scopeOptions(target) {
+    if (target?.kind === 'text') {
+      const options = [{ value: 'this', label: 'this text only' }];
+      if (target.role === 'collection.title') {
+        options.push({ value: 'role', label: 'all section titles' });
+      }
+      if (target.role === 'portfolio.title' || target.role === 'collection.title') {
+        options.push({ value: 'all-headings', label: 'all headings' });
+      }
+      return options;
+    }
+    if (target?.kind === 'work') {
+      return [
+        { value: 'this', label: 'this image only' },
+        { value: 'all-images', label: 'all images' },
+      ];
+    }
+    return [{ value: 'this', label: 'this only' }];
+  }
+
+  function renderScopeOptions(target) {
+    const scope = bubble.querySelector('.cursor-assistant-scope');
+    scope.innerHTML = '';
+    scopeOptions(target).forEach((option, index) => {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'cursor-scope';
+      input.value = option.value;
+      input.checked = index === 0;
+      label.append(input, document.createTextNode(` ${option.label}`));
+      scope.appendChild(label);
+    });
+    scope.hidden = scope.children.length <= 1;
+  }
+
   function createBubble() {
     bubble = document.createElement('div');
     bubble.className = 'cursor-assistant';
@@ -56,11 +92,7 @@
       </div>
       <form class="cursor-assistant-form" hidden>
         <textarea rows="2" placeholder="What should change here?"></textarea>
-        <div class="cursor-assistant-scope">
-          <label><input type="radio" name="cursor-scope" value="this" checked> this</label>
-          <label><input type="radio" name="cursor-scope" value="presentation"> this view</label>
-          <label><input type="radio" name="cursor-scope" value="all"> all views</label>
-        </div>
+        <div class="cursor-assistant-scope"></div>
         <div class="cursor-assistant-actions">
           <button type="button" class="cursor-assistant-cancel">Cancel</button>
           <button type="submit">Propose</button>
@@ -174,6 +206,7 @@
     bubble.classList.add('is-peek');
     bubble.classList.remove('is-busy');
     bubble.querySelector('.cursor-assistant-title').textContent = targetTitle(target);
+    renderScopeOptions(target);
     bubble.querySelector('.cursor-assistant-peek').hidden = false;
     bubble.querySelector('.cursor-assistant-form').hidden = true;
     bubble.querySelector('.cursor-assistant-proposal').hidden = true;

@@ -179,6 +179,10 @@
   background: var(--ed-surface);
   color: var(--ed-text);
   border: 1px solid var(--ed-line);
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .publish-btn:hover {

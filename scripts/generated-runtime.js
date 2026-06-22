@@ -151,6 +151,35 @@ window.GeneratedRuntime = (() => {
     });
   }
 
+  function bindGeneratedModelTargets(root) {
+    root.querySelectorAll('[data-collection-index]').forEach((el) => {
+      if (el.dataset.modelKind || el.dataset.workIndex != null) return;
+      const ci = Number(el.dataset.collectionIndex);
+      if (!Number.isFinite(ci)) return;
+      el.dataset.modelKind = 'collection';
+      el.dataset.modelPath = `collections.${ci}`;
+      el.dataset.collectionId = `collection_${ci}`;
+      const heading = el.querySelector('h1,h2,h3,h4,h5,h6');
+      el.dataset.modelLabel = heading?.textContent?.trim() || `Collection ${ci + 1}`;
+    });
+
+    root.querySelectorAll('[data-canvas-draggable="true"], [data-work-index]').forEach((el) => {
+      if (el.dataset.modelKind) return;
+      const ci = Number(el.dataset.collectionIndex ?? 0);
+      const wi = Number(el.dataset.workIndex ?? 0);
+      if (!Number.isFinite(ci) || !Number.isFinite(wi)) return;
+      el.dataset.modelKind = 'work';
+      el.dataset.modelPath = `collections.${ci}.works.${wi}`;
+      el.dataset.collectionIndex = String(ci);
+      el.dataset.workIndex = String(wi);
+      el.dataset.workId = `work_${ci}_${wi}`;
+      const img = el.querySelector('img');
+      el.dataset.modelLabel = img?.alt && img.alt !== 'artwork'
+        ? img.alt
+        : img?.src?.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+    });
+  }
+
   function bindCanvasDrag(root) {
     root.querySelectorAll('[data-canvas-draggable="true"]').forEach((item) => {
       if (item.dataset.canvasBound === '1') return;
@@ -242,6 +271,7 @@ window.GeneratedRuntime = (() => {
       versionKey,
     });
 
+    bindGeneratedModelTargets(root);
     bindGeneratedText(root, collections, resolvedModels, versionKey);
 
     root.querySelectorAll('.generated-collection').forEach((section) => {

@@ -250,7 +250,25 @@ function proposalFor(operation, message) {
   return { operation, message };
 }
 
+function normalizeCursorScope(scope) {
+  return ['this', 'role', 'all-headings', 'all-images'].includes(scope) ? scope : 'this';
+}
+
+function scopeLabelForTarget(target, scope) {
+  if (target?.kind === 'text') {
+    if (scope === 'role') return 'all section titles';
+    if (scope === 'all-headings') return 'all headings';
+    return 'this text';
+  }
+  if (target?.kind === 'work') {
+    if (scope === 'all-images') return 'all images';
+    return 'this image';
+  }
+  return 'this object';
+}
+
 async function proposeCursorOperation({ target, prompt, scope, presentationId }) {
+  scope = normalizeCursorScope(scope);
   const normalized = prompt.trim().toLowerCase();
   const versionKey = getCurrentVersionKey();
   const currentPresentation = presentationId || getCurrentPresentationId();
@@ -284,7 +302,7 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
 
     const textAlign = textAlignFromPrompt(prompt);
     if (textAlign) {
-      const scopeLabel = scope === 'all' ? 'all heading text' : scope === 'presentation' ? 'this text in this view' : 'this text';
+      const scopeLabel = scopeLabelForTarget(target, scope);
       return proposalFor({
         type: 'typography',
         target,
@@ -298,7 +316,7 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
     const font = fontFromPrompt(prompt);
     if (font || textMatchesAny(normalized, [/font/, /typeface/, /serif/, /sans/])) {
       const fallbackFont = font || (normalized.includes('serif') ? 'Georgia' : 'DM Sans');
-      const scopeLabel = scope === 'all' ? 'all heading text' : scope === 'presentation' ? 'this text in this view' : 'this text';
+      const scopeLabel = scopeLabelForTarget(target, scope);
       return proposalFor({
         type: 'typography',
         target,
@@ -339,7 +357,7 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
       versionKey,
       gridGap: `${nextGap}px`,
       artSize: `${Math.round(nextArtSize)}px`,
-    }, `Make ${target?.label || 'this view'} less crowded by increasing spacing and slightly reducing artwork size.`);
+    }, `Make ${target?.label || 'this interface'} less crowded by increasing spacing and slightly reducing artwork size.`);
   }
 
   if (target?.kind === 'work' && textMatchesAny(normalized, [/important/, /feature/, /bigger/, /larger/, /emphasize/])) {
@@ -378,7 +396,7 @@ async function parseOperationWithAI({ target, prompt, scope, presentationId, ver
   });
 
   const operation = validateCursorOperation(result.operation, { target, scope, prompt, presentationId, versionKey });
-  return proposalFor(operation, result.message || messageForOperation(operation));
+  return proposalFor(operation, operation.type === 'noop' ? messageForOperation(operation) : (result.message || messageForOperation(operation)));
 }
 
 const TEXT_STYLE_VALUE_PATTERNS = {
@@ -393,6 +411,31 @@ const TEXT_STYLE_VALUE_PATTERNS = {
   transform: /^((rotate\(-?\d{1,3}(\.\d+)?deg\)|scale\(\d(\.\d{1,2})?\)|translate\(-?\d{1,3}px,\s?-?\d{1,3}px\))\s*){1,3}$/,
   transformOrigin: /^(left|center|right|top|bottom)( (left|center|right|top|bottom))?$/,
   opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
+};
+
+const ELEMENT_STYLE_VALUE_PATTERNS = {
+  aspectRatio: /^(\d{1,3}(\.\d+)?\/\d{1,3}(\.\d+)?|auto)$/,
+  background: /^(transparent|#[0-9a-fA-F]{3,8}|rgba?\([0-9.,\s%]+\)|color-mix\(in srgb, var\(--color-[a-z-]+\) \d{1,3}%, (black|white|transparent|var\(--color-[a-z-]+\))\))$/,
+  border: /^(\d{1,2}px)\s+(solid|dashed|dotted)\s+(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\))$/,
+  borderColor: /^(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\))$/,
+  borderRadius: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|9999px)(\s+\d{1,4}(\.\d+)?(px|rem|em|%)){0,3}$/,
+  borderStyle: /^(solid|dashed|dotted|none)$/,
+  borderWidth: /^\d{1,2}px$/,
+  boxShadow: /^(none|0\s+\d{1,2}px\s+\d{1,3}px\s+rgba?\([0-9.,\s%]+\))$/,
+  clipPath: /^(circle\(\d{1,3}%\)|ellipse\(\d{1,3}%\s+\d{1,3}%\)|inset\(\d{1,3}%\s+round\s+\d{1,3}(px|%)\))$/,
+  filter: /^(none|grayscale\(\d{1,3}%\)|sepia\(\d{1,3}%\)|blur\(\d{1,2}px\)|contrast\(\d(\.\d{1,2})?\)|saturate\(\d(\.\d{1,2})?\)|brightness\(\d(\.\d{1,2})?\))$/,
+  height: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
+  maxHeight: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|none|100%)$/,
+  maxWidth: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|none|100%)$/,
+  objectFit: /^(contain|cover|fill|none|scale-down)$/,
+  objectPosition: /^(center|top|bottom|left|right|center center|top center|bottom center|left center|right center)$/,
+  opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
+  outline: /^(none|\d{1,2}px\s+(solid|dashed|dotted)\s+(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\)))$/,
+  overflow: /^(hidden|visible|clip|auto)$/,
+  padding: /^(\d{1,3}(\.\d+)?(px|rem|em|%)|var\(--space-imagePadding\))$/,
+  transform: TEXT_STYLE_VALUE_PATTERNS.transform,
+  transformOrigin: TEXT_STYLE_VALUE_PATTERNS.transformOrigin,
+  width: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
 };
 
 function normalizeStylePatch(patch) {
@@ -458,14 +501,49 @@ function sanitizeStylePatch(patch) {
   return clean;
 }
 
+function normalizeElementStylePatch(patch) {
+  const normalized = { ...(patch || {}) };
+
+  if ((normalized.shape === 'circle' || normalized.circle === true) && normalized.borderRadius == null) {
+    normalized.borderRadius = '9999px';
+    normalized.aspectRatio = normalized.aspectRatio || '1/1';
+    normalized.overflow = normalized.overflow || 'hidden';
+  }
+
+  if (normalized.roundness != null && normalized.borderRadius == null) {
+    const value = String(normalized.roundness).trim();
+    normalized.borderRadius = /^\d/.test(value) ? value : '9999px';
+  }
+
+  return normalized;
+}
+
+function sanitizeElementStylePatch(patch) {
+  const clean = {};
+  const allowed = PortfolioContent.ELEMENT_STYLE_PROPS || [];
+  Object.entries(normalizeElementStylePatch(patch)).forEach(([prop, value]) => {
+    if (!allowed.includes(prop)) return;
+    const str = String(value).trim();
+    const pattern = ELEMENT_STYLE_VALUE_PATTERNS[prop];
+    if (!pattern || !pattern.test(str)) return;
+    clean[prop] = str;
+  });
+  return clean;
+}
+
+function targetStyleId(target) {
+  if (!target) return null;
+  if (target.path) return target.path;
+  if (target.kind === 'text' && target.id) return `text.${target.id}`;
+  return null;
+}
+
 function normalizeGeneratedOperation(operation, fallback) {
-  if (operation.type === 'newRepresentation') {
+  if (operation.type === 'newRepresentation' || operation.type === 'needsGeneration') {
     return {
-      type: 'needsGeneration',
+      type: 'noop',
       target: fallback.target,
-      scope: fallback.scope,
-      prompt: operation.prompt || fallback.prompt,
-      presentationId: fallback.presentationId,
+      message: 'This cursor edit can only change the existing interface. Try a smaller edit to the clicked object.',
     };
   }
   return operation;
@@ -481,12 +559,23 @@ function validateCursorOperation(rawOperation, fallback) {
 
   if (operation.type === 'stylePatch') {
     if (target?.kind !== 'text') {
+      const patch = sanitizeElementStylePatch(operation.patch);
+      const imagePatch = sanitizeElementStylePatch(operation.imagePatch);
+      if (!Object.keys(patch).length && !Object.keys(imagePatch).length) {
+        throw new Error('The operation parser returned text styles for a non-text target.');
+      }
+      const styleId = targetStyleId(target);
+      if (!styleId) {
+        throw new Error('The operation parser did not identify a specific clicked element to style.');
+      }
       return {
-        type: 'needsGeneration',
+        type: 'elementStylePatch',
         target,
-        scope: fallback.scope,
-        prompt: fallback.prompt,
-        presentationId: fallback.presentationId,
+        styleId,
+        scope: normalizeCursorScope(operation.scope || fallback.scope),
+        versionKey: fallback.versionKey,
+        patch,
+        imagePatch,
       };
     }
     const patch = sanitizeStylePatch(operation.patch);
@@ -496,7 +585,7 @@ function validateCursorOperation(rawOperation, fallback) {
     return {
       type: 'stylePatch',
       target,
-      scope: operation.scope || fallback.scope,
+      scope: normalizeCursorScope(operation.scope || fallback.scope),
       versionKey: fallback.versionKey,
       patch,
     };
@@ -511,6 +600,27 @@ function validateCursorOperation(rawOperation, fallback) {
     };
   }
 
+  if (operation.type === 'elementStylePatch') {
+    const styleId = targetStyleId(target);
+    if (!styleId || !target || target.kind === 'presentation') {
+      throw new Error('The operation parser did not identify a specific clicked element to style.');
+    }
+    const patch = sanitizeElementStylePatch(operation.patch);
+    const imagePatch = sanitizeElementStylePatch(operation.imagePatch);
+    if (!Object.keys(patch).length && !Object.keys(imagePatch).length) {
+      throw new Error('The operation parser did not return any safe element style properties to apply.');
+    }
+    return {
+      type: 'elementStylePatch',
+      target,
+      styleId,
+      scope: normalizeCursorScope(operation.scope || fallback.scope),
+      versionKey: fallback.versionKey,
+      patch,
+      imagePatch,
+    };
+  }
+
   if (operation.type === 'spacing') {
     return {
       type: 'spacing',
@@ -521,7 +631,7 @@ function validateCursorOperation(rawOperation, fallback) {
     };
   }
 
-  if (operation.type === 'needsGeneration') return operation;
+  if (operation.type === 'noop') return { type: 'noop', message: operation.message || 'No safe local edit was available for that request.' };
   throw new Error(`Unsupported operation type: ${operation.type}`);
 }
 
@@ -529,15 +639,23 @@ function messageForOperation(operation) {
   if (operation.type === 'stylePatch') {
     return `Apply ${Object.keys(operation.patch).join(', ')} to ${operation.target?.label || 'this text'} in this presentation.`;
   }
-  if (operation.type === 'needsGeneration') {
-    return `This request needs a new generated interface/spec for ${operation.target?.label || 'the selected object'}.`;
+  if (operation.type === 'elementStylePatch') {
+    const props = [...Object.keys(operation.patch || {}), ...Object.keys(operation.imagePatch || {})];
+    return `Apply ${props.join(', ')} to only ${operation.target?.label || 'the clicked element'}.`;
   }
+  if (operation.type === 'noop') return operation.message || 'No safe local edit was available for that request.';
   return 'Apply this local edit.';
 }
 
 function ensureContentVisibility() {
   if (!editedContent.visibility) editedContent.visibility = {};
   if (!editedContent.visibility.collections) editedContent.visibility.collections = {};
+}
+
+function ensureElementStyles() {
+  if (!editedContent.elementStyles) editedContent.elementStyles = {};
+  if (!editedContent.elementStyles.all) editedContent.elementStyles.all = {};
+  if (!editedContent.elementStyles.versions) editedContent.elementStyles.versions = {};
 }
 
 function collectionTextIdFromTarget(target) {
@@ -565,7 +683,7 @@ function applyCursorOperation(operation) {
 
   if (operation.type === 'typography' && operation.target?.kind === 'text') {
     const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'collection.title');
-    const textScope = operation.scope === 'all' ? 'all-headings' : operation.scope === 'presentation' ? 'this' : 'this';
+    const textScope = ['role', 'all-headings'].includes(operation.scope) ? operation.scope : 'this';
     handleTextEditChange({
       id: operation.target.id,
       role,
@@ -578,7 +696,7 @@ function applyCursorOperation(operation) {
 
   if (operation.type === 'stylePatch' && operation.target?.kind === 'text') {
     const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'collection.title');
-    const textScope = operation.scope === 'all' ? 'all-headings' : operation.scope === 'presentation' ? 'this' : 'this';
+    const textScope = ['role', 'all-headings'].includes(operation.scope) ? operation.scope : 'this';
     Object.entries(operation.patch || {}).forEach(([property, value]) => {
       handleTextEditChange({
         id: operation.target.id,
@@ -610,6 +728,20 @@ function applyCursorOperation(operation) {
     return;
   }
 
+  if (operation.type === 'elementStylePatch') {
+    ensureElementStyles();
+    const bucket = (editedContent.elementStyles.versions[operation.versionKey] ||= {});
+    const styleId = operation.scope === 'all-images' ? '__all_work__' : operation.styleId;
+    const current = bucket[styleId] || {};
+    bucket[styleId] = {
+      patch: { ...(current.patch || {}), ...(operation.patch || {}) },
+      imagePatch: { ...(current.imagePatch || {}), ...(operation.imagePatch || {}) },
+    };
+    updatePreview();
+    refreshInspectModel();
+    return;
+  }
+
   if (operation.type === 'spacing') {
     if (operation.gridGap) {
       editedTheme.spacing.gridGap = operation.gridGap;
@@ -635,12 +767,7 @@ function applyCursorOperation(operation) {
   }
 
   if (operation.type === 'needsGeneration') {
-    const modal = document.getElementById('create-modal');
-    const prompt = document.getElementById('ai-prompt');
-    if (prompt) {
-      prompt.value = `${operation.prompt}\n\nTarget: ${operation.target?.kind || 'view'} ${operation.target?.label || ''}\nPresentation: ${operation.presentationId}`;
-    }
-    if (modal) modal.hidden = false;
+    return;
   }
 }
 
@@ -682,6 +809,11 @@ function applyLayoutMetadata() {
       name: 'Museum',
       examplePrompt:
         'A 2D skeuomorphic museum gallery — artwork in ornate gilded picture frames, horizontal scroll per collection, dark walnut walls.',
+    },
+    {
+      name: 'Filing Cabinet',
+      examplePrompt:
+        'A skeuomorphic filing cabinet portfolio where each collection is a labeled drawer. The user must click a drawer to open it, revealing the images inside as papers or folders. Keep the cabinet closed by default and show the full artwork inside the opened drawer.',
     },
   ];
 
@@ -1288,7 +1420,9 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
   const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
+  const layoutViewClass = `view-${layout.key}`;
   const directoryViewClass = layout.key === 'directory' ? ' view-directory' : '';
+  const previewViewClass = `${layoutViewClass}${directoryViewClass}`;
   const directoryInlineStyles = layout.key === 'directory'
     ? `
     html.view-directory, body.view-directory {
@@ -1383,7 +1517,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   })();`;
 
   return `<!DOCTYPE html>
-<html class="${directoryViewClass.trim()}">
+<html class="${previewViewClass.trim()}">
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" href="./styles.css">
@@ -1497,7 +1631,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     .text-edit-scope input { accent-color: var(--text-edit-ink); }
   </style>
 </head>
-<body data-edit-mode="1" class="${directoryViewClass.trim()}">
+<body data-edit-mode="1" class="${previewViewClass.trim()}">
   <header>
     ${titleHeading}
     ${buildPreviewNav(layout)}
