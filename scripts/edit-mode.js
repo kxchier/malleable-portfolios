@@ -203,49 +203,6 @@ function handleCursorAssistantMessage(msg) {
   }
 }
 
-function textMatchesAny(text, patterns) {
-  return patterns.some((pattern) => pattern.test(text));
-}
-
-function fontFromPrompt(prompt) {
-  const lower = prompt.toLowerCase();
-  return PortfolioContent.FONT_OPTIONS.find((font) => lower.includes(font.toLowerCase()));
-}
-
-function textAlignFromPrompt(prompt) {
-  const lower = prompt.toLowerCase();
-  if (/left[-\s]?align|align (it |this )?left|flush left/.test(lower)) return 'left';
-  if (/right[-\s]?align|align (it |this )?right|flush right/.test(lower)) return 'right';
-  if (/center|centre|middle/.test(lower) && /align|text|title|heading|this/.test(lower)) return 'center';
-  return null;
-}
-
-function textRotationFromPrompt(prompt) {
-  const lower = prompt.toLowerCase();
-  if (!/rotate|rotation|tilt|slant|angle|crooked|askew/.test(lower)) return null;
-  const explicit = lower.match(/(-?\d{1,3})(?:\s?deg| degrees?)/);
-  if (explicit) return Math.max(-45, Math.min(45, parseInt(explicit[1], 10)));
-  if (/right|clockwise/.test(lower)) return 4;
-  if (/straight|reset|normal/.test(lower)) return 0;
-  return -4;
-}
-
-function textTranslationFromPrompt(prompt) {
-  const lower = prompt.toLowerCase();
-  if (!/move|shift|nudge|raise|lower|up|down|left|right/.test(lower)) return null;
-  if (!/text|title|heading|this|it/.test(lower)) return null;
-  const explicit = lower.match(/(-?\d{1,3})\s?(?:px|pixels?)/);
-  const amount = explicit ? Math.max(-80, Math.min(80, parseInt(explicit[1], 10))) : 6;
-  let x = 0;
-  let y = 0;
-  if (/up|raise|higher/.test(lower)) y = -Math.abs(amount);
-  if (/down|lower/.test(lower)) y = Math.abs(amount);
-  if (/left/.test(lower)) x = -Math.abs(amount);
-  if (/right/.test(lower)) x = Math.abs(amount);
-  if (x === 0 && y === 0) return null;
-  return { x, y };
-}
-
 function proposalFor(operation, message) {
   return { operation, message };
 }
@@ -254,122 +211,10 @@ function normalizeCursorScope(scope) {
   return ['this', 'role', 'all-headings', 'all-images'].includes(scope) ? scope : 'this';
 }
 
-function scopeLabelForTarget(target, scope) {
-  if (target?.kind === 'text') {
-    if (scope === 'role') return 'all section titles';
-    if (scope === 'all-headings') return 'all headings';
-    return 'this text';
-  }
-  if (target?.kind === 'work') {
-    if (scope === 'all-images') return 'all images';
-    return 'this image';
-  }
-  return 'this object';
-}
-
 async function proposeCursorOperation({ target, prompt, scope, presentationId }) {
   scope = normalizeCursorScope(scope);
-  const normalized = prompt.trim().toLowerCase();
   const versionKey = getCurrentVersionKey();
   const currentPresentation = presentationId || getCurrentPresentationId();
-
-  if (target?.kind === 'text') {
-    const translation = textTranslationFromPrompt(prompt);
-    if (translation) {
-      const transform = `translate(${translation.x}px, ${translation.y}px)`;
-      return proposalFor({
-        type: 'stylePatch',
-        target,
-        scope,
-        versionKey,
-        patch: { transform },
-      }, `Move ${target.label} ${translation.x}px horizontally and ${translation.y}px vertically in this presentation.`);
-    }
-
-    const rotation = textRotationFromPrompt(prompt);
-    if (rotation != null) {
-      return proposalFor({
-        type: 'stylePatch',
-        target,
-        scope,
-        versionKey,
-        patch: {
-          transform: rotation === 0 ? 'rotate(0deg)' : `rotate(${rotation}deg)`,
-          transformOrigin: 'left center',
-        },
-      }, rotation === 0 ? `Reset rotation for ${target.label}.` : `Rotate ${target.label} ${rotation} degrees in this presentation.`);
-    }
-
-    const textAlign = textAlignFromPrompt(prompt);
-    if (textAlign) {
-      const scopeLabel = scopeLabelForTarget(target, scope);
-      return proposalFor({
-        type: 'typography',
-        target,
-        scope,
-        versionKey,
-        property: 'textAlign',
-        value: textAlign,
-      }, `Align ${target.label} ${textAlign} for ${scopeLabel}.`);
-    }
-
-    const font = fontFromPrompt(prompt);
-    if (font || textMatchesAny(normalized, [/font/, /typeface/, /serif/, /sans/])) {
-      const fallbackFont = font || (normalized.includes('serif') ? 'Georgia' : 'DM Sans');
-      const scopeLabel = scopeLabelForTarget(target, scope);
-      return proposalFor({
-        type: 'typography',
-        target,
-        scope,
-        versionKey,
-        property: 'fontFamily',
-        value: fallbackFont,
-      }, `Change ${target.label} to ${fallbackFont} for ${scopeLabel}.`);
-    }
-
-    return parseOperationWithAI({ target, prompt, scope, presentationId: currentPresentation, versionKey });
-  }
-
-  const visibilityTarget = target?.kind === 'collection' ? target : collectionTargetFromText(target);
-  if (visibilityTarget && textMatchesAny(normalized, [
-    /hide/,
-    /don.?t want/,
-    /do not want/,
-    /not see/,
-    /remove.*(view|presentation|here)/,
-    /invisible/,
-  ])) {
-    return proposalFor({
-      type: 'collectionVisibility',
-      target: visibilityTarget,
-      presentationId: currentPresentation,
-      visible: false,
-    }, `Hide “${visibilityTarget.label}” in ${currentPresentation}. It will stay in the portfolio and other presentations.`);
-  }
-
-  if (textMatchesAny(normalized, [/less clutter/, /less crowded/, /more space/, /spread.*out/, /too crowded/])) {
-    const nextGap = Math.min(56, getEditedGridGapPx() + 8);
-    const artSize = parseSpacingPx(editedTheme.spacing.artSize || '190px');
-    const nextArtSize = Math.max(120, artSize - 10);
-    return proposalFor({
-      type: 'spacing',
-      target,
-      versionKey,
-      gridGap: `${nextGap}px`,
-      artSize: `${Math.round(nextArtSize)}px`,
-    }, `Make ${target?.label || 'this interface'} less crowded by increasing spacing and slightly reducing artwork size.`);
-  }
-
-  if (target?.kind === 'work' && textMatchesAny(normalized, [/important/, /feature/, /bigger/, /larger/, /emphasize/])) {
-    const artSize = parseSpacingPx(editedTheme.spacing.artSize || '190px');
-    return proposalFor({
-      type: 'spacing',
-      target,
-      versionKey,
-      artSize: `${Math.min(360, Math.round(artSize + 24))}px`,
-      gridGap: editedTheme.spacing.gridGap,
-    }, `Make artwork tiles larger in this presentation to give “${target.label}” more presence.`);
-  }
 
   return parseOperationWithAI({ target, prompt, scope, presentationId: currentPresentation, versionKey });
 }
