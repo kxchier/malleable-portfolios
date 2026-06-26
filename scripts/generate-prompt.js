@@ -1,64 +1,12 @@
 /** System prompt and schema for Cerebras template generation. */
-const EXAMPLE_PRESENTATION = {
-  id: 'museum_gallery',
-  layout_family: 'horizontal_strip',
-  metaphor: 'museum_gallery',
-  visual_language: {
-    abstract_to_skeuomorphic: 0.75,
-    materials: ['gilded_frame', 'mat', 'gallery_wall'],
-    density: 'medium',
-  },
-  encounter: {
-    fast_discovery_to_deep_encounter: 0.55,
-    navigation: 'horizontal_scroll',
-    progressive_disclosure: false,
-    hiddenness: 'low',
-  },
-  intent: {
-    professional_legibility: 0.5,
-    personal_archive: 0.35,
-    social_encounter: 0.15,
-  },
-  components: ['portfolio_header', 'collection_section', 'museum_gallery'],
-  ui_spec: {
-    PORTFOLIO: {
-      title: { function: 'publicIdentifier', render: 'shortText', editable: true },
-    },
-    COLLECTION: {
-      title: { function: 'publicIdentifier', render: 'shortText', editable: true },
-      works: {
-        render: 'expanded',
-        item: { type: '__WORK__', thumbnail: ['images'] },
-      },
-    },
-    WORK: {
-      images: { render: 'expanded', item: { render: 'image' } },
-    },
-  },
-  layout_engine: {
-    collection_container: 'vertical_stack',
-    work_container: 'horizontal_scroll',
-    work_tile: { aspect: 'natural', border: 'frame' },
-  },
-};
-
-const EXAMPLE_CSS = `body.view-museum_gallery {
+const EXAMPLE_CSS = `body.view-KEY {
   background-color: var(--color-background);
   color: var(--color-primary);
 }
-.view-museum_gallery h2 {
-  color: var(--color-primary);
-  border-bottom: 1px solid var(--color-accent);
-}
-.museum-frame {
-  padding: 0.5rem;
-  background: linear-gradient(145deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 70%, black));
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-.museum-mat {
-  background: var(--color-paper);
-  padding: var(--space-imagePadding);
+.KEY-work {
   width: var(--space-artSize);
+  padding: var(--space-imagePadding);
+  background: var(--color-paper);
 }
 .images-scroll {
   overflow-x: auto;
@@ -66,50 +14,23 @@ const EXAMPLE_CSS = `body.view-museum_gallery {
   gap: var(--space-gridGap);
 }`;
 
-const EXAMPLE_THEME_COLORS = {
-  background: '#1a1816',
-  primary: '#f8f6f3',
-  accent: '#c5a059',
-  paper: '#f8f6f3',
-  panel: '#2c2520',
-  secondary: '#2c2520',
-};
-
 const EXAMPLE_RENDER = `window.GeneratedLayouts = window.GeneratedLayouts || {};
-window.GeneratedLayouts['museum_gallery'] = {
+window.GeneratedLayouts['KEY'] = {
   mount(root, ctx) {
-    const { collections, helpers, assets } = ctx;
+    const { collections, helpers } = ctx;
     collections.forEach((col, ci) => {
       const section = helpers.collectionSection(col, ci);
-      const strip = document.createElement('div');
-      strip.className = 'museum-scroll images-scroll';
-      strip.dataset.collectionIndex = String(ci);
-
+      const list = document.createElement('div');
+      list.className = 'KEY-list images-scroll';
       col.images.forEach((img, wi) => {
-        const piece = document.createElement('article');
-        piece.className = 'museum-piece';
-        piece.dataset.collectionIndex = String(ci);
-        piece.dataset.workIndex = String(wi);
-        piece.dataset.canvasDraggable = 'true';
-
-        const frame = document.createElement('div');
-        frame.className = 'museum-frame';
-        frame.setAttribute('aria-hidden', 'true');
-        frame.innerHTML = assets['frame.svg'] || '';
-
-        const mat = helpers.workTile(img, {
-          className: 'museum-mat scroll-item',
+        list.appendChild(helpers.workTile(img, {
+          className: 'KEY-work scroll-item',
           alt: 'artwork',
           collectionIndex: col.originalIndex,
           workIndex: wi,
-        });
-
-        frame.appendChild(mat);
-        piece.append(frame);
-        strip.appendChild(piece);
+        }));
       });
-
-      section.appendChild(strip);
+      section.appendChild(list);
       root.appendChild(section);
     });
   },
@@ -135,6 +56,16 @@ Generate a complete new portfolio interface from the user's prompt. Output ONLY 
     "panel": "#hex",
     "secondary": "#hex"
   },
+  "themeTypography": {
+    "heading1": { "fontFamily": "font stack", "fontSize": "CSS size", "fontWeight": "400" },
+    "heading2": { "fontFamily": "font stack", "fontSize": "CSS size", "fontWeight": "600" },
+    "body": { "fontFamily": "font stack", "fontSize": "CSS size", "fontWeight": "400" }
+  },
+  "themeSpacing": {
+    "gridGap": "CSS length",
+    "artSize": "CSS length",
+    "imagePadding": "CSS length"
+  },
   "presentation": { ...full Walo presentation spec... },
   "css": "...complete CSS string...",
   "renderScript": "...complete JavaScript string...",
@@ -147,10 +78,21 @@ themeColors (REQUIRED):
 - Include panel ONLY if CSS uses var(--color-panel). Include secondary ONLY if CSS uses var(--color-secondary).
 - Do NOT include unused swatch colors — the editor hides swatches that are not used.
 
+themeTypography / themeSpacing (OPTIONAL but encouraged):
+- Use these when the generated interface should change the whole website shell, not just generated components.
+- themeTypography controls the shared body, portfolio title, and collection-title variables.
+- Use only local/system font stacks already likely available, such as Georgia, Times New Roman, Cormorant Garamond, DM Sans, Trebuchet MS, Arial, Courier New, system-ui, serif, sans-serif, monospace.
+- Do NOT import fonts or use external URLs.
+- themeSpacing controls shared spacing variables: gridGap, artSize, imagePadding. Use CSS lengths like "28px", "13rem", "0.8rem".
+
 css (CRITICAL — editor swatches depend on this):
 - NEVER invent custom color variable names like --color-wall, --color-gold, --color-matting. Use ONLY the standard theme variables:
   --color-background, --color-primary, --color-secondary, --color-accent, --color-paper, --color-panel
 - body.view-{key} { background-color: var(--color-background); color: var(--color-primary); }
+- For whole-page typography, rely on themeTypography and the shared variables:
+  --font-heading1-family, --font-heading1, --font-heading1-weight,
+  --font-heading2-family, --font-heading2, --font-heading2-weight,
+  --font-body-family, --font-body, --font-body-weight.
 - Headings: var(--color-primary) or color-mix with var(--color-accent)
 - Frames/mats: var(--color-paper), var(--color-accent)
 - For darker/lighter variants use color-mix(in srgb, var(--color-accent) 70%, black) — NOT hardcoded hex for swatch colors
@@ -159,6 +101,7 @@ css (CRITICAL — editor swatches depend on this):
   Use var(--space-imagePadding) for mats/inner image padding.
   Only use a fixed px/rem size for artwork panels when the user explicitly asks for a specific fixed-size object/metaphor.
 - Scope under body.view-{key} and unique class prefixes
+- Generated layouts may be full-bleed, but they must not depend on an unstated parent height. If a root uses absolute positioning, overflow hidden, panning, or height: 100%, also set a concrete min-height such as min-height: 100vh on the root/content surface.
 - Include .images-scroll { overflow-x: auto; display: flex; gap: var(--space-gridGap); } for scroll layouts
 - Work tiles: show the full artwork. Use object-fit: contain on img, object-position: center, and avoid cropping unless the user explicitly asks for cropped thumbnails.
 
@@ -184,16 +127,10 @@ assets:
 - SVG should use currentColor or CSS variables where possible for theme integration.
 - Keys are filenames like "frame.svg", "wall-pattern.svg".
 
-Example themeColors (dark museum — adjust to match your prompt):
-${JSON.stringify(EXAMPLE_THEME_COLORS, null, 2)}
-
-Example css:
+Minimal CSS pattern:
 ${EXAMPLE_CSS}
 
-Example presentation:
-${JSON.stringify(EXAMPLE_PRESENTATION, null, 2)}
-
-Example renderScript (adapt key and classes to the user's metaphor):
+Minimal renderScript pattern:
 ${EXAMPLE_RENDER}
 
 Be creative with metaphors, layout, positioning, and skeuomorphic decoration. Always render ALL author artwork from ctx.collections. themeColors MUST match the dark/light mood of your CSS.`;
@@ -202,10 +139,63 @@ Be creative with metaphors, layout, positioning, and skeuomorphic decoration. Al
 function buildUserPrompt(userPrompt, context = {}) {
   const collections = context.collections || [];
   const collectionSummary = collections.map((c) => `"${c.name}" (${(c.images || []).length} works)`).join(', ');
+  const existingLayouts = Array.isArray(context.existingLayouts) ? context.existingLayouts : [];
+  const existingMetaphors = existingLayouts
+    .map((layout) => layout.metaphor || layout.key || layout.name)
+    .filter(Boolean);
+  const existingMetaphorsBlock = existingMetaphors.length
+    ? `
+Already used portfolio interface metaphors:
+${existingLayouts.map((layout) => {
+  const metaphor = layout.metaphor || layout.key || layout.name;
+  const description = String(layout.prompt || layout.examplePrompt || '').trim();
+  return `- ${layout.name || layout.key}: ${metaphor}${description ? ` — ${description.slice(0, 120)}` : ''}`;
+}).join('\n')}
+
+Do NOT generate another interface with the same metaphor, place-world, object world, material system, or organizing conceit as any item above. Pick a genuinely new metaphor and set both top-level "metaphor" and presentation.metaphor to that new short_metaphor_id.`
+    : '';
+  const designSpace = context.designSpace || null;
+  const designX = Number.isFinite(Number(designSpace?.x)) ? Number(designSpace.x) : 0;
+  const designY = Number.isFinite(Number(designSpace?.y)) ? Number(designSpace.y) : 0;
+  const xAxis = designSpace?.xAxis || { name: 'Visible to Friction', leftLabel: 'immediately visible', rightLabel: 'deliberate friction and slower encounter' };
+  const yAxis = designSpace?.yAxis || { name: 'Abstract to Skeuomorphic', leftLabel: 'abstract/interface-native', rightLabel: 'tactile/skeuomorphic/object-like' };
+  const customAxes = Array.isArray(designSpace?.customAxes) ? designSpace.customAxes : [];
+  const customAxisBlock = customAxes.length
+    ? `
+User-defined concept axes:
+${customAxes.map((axis) => {
+  const value = Number.isFinite(Number(axis.value)) ? Number(axis.value) : 0.5;
+  const left = axis.leftLabel || 'left concept';
+  const right = axis.rightLabel || 'right concept';
+  const role = axis.mapRole ? `; marked as ${String(axis.mapRole).toUpperCase()} rectangle axis` : '';
+  const nearby = Array.isArray(axis.scores)
+    ? axis.scores
+      .slice()
+      .sort((a, b) => Math.abs(Number(a.value) - value) - Math.abs(Number(b.value) - value))
+      .slice(0, 3)
+      .map((score) => `${score.name || score.key} ${Number(score.value).toFixed(2)}${score.manual ? ' artist-corrected' : ''}`)
+      .join(', ')
+    : '';
+  return `- ${axis.name || `${left} to ${right}`}: ${value.toFixed(2)} (0 = ${left}, 1 = ${right})${role}${nearby ? `; nearby/corrected interfaces: ${nearby}` : ''}`;
+}).join('\n')}
+
+Use these axes as artist-authored semantic interpolation controls. Artist-corrected note positions are stronger evidence than initial AI rankings. If the selected value is between endpoint concepts, synthesize a coherent middle ground rather than choosing one endpoint literally.`
+    : '';
+  const designSpaceBlock = designSpace
+    ? `
+Design space selection:
+- x ${xAxis.name || `${xAxis.leftLabel} to ${xAxis.rightLabel}`}: ${designX.toFixed(2)} (0 = ${xAxis.leftLabel}, 1 = ${xAxis.rightLabel})
+- y ${yAxis.name || `${yAxis.leftLabel} to ${yAxis.rightLabel}`}: ${designY.toFixed(2)} (0 = ${yAxis.leftLabel}, 1 = ${yAxis.rightLabel})
+${customAxisBlock}
+
+Use this coordinate as a research/prototyping constraint. It should shape the presentation model, encounter model, layout engine, and material language. This is not a decorative slider value.`
+    : '';
   return `User prompt: ${userPrompt}
 
 Portfolio has ${collections.length} collection(s): ${collectionSummary || 'none yet'}.
 Theme colors: primary ${context.primary || '#1a1816'}, accent ${context.accent || '#8b7355'}, background ${context.background || '#f8f6f3'}.
+${existingMetaphorsBlock}
+${designSpaceBlock}
 
 Generate a unique interface matching the prompt. Include decorative SVG assets when the metaphor benefits from them (frames, lines, surfaces, etc.).`;
 }
@@ -213,5 +203,4 @@ Generate a unique interface matching the prompt. Include decorative SVG assets w
 module.exports = {
   buildSystemPrompt,
   buildUserPrompt,
-  EXAMPLE_PRESENTATION,
 };

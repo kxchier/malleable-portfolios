@@ -15,13 +15,6 @@
     <div class="edit-toolbar">
       <div class="toolbar-row">
         <h1>Edit Mode</h1>
-        <div class="version-buttons" id="version-buttons">
-          <button class="version-btn active" data-version="1" title="">Grid</button>
-          <button class="version-btn" data-version="2" title="">Clothesline</button>
-          <button class="version-btn" data-version="3" title="">Desk</button>
-          <button class="version-btn" data-version="4" title="">Directory</button>
-          <button class="version-btn create-btn">+ Create New</button>
-        </div>
         <div class="edit-controls">
           <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
@@ -30,21 +23,82 @@
           <button id="publish-btn" class="publish-btn">Publish to GitHub ↑</button>
         </div>
       </div>
-
-      <div class="toolbar-api-row">
-        <label class="toolbar-api-label" for="api-key-input">Cerebras API key</label>
-        <input type="password" id="api-key-input" class="toolbar-api-input" placeholder="csk-…" autocomplete="off">
-        <button id="connect-ai-btn" class="ghost-btn">Connect</button>
-        <span id="ai-status" class="ai-status ai-status--off">not connected</span>
-        <span class="toolbar-api-hint">Stored only in this browser</span>
-      </div>
     </div>
   </header>
 
   <main class="edit-container" id="edit-container">
+    <aside class="design-sidebar" aria-label="Design space navigation">
+      <section class="design-space-panel" aria-label="Design space instrument">
+        <div class="design-space-head">
+          <strong>Design space</strong>
+          <button id="expand-design-space" class="ghost-btn design-space-expand-btn" type="button">Expand</button>
+        </div>
+        <div class="design-space-wrap">
+          <span class="axis-label axis-label--top">Skeuomorphic</span>
+          <span class="axis-label axis-label--bottom">Abstract</span>
+          <span class="axis-label axis-label--left">Visible</span>
+          <span class="axis-label axis-label--right">Friction</span>
+          <div id="design-space" class="design-space" role="button" tabindex="0" aria-label="Choose design space position">
+            <span class="axis-line axis-line--x" aria-hidden="true"></span>
+            <span class="axis-line axis-line--y" aria-hidden="true"></span>
+            <span id="design-space-selection" class="design-space-selection" aria-hidden="true"></span>
+          </div>
+        </div>
+        <div id="design-space-legend" class="design-space-legend" aria-label="Template positions"></div>
+        <div class="sidebar-axis-panel" aria-label="Design-space axes">
+          <div class="sidebar-axis-head">Axes</div>
+          <div id="sidebar-axis-list" class="sidebar-axis-list"></div>
+        </div>
+      </section>
+    </aside>
+
+    <section id="design-space-expanded" class="design-space-expanded" hidden aria-label="Expanded design space">
+      <div class="design-space-expanded-head">
+        <div>
+          <p class="design-space-kicker">Design space</p>
+          <h2>Portfolio interface map</h2>
+        </div>
+        <button id="collapse-design-space" class="ghost-btn" type="button">Close</button>
+      </div>
+      <div class="design-space-expanded-body">
+        <section class="design-space-panel design-space-panel--expanded" aria-label="Expanded design space instrument">
+          <div class="design-space-wrap design-space-wrap--expanded">
+            <span class="axis-label axis-label--top">Skeuomorphic</span>
+            <span class="axis-label axis-label--bottom">Abstract</span>
+            <span class="axis-label axis-label--left">Visible</span>
+            <span class="axis-label axis-label--right">Friction</span>
+            <div id="expanded-design-space" class="design-space design-space--expanded" role="button" tabindex="0" aria-label="Choose design space position">
+              <span class="axis-line axis-line--x" aria-hidden="true"></span>
+              <span class="axis-line axis-line--y" aria-hidden="true"></span>
+              <span id="expanded-design-space-selection" class="design-space-selection" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div id="expanded-design-space-legend" class="design-space-legend design-space-legend--expanded" aria-label="Template positions"></div>
+        </section>
+        <aside class="design-space-expanded-controls" aria-label="Design space controls">
+          <section class="custom-axis-panel" aria-label="Custom design-space axes">
+            <div class="custom-axis-head">
+              <strong>Axes</strong>
+              <button id="add-design-axis" class="ghost-btn" type="button">Add axis</button>
+            </div>
+            <div id="custom-axis-list" class="custom-axis-list"></div>
+          </section>
+          <section class="generate-panel" aria-label="Generate interface">
+            <div class="generate-panel-head">
+              <strong>Generate</strong>
+            </div>
+            <div class="prompt-examples" id="prompt-examples"></div>
+            <textarea id="ai-prompt" rows="5" placeholder="Describe a portfolio interface for this point"></textarea>
+            <div id="generate-questions" class="generate-questions" hidden></div>
+            <p id="generate-status" class="generate-status" hidden></p>
+            <button id="generate-btn" class="publish-btn">Generate version</button>
+          </section>
+        </aside>
+      </div>
+    </section>
+
     <div class="edit-workspace">
     <div class="preview-toolbar">
-      <span class="preview-label">Click title or headings in the preview to edit</span>
       <div class="palette-strip" id="palette-strip" title="Click a swatch to open the color pad — drag for hue &amp; lightness, or use sliders."></div>
       <div class="preview-gap" title="Spacing between images">
         <label for="grid-gap">Gap</label>
@@ -75,22 +129,6 @@
     <aside id="inspect-panel" class="inspect-panel" hidden aria-label="Model inspector">
     </aside>
   </main>
-
-  <!-- Create a new version — Cerebras generates Model + Canvas + assets -->
-  <div id="create-modal" class="modal-overlay" hidden>
-    <div class="modal">
-      <h2>Create a new version</h2>
-      <p>Describe the layout you want. Cerebras generates a presentation spec, styles, decorative assets, and a live interface — with space for your artwork.</p>
-      <p class="hint">Example prompts:</p>
-      <div class="prompt-examples" id="prompt-examples"></div>
-      <textarea id="ai-prompt" rows="3" placeholder="e.g. a 2D skeuomorphic museum with gilded picture frames, horizontal scroll per collection"></textarea>
-      <p id="generate-status" class="generate-status" hidden></p>
-      <div class="modal-actions">
-        <button id="create-cancel" class="ghost-btn">Cancel</button>
-        <button id="generate-btn" class="publish-btn">✦ Generate version</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Publish flow (mocked) -->
   <div id="publish-modal" class="modal-overlay" hidden>

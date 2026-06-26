@@ -28,5 +28,38 @@
     "gridGap": "32px",
     "artSize": "220px",
     "imagePadding": "0.75rem"
+  },
+  "versions": {
+    "zine_rack": {
+      "colors": {
+        "background": "#f8f6f3",
+        "primary": "#1a1816",
+        "accent": "#8b7355",
+        "paper": "#ede9e2",
+        "panel": "#d6cfc4"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontSize": "2rem",
+          "fontWeight": "400"
+        },
+        "heading2": {
+          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontSize": "1.1rem",
+          "fontWeight": "400"
+        },
+        "body": {
+          "fontFamily": "'Trebuchet MS', Arial, sans-serif",
+          "fontSize": "0.85rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "18px",
+        "artSize": "11rem",
+        "imagePadding": "0.6rem"
+      }
+    }
   }
 }

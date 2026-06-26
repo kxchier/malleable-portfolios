@@ -1,6 +1,5 @@
 /** Parse cursor-assistant requests into validated local edit operations. */
-const CEREBRAS_URL = 'https://api.cerebras.ai/v1/chat/completions';
-const DEFAULT_MODEL = process.env.CEREBRAS_MODEL || 'zai-glm-4.7';
+const { callTextModel, normalizeProvider, providerLabel } = require('./ai-client.js');
 
 function extractJson(text) {
   const trimmed = String(text || '').trim();
@@ -90,6 +89,7 @@ Allowed operation types:
 
 Rules:
 - Prefer stylePatch for text requests such as rotate, tilt, align, make italic, space letters, underline, fade, enlarge.
+- For relative text size requests, return a concrete fontSize value. If target.currentStyle.fontSize is present, use it as the starting point: "a little bigger" means about +2px, "bigger/larger" means about +4px, "a little smaller" means about -2px, and "smaller" means about -4px. Keep the final fontSize between 10px and 96px.
 - Prefer elementStylePatch for clicked image/work/object requests such as make this image a circle, round this, make this black and white, add a border, fade this, tilt this, make this artwork cropped/contained.
 - Scope is about similar objects in the current interface, not different templates/views.
 - For selected text: use "this" for only the clicked text, "role" for all section titles when the target role is collection.title, and "all-headings" for all portfolio/section headings.
@@ -113,36 +113,20 @@ function buildOperationUserPrompt({ target, prompt, scope, presentationId, conte
   }, null, 2);
 }
 
-async function parseCursorOperation({ apiKey, target, prompt, scope, presentationId, context }) {
-  if (!apiKey) throw new Error('missing Cerebras API key');
+async function parseCursorOperation({ apiKey, provider, target, prompt, scope, presentationId, context }) {
+  const normalizedProvider = normalizeProvider(provider);
 
-  const body = {
-    model: DEFAULT_MODEL,
+  const result = await callTextModel({
+    provider: normalizedProvider,
+    apiKey,
+    system: buildOperationSystemPrompt(),
+    user: buildOperationUserPrompt({ target, prompt, scope, presentationId, context }),
+    maxTokens: 1200,
     temperature: 0.15,
-    max_tokens: 1200,
-    messages: [
-      { role: 'system', content: buildOperationSystemPrompt() },
-      { role: 'user', content: buildOperationUserPrompt({ target, prompt, scope, presentationId, context }) },
-    ],
-  };
-
-  const res = await fetch(CEREBRAS_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = data?.error?.message || data?.message || res.statusText;
-    throw new Error(`Cerebras API error (${res.status}): ${msg}`);
-  }
-
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Cerebras returned no operation');
+  const text = result.text;
+  if (!text) throw new Error(`${providerLabel(normalizedProvider)} returned no operation`);
   return extractJson(text);
 }
 

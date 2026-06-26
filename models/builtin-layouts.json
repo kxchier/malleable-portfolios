@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "key": "grid",
+    "presentationId": "grid",
+    "name": "Grid",
+    "metaphor": "gallery_wall",
+    "file": "ver1.html",
+    "generated": false,
+    "colorKeys": ["background", "primary", "accent", "paper"],
+    "designSpace": { "x": 0.08, "y": 0.1 },
+    "examplePrompt": "A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders."
+  },
+  {
+    "id": 2,
+    "key": "clothesline",
+    "presentationId": "clothesline",
+    "name": "Clothesline",
+    "metaphor": "clothesline",
+    "file": "ver2.html",
+    "generated": false,
+    "colorKeys": ["background", "primary", "accent", "paper", "panel"],
+    "designSpace": { "x": 0.38, "y": 0.68 },
+    "examplePrompt": "Horizontal scroll strips per collection, like prints clipped on a clothesline - peek and swipe sideways."
+  },
+  {
+    "id": 3,
+    "key": "desk",
+    "presentationId": "desk",
+    "name": "Desk",
+    "metaphor": "desk",
+    "file": "ver3.html",
+    "generated": false,
+    "colorKeys": ["background", "primary", "accent", "paper", "secondary"],
+    "designSpace": { "x": 0.58, "y": 0.75 },
+    "examplePrompt": "A scattered desk layout - prints loosely piled on a flat surface with slight tilts and soft overlaps."
+  },
+  {
+    "id": 4,
+    "key": "directory",
+    "presentationId": "directory",
+    "name": "Directory",
+    "metaphor": "file_browser",
+    "file": "ver4.html",
+    "generated": false,
+    "colorKeys": ["background", "primary", "accent", "paper", "panel"],
+    "designSpace": { "x": 0.74, "y": 0.2 },
+    "examplePrompt": "A split-pane file browser - collections as folders on the left, click a file to preview the artwork on the right."
+  }
+]

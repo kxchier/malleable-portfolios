@@ -13,6 +13,17 @@ const DEFAULT_THEME_COLORS = {
   paper: '#ffffff',
   panel: '#f0ede8',
 };
+const DESIGN_SPACE_DEFAULT = { x: 0.5, y: 0.5 };
+const DESIGN_SPACE_COLORS = ['#2f3437', '#9b7a4d', '#4f7f78', '#b45c47', '#6f6aa8', '#5f8a4f'];
+const DESIGN_SCAFFOLD_MARKER = 'Design-space scaffold:';
+const DESIGN_AXES_STORE = 'portfolio.designAxes';
+let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
+let customDesignAxes = [];
+let draggingAxisNote = null;
+let pendingGeneratePrompt = '';
+let pendingGenerateQuestion = null;
+let pendingGenerateAnswers = [];
+let pendingGenerateReady = false;
 
 async function initEditMode() {
   if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
@@ -51,7 +62,7 @@ async function initEditMode() {
   setupAI();
   setupDeleteLayout();
   setupPublish();
-  setupCreateModal();
+  setupCreatePanel();
   setupDeviceToggle();
   setupInspectModel();
 }
@@ -115,8 +126,31 @@ function ensureVersionColorsObject(versionKey) {
   }
 }
 
+function ensureVersionSpacingObject(versionKey) {
+  if (!editedTheme.versions) editedTheme.versions = {};
+  if (!editedTheme.versions[versionKey]) editedTheme.versions[versionKey] = {};
+  if (!editedTheme.versions[versionKey].spacing) {
+    editedTheme.versions[versionKey].spacing = {};
+  }
+}
+
 function getVersionColorsForKey(versionKey) {
   return PortfolioContent.getVersionColors(editedTheme, versionKey);
+}
+
+function getVersionTypographyForKey(versionKey) {
+  return {
+    heading1: PortfolioContent.getVersionTypography(editedTheme, versionKey, 'heading1'),
+    heading2: PortfolioContent.getVersionTypography(editedTheme, versionKey, 'heading2'),
+    body: PortfolioContent.getVersionTypography(editedTheme, versionKey, 'body'),
+  };
+}
+
+function getVersionSpacingForKey(versionKey) {
+  return {
+    ...(editedTheme.spacing || {}),
+    ...(editedTheme.versions?.[versionKey]?.spacing || {}),
+  };
 }
 
 function getCurrentVersionColors() {
@@ -220,19 +254,10 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
 }
 
 async function parseOperationWithAI({ target, prompt, scope, presentationId, versionKey }) {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    return proposalFor(
-      { type: 'noop' },
-      'Connect your Cerebras API key to interpret this as a flexible local edit. I will only generate a new interface when the parsed operation explicitly asks for one.'
-    );
-  }
-
   const result = await fetchJson('/api/operation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      apiKey,
       target,
       prompt,
       scope,
@@ -670,9 +695,12 @@ function applyLayoutMetadata() {
     chip.title = layout.examplePrompt;
     chip.addEventListener('click', () => {
       document.getElementById('ai-prompt').value = layout.examplePrompt;
+      if (layout.designSpace) setDesignSpaceSelection(layout.designSpace);
     });
     examples.appendChild(chip);
   });
+
+  renderDesignSpace();
 }
 
 function syncDeviceFrameLayoutClass() {
@@ -689,6 +717,8 @@ function selectVersion(versionId) {
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
     b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
   });
+  renderDesignSpace();
+  renderCustomDesignAxes();
   syncPaletteVisibility();
   syncPaletteSwatches();
   syncDeleteLayoutButton();
@@ -718,7 +748,7 @@ function renderVersionButtons() {
     btn.textContent = layout.generated ? `${layout.name} ✦` : layout.name;
     btn.title = layout.examplePrompt || layout.prompt || layout.name;
     btn.addEventListener('click', () => selectVersion(layout.id));
-    container.insertBefore(btn, createBtn);
+    container.insertBefore(btn, createBtn || null);
   });
   syncDeleteLayoutButton();
 }
@@ -748,6 +778,7 @@ function setupDeleteLayout() {
       });
 
       if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
+      pruneAxisScoresToCurrentLayouts({ persist: true });
 
       if (editedTheme.versions?.[layout.key]) {
         delete editedTheme.versions[layout.key];
@@ -766,20 +797,723 @@ function setupDeleteLayout() {
   });
 }
 
-function setupCreateModal() {
-  const modal = document.getElementById('create-modal');
-  const open = () => { modal.hidden = false; };
-  const close = () => { modal.hidden = true; };
-
-  document.querySelector('.create-btn').addEventListener('click', open);
-  document.getElementById('create-cancel').addEventListener('click', close);
-  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+function clamp01(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
 }
 
-const AI_KEY_STORE = 'portfolio.cerebrasApiKey';
+function axisName(axis) {
+  return `${axis.leftLabel || 'left'} to ${axis.rightLabel || 'right'}`;
+}
 
-function getApiKey() {
-  return localStorage.getItem(AI_KEY_STORE) || '';
+function createDefaultDesignAxes() {
+  const layouts = window.PORTFOLIO_LAYOUTS || [];
+  return [
+    {
+      id: 'axis_visible_friction',
+      leftLabel: 'Visible',
+      rightLabel: 'Friction',
+      name: 'Visible to Friction',
+      value: 0.5,
+      mapRole: 'x',
+      scores: layouts.map((layout) => ({
+        key: layout.key,
+        name: layout.name,
+        value: clamp01(layout.designSpace?.x ?? DESIGN_SPACE_DEFAULT.x),
+        rationale: 'seeded example',
+      })),
+    },
+    {
+      id: 'axis_abstract_skeuomorphic',
+      leftLabel: 'Abstract',
+      rightLabel: 'Skeuomorphic',
+      name: 'Abstract to Skeuomorphic',
+      value: 0.5,
+      mapRole: 'y',
+      scores: layouts.map((layout) => ({
+        key: layout.key,
+        name: layout.name,
+        value: clamp01(layout.designSpace?.y ?? DESIGN_SPACE_DEFAULT.y),
+        rationale: 'seeded example',
+      })),
+    },
+  ];
+}
+
+function sanitizeStoredAxes(axes) {
+  if (!Array.isArray(axes)) return [];
+  return axes.map((axis) => ({
+    id: String(axis.id || `axis_${Date.now()}`).slice(0, 80),
+    leftLabel: String(axis.leftLabel || '').slice(0, 48),
+    rightLabel: String(axis.rightLabel || '').slice(0, 48),
+    name: String(axis.name || axisName(axis)).slice(0, 80),
+    value: clamp01(axis.value ?? 0.5),
+    mapRole: ['x', 'y'].includes(axis.mapRole) ? axis.mapRole : '',
+    scores: Array.isArray(axis.scores)
+      ? axis.scores.map((score) => ({
+        key: String(score.key || '').slice(0, 80),
+        name: String(score.name || '').slice(0, 80),
+        value: clamp01(score.value ?? 0.5),
+        rationale: String(score.rationale || '').slice(0, 100),
+        manual: !!score.manual,
+      })).filter((score) => score.key)
+      : [],
+  })).filter((axis) => axis.id);
+}
+
+function currentLayoutKeys() {
+  return new Set((window.PORTFOLIO_LAYOUTS || []).map((layout) => layout.key));
+}
+
+function pruneAxisScoresToCurrentLayouts({ persist = false } = {}) {
+  const keys = currentLayoutKeys();
+  if (!keys.size) return false;
+  let changed = false;
+  customDesignAxes.forEach((axis) => {
+    if (!Array.isArray(axis.scores)) return;
+    const next = axis.scores.filter((score) => keys.has(score.key));
+    if (next.length !== axis.scores.length) {
+      axis.scores = next;
+      changed = true;
+    }
+  });
+  if (changed && persist) saveDesignAxes();
+  return changed;
+}
+
+function loadDesignAxes() {
+  try {
+    const stored = sanitizeStoredAxes(JSON.parse(localStorage.getItem(DESIGN_AXES_STORE) || '[]'));
+    return stored.length ? stored : createDefaultDesignAxes();
+  } catch {
+    return createDefaultDesignAxes();
+  }
+}
+
+function saveDesignAxes() {
+  try {
+    localStorage.setItem(DESIGN_AXES_STORE, JSON.stringify(sanitizeStoredAxes(customDesignAxes)));
+  } catch {
+    // Ignore storage failures; the in-memory prototype still works.
+  }
+}
+
+function mappedAxis(role) {
+  return customDesignAxes.find((axis) => axis.mapRole === role) || null;
+}
+
+function axisScoreForLayout(axis, layout, fallback = 0.5) {
+  const score = axis?.scores?.find((item) => item.key === layout?.key);
+  return clamp01(score?.value ?? fallback);
+}
+
+function getLayoutDesignSpace(layout) {
+  const point = layout?.designSpace || {};
+  const xAxis = mappedAxis('x');
+  const yAxis = mappedAxis('y');
+  return {
+    x: axisScoreForLayout(xAxis, layout, point.x ?? DESIGN_SPACE_DEFAULT.x),
+    y: axisScoreForLayout(yAxis, layout, point.y ?? DESIGN_SPACE_DEFAULT.y),
+  };
+}
+
+function designSpaceBand(value, low, mid, high) {
+  if (value < 0.34) return low;
+  if (value > 0.66) return high;
+  return mid;
+}
+
+function designSpaceReadout(point = selectedDesignSpace) {
+  const xAxis = mappedAxis('x');
+  const yAxis = mappedAxis('y');
+  const xLabel = xAxis ? `${xAxis.leftLabel} to ${xAxis.rightLabel}` : 'x axis';
+  const yLabel = yAxis ? `${yAxis.leftLabel} to ${yAxis.rightLabel}` : 'y axis';
+  const custom = customDesignAxes.length ? ` · ${customDesignAxes.length} axes` : '';
+  return `${xLabel}: ${clamp01(point.x).toFixed(2)}, ${yLabel}: ${clamp01(point.y).toFixed(2)}${custom}`;
+}
+
+function nearestDesignSpaceLayouts(point, limit = 2) {
+  return (window.PORTFOLIO_LAYOUTS || [])
+    .map((layout) => {
+      const candidate = getLayoutDesignSpace(layout);
+      const distance = Math.hypot(candidate.x - point.x, candidate.y - point.y);
+      return { layout, distance };
+    })
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, limit)
+    .map(({ layout }) => layout.name);
+}
+
+function buildDesignPromptScaffold(point = selectedDesignSpace) {
+  const x = clamp01(point.x);
+  const y = clamp01(point.y);
+  const layoutKeys = currentLayoutKeys();
+  const nearby = nearestDesignSpaceLayouts(point).join(' + ') || 'the existing portfolio templates';
+  const axes = customDesignAxes
+    .filter((axis) => axis.leftLabel && axis.rightLabel)
+    .map((axis) => {
+      const value = clamp01(axis.value ?? 0.5);
+      const nearbyOnAxis = Array.isArray(axis.scores)
+        ? axis.scores
+          .filter((score) => layoutKeys.has(score.key))
+          .slice()
+          .sort((a, b) => Math.abs(clamp01(a.value) - value) - Math.abs(clamp01(b.value) - value))
+          .slice(0, 3)
+          .map((score) => `${score.name || score.key} ${clamp01(score.value).toFixed(2)}`)
+          .join(', ')
+        : '';
+      const role = axis.mapRole ? `; marked as ${axis.mapRole.toUpperCase()} map axis` : '';
+      return `- ${axis.name || axisName(axis)}: ${value.toFixed(2)} (0 = ${axis.leftLabel}, 1 = ${axis.rightLabel})${role}${nearbyOnAxis ? `; nearby/corrected interfaces: ${nearbyOnAxis}` : ''}`;
+    });
+  const xAxis = mappedAxis('x') || { leftLabel: 'Visible', rightLabel: 'Friction', name: 'Visible to Friction' };
+  const yAxis = mappedAxis('y') || { leftLabel: 'Abstract', rightLabel: 'Skeuomorphic', name: 'Abstract to Skeuomorphic' };
+
+  return `${DESIGN_SCAFFOLD_MARKER}
+- x ${xAxis.name || axisName(xAxis)}: ${x.toFixed(2)} (0 = ${xAxis.leftLabel}, 1 = ${xAxis.rightLabel})
+- y ${yAxis.name || axisName(yAxis)}: ${y.toFixed(2)} (0 = ${yAxis.leftLabel}, 1 = ${yAxis.rightLabel})
+- Nearby template anchors: ${nearby}
+- User-defined axis constraints:
+${axes.length ? axes.join('\n') : '- none'}
+- Manual note positions are artist corrections. Treat them as stronger evidence than the initial AI ranking.
+- Treat this as a research prototype position, not a generic style axis.`;
+}
+
+function promptWithoutDesignScaffold(value) {
+  const text = String(value || '').trim();
+  const index = text.indexOf(DESIGN_SCAFFOLD_MARKER);
+  return (index >= 0 ? text.slice(0, index) : text).trim();
+}
+
+function syncDesignPromptScaffold() {
+  const textarea = document.getElementById('ai-prompt');
+  if (!textarea) return;
+  const base = promptWithoutDesignScaffold(textarea.value);
+  textarea.value = [base || 'Generate a portfolio interface.', buildDesignPromptScaffold(selectedDesignSpace)]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function setDesignSpaceSelection(point, { syncPrompt = true } = {}) {
+  const mode = getDesignSpaceMode();
+  const xAxis = mappedAxis('x');
+  const yAxis = mappedAxis('y');
+  if (mode === 'x') {
+    if (xAxis) xAxis.value = clamp01(point.x);
+  } else if (mode === 'y') {
+    if (yAxis) yAxis.value = clamp01(point.x);
+  } else {
+    if (xAxis) xAxis.value = clamp01(point.x);
+    if (yAxis) yAxis.value = clamp01(point.y);
+  }
+  if (xAxis || yAxis) saveDesignAxes();
+  selectedDesignSpace = {
+    x: mode === 'y' ? 0.5 : clamp01(point.x),
+    y: mode === 'x' ? 0.5 : clamp01(mode === 'y' ? point.x : point.y),
+    customAxes: customDesignAxes.map((axis) => ({
+      id: axis.id,
+      name: axis.name,
+      leftLabel: axis.leftLabel,
+      rightLabel: axis.rightLabel,
+      value: clamp01(axis.value ?? 0.5),
+      scores: axis.scores || [],
+      mapRole: axis.mapRole || '',
+    })),
+    xAxis: xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel } : null,
+    yAxis: yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel } : null,
+  };
+
+  document.querySelectorAll('.design-space-selection').forEach((selection) => {
+    selection.style.left = `${selectedDesignSpace.x * 100}%`;
+    selection.style.top = `${(1 - selectedDesignSpace.y) * 100}%`;
+  });
+
+  const readout = document.getElementById('design-space-readout');
+  if (readout) readout.textContent = designSpaceReadout(selectedDesignSpace);
+  if (syncPrompt) syncDesignPromptScaffold();
+}
+
+function syncCustomAxesToDesignSpace({ syncPrompt = true } = {}) {
+  const xAxis = mappedAxis('x');
+  const yAxis = mappedAxis('y');
+  selectedDesignSpace.x = clamp01(xAxis?.value ?? selectedDesignSpace.x);
+  selectedDesignSpace.y = clamp01(yAxis?.value ?? selectedDesignSpace.y);
+  selectedDesignSpace.customAxes = customDesignAxes.map((axis) => ({
+    id: axis.id,
+    name: axis.name || axisName(axis),
+    leftLabel: axis.leftLabel,
+    rightLabel: axis.rightLabel,
+    value: clamp01(axis.value ?? 0.5),
+    scores: axis.scores || [],
+    mapRole: axis.mapRole || '',
+  }));
+  selectedDesignSpace.xAxis = xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel } : null;
+  selectedDesignSpace.yAxis = yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel } : null;
+  document.querySelectorAll('.design-space-selection').forEach((selection) => {
+    selection.style.left = `${selectedDesignSpace.x * 100}%`;
+    selection.style.top = `${(1 - selectedDesignSpace.y) * 100}%`;
+  });
+  const readout = document.getElementById('design-space-readout');
+  if (readout) readout.textContent = designSpaceReadout(selectedDesignSpace);
+  if (syncPrompt) syncDesignPromptScaffold();
+}
+
+function layoutNameByKey(key) {
+  return (window.PORTFOLIO_LAYOUTS || []).find((layout) => layout.key === key)?.name || key;
+}
+
+function colorForLayout(layoutOrKey) {
+  const key = typeof layoutOrKey === 'string' ? layoutOrKey : layoutOrKey?.key;
+  const layouts = window.PORTFOLIO_LAYOUTS || [];
+  const index = layouts.findIndex((layout) => layout.key === key);
+  if (index >= 0) return DESIGN_SPACE_COLORS[index % DESIGN_SPACE_COLORS.length];
+  let hash = 0;
+  String(key || '').split('').forEach((char) => {
+    hash = ((hash << 5) - hash) + char.charCodeAt(0);
+    hash |= 0;
+  });
+  return DESIGN_SPACE_COLORS[Math.abs(hash) % DESIGN_SPACE_COLORS.length];
+}
+
+function openLayoutFromDesignSpace(layout) {
+  if (!layout) return;
+  if (layout.designSpace) setDesignSpaceSelection(layout.designSpace);
+  selectVersion(layout.id);
+}
+
+function markAxisForMap(axis, role) {
+  customDesignAxes.forEach((item) => {
+    if (item !== axis && item.mapRole === role) item.mapRole = '';
+  });
+  axis.mapRole = axis.mapRole === role ? '' : role;
+  saveDesignAxes();
+  syncCustomAxesToDesignSpace();
+  renderDesignSpace();
+  renderCustomDesignAxes();
+}
+
+function ensureAxisScore(axis, layout) {
+  if (!axis.scores) axis.scores = [];
+  let score = axis.scores.find((item) => item.key === layout.key);
+  if (!score) {
+    const fallbackPoint = layout.designSpace || DESIGN_SPACE_DEFAULT;
+    score = {
+      key: layout.key,
+      name: layout.name,
+      value: clamp01(axis.mapRole === 'y' ? fallbackPoint.y : fallbackPoint.x),
+      rationale: 'manual',
+    };
+    axis.scores.push(score);
+  }
+  return score;
+}
+
+function customAxisValueForGeneratedLayout(axis, layout) {
+  const generatedAxis = layout?.designSpace?.customAxes?.find((item) => item.id === axis.id);
+  if (generatedAxis) return clamp01(generatedAxis.value ?? axis.value ?? 0.5);
+  if (axis.mapRole === 'x') return clamp01(layout?.designSpace?.x ?? axis.value ?? 0.5);
+  if (axis.mapRole === 'y') return clamp01(layout?.designSpace?.y ?? axis.value ?? 0.5);
+  return clamp01(axis.value ?? 0.5);
+}
+
+function placeGeneratedLayoutOnAxes(layout) {
+  if (!layout?.key || !customDesignAxes.length) return;
+  customDesignAxes.forEach((axis) => {
+    if (!axis.scores) axis.scores = [];
+    let score = axis.scores.find((item) => item.key === layout.key);
+    if (!score) {
+      score = { key: layout.key };
+      axis.scores.push(score);
+    }
+    score.name = layout.name;
+    score.value = customAxisValueForGeneratedLayout(axis, layout);
+    score.rationale = 'generated at selected axis position';
+  });
+  saveDesignAxes();
+  syncCustomAxesToDesignSpace({ syncPrompt: false });
+  renderCustomDesignAxes();
+  renderSidebarDesignAxes();
+  renderDesignSpace();
+}
+
+function updateAxisScoreFromPointer(axis, layout, clientX, track, note = null) {
+  const rect = track.getBoundingClientRect();
+  const value = clamp01((clientX - rect.left) / rect.width);
+  const score = ensureAxisScore(axis, layout);
+  score.value = value;
+  score.name = layout.name;
+  score.rationale = 'artist corrected';
+  score.manual = true;
+  saveDesignAxes();
+  if (note) {
+    note.classList.add('manual');
+    note.style.setProperty('--axis-value', value);
+    note.title = `${layout.name}: ${Math.round(value * 100)}% - artist corrected`;
+  }
+  syncCustomAxesToDesignSpace();
+  renderDesignSpace();
+}
+
+function renderCustomDesignAxes() {
+  const list = document.getElementById('custom-axis-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  customDesignAxes.forEach((axis, axisIndex) => {
+    const row = document.createElement('div');
+    row.className = 'custom-axis';
+    row.innerHTML = `
+      <div class="custom-axis-fields">
+        <label>Left concept
+          <input type="text" data-axis-field="leftLabel" value="${PortfolioContent.escapeHtml(axis.leftLabel || '')}">
+        </label>
+        <label>Right concept
+          <input type="text" data-axis-field="rightLabel" value="${PortfolioContent.escapeHtml(axis.rightLabel || '')}">
+        </label>
+        <div class="custom-axis-map-controls" aria-label="Map axis role">
+          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'x' ? 'active' : ''}" type="button" data-map-role="x" title="Use this axis as the horizontal map axis">X</button>
+          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'y' ? 'active' : ''}" type="button" data-map-role="y" title="Use this axis as the vertical map axis">Y</button>
+        </div>
+        <button class="ghost-btn custom-axis-rank" type="button" title="Rank websites on this axis">Rank</button>
+        <button class="ghost-btn custom-axis-remove" type="button" aria-label="Remove axis">x</button>
+      </div>
+      <div class="custom-axis-rank-row">
+        <span>${PortfolioContent.escapeHtml(axis.leftLabel || 'left')}</span>
+        <div class="custom-axis-notes" aria-label="Ranked website notes"></div>
+        <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
+      </div>
+    `;
+
+    row.querySelectorAll('input[type="text"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const field = input.dataset.axisField;
+        axis[field] = input.value.trim();
+        axis.name = axisName(axis);
+        axis.scores = [];
+        saveDesignAxes();
+        renderCustomDesignAxes();
+        renderSidebarDesignAxes();
+        syncCustomAxesToDesignSpace();
+      });
+    });
+
+    row.querySelectorAll('.custom-axis-map').forEach((button) => {
+      button.addEventListener('click', () => markAxisForMap(axis, button.dataset.mapRole));
+    });
+
+    row.querySelector('.custom-axis-rank').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        await scoreCustomDesignAxis(axis);
+      } catch (err) {
+        alert(`Could not rank layouts:\n\n${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Rank';
+      }
+    });
+
+    row.querySelector('.custom-axis-remove').addEventListener('click', () => {
+      customDesignAxes.splice(axisIndex, 1);
+      saveDesignAxes();
+      renderCustomDesignAxes();
+      renderSidebarDesignAxes();
+      syncCustomAxesToDesignSpace();
+    });
+
+    const notes = row.querySelector('.custom-axis-notes');
+    if (axis.scores?.length) {
+      axis.scores.filter((score) => currentLayoutKeys().has(score.key)).forEach((score) => {
+        const layout = (window.PORTFOLIO_LAYOUTS || []).find((item) => item.key === score.key);
+        if (!layout) return;
+        const note = document.createElement('button');
+        note.type = 'button';
+        note.className = 'custom-axis-note';
+        if (score.manual) note.classList.add('manual');
+        if (layout?.id === currentVersion) note.classList.add('active');
+        note.dataset.label = layoutNameByKey(score.key);
+        note.title = `${layoutNameByKey(score.key)}: ${Math.round(clamp01(score.value) * 100)}%${score.manual ? ' - artist corrected' : score.rationale ? ` - ${score.rationale}` : ''}`;
+        note.style.setProperty('--axis-value', clamp01(score.value));
+        note.style.setProperty('--node-color', colorForLayout(layout));
+        note.addEventListener('click', () => {
+          openLayoutFromDesignSpace(layout);
+        });
+        note.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          draggingAxisNote = { axis, layout, track: notes, note };
+          note.setPointerCapture?.(e.pointerId);
+        });
+        notes.appendChild(note);
+      });
+    }
+    list.appendChild(row);
+  });
+}
+
+function renderSidebarDesignAxes() {
+  const list = document.getElementById('sidebar-axis-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  customDesignAxes.forEach((axis) => {
+    const row = document.createElement('div');
+    row.className = 'sidebar-axis';
+    row.innerHTML = `
+      <div class="sidebar-axis-labels">
+        <span>${PortfolioContent.escapeHtml(axis.leftLabel || 'left')}</span>
+        <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
+      </div>
+      <div class="sidebar-axis-notes" aria-label="${PortfolioContent.escapeHtml(axis.name || axisName(axis))} ranked websites"></div>
+    `;
+
+    const notes = row.querySelector('.sidebar-axis-notes');
+    (axis.scores || []).filter((score) => currentLayoutKeys().has(score.key)).forEach((score) => {
+      const layout = (window.PORTFOLIO_LAYOUTS || []).find((item) => item.key === score.key);
+      if (!layout) return;
+      const note = document.createElement('button');
+      note.type = 'button';
+      note.className = 'sidebar-axis-note';
+      if (score.manual) note.classList.add('manual');
+      if (layout.id === currentVersion) note.classList.add('active');
+      note.dataset.label = layoutNameByKey(score.key);
+      note.title = `${layoutNameByKey(score.key)}: ${Math.round(clamp01(score.value) * 100)}%`;
+      note.style.setProperty('--axis-value', clamp01(score.value));
+      note.style.setProperty('--node-color', colorForLayout(layout));
+      note.addEventListener('click', () => openLayoutFromDesignSpace(layout));
+      notes.appendChild(note);
+    });
+
+    list.appendChild(row);
+  });
+}
+
+async function scoreCustomDesignAxis(axis) {
+  if (!axis.leftLabel || !axis.rightLabel) {
+    alert('Name both ends of the axis first.');
+    return;
+  }
+  const manualScores = new Map((axis.scores || []).filter((score) => score.manual).map((score) => [score.key, score]));
+  const data = await fetchJson('/api/design-axis', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ axis }),
+  });
+  axis.scores = (data.scores || []).map((score) => ({
+    ...score,
+    name: layoutNameByKey(score.key),
+    ...(manualScores.get(score.key) || {}),
+  }));
+  saveDesignAxes();
+  syncCustomAxesToDesignSpace();
+  renderCustomDesignAxes();
+  renderSidebarDesignAxes();
+  renderDesignSpace();
+}
+
+function layoutPreviewSrc(layout) {
+  return layout?.file || `${layout?.key || 'grid'}.html`;
+}
+
+function getDesignSpaceMode() {
+  const hasX = !!mappedAxis('x');
+  const hasY = !!mappedAxis('y');
+  if (hasX && hasY) return 'xy';
+  if (hasX) return 'x';
+  if (hasY) return 'y';
+  return 'xy';
+}
+
+function getLayoutMapPoint(layout, mode = getDesignSpaceMode()) {
+  const point = getLayoutDesignSpace(layout);
+  if (mode === 'x') return { x: point.x, y: 0.5 };
+  if (mode === 'y') return { x: point.y, y: 0.5 };
+  return point;
+}
+
+function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy' } = {}) {
+  const point = getLayoutMapPoint(layout, mode);
+  const color = colorForLayout(layout);
+  const node = document.createElement(preview ? 'div' : 'button');
+  if (!preview) node.type = 'button';
+  if (preview) {
+    node.setAttribute('role', 'button');
+    node.tabIndex = 0;
+  }
+  node.className = preview ? 'design-space-node design-space-node--preview' : 'design-space-node';
+  if (preview && layout.key) {
+    node.classList.add(`design-space-node--${String(layout.key).replace(/[^a-zA-Z0-9_-]/g, '_')}`);
+  }
+  if (layout.id === currentVersion) node.classList.add('active');
+  node.dataset.label = layout.generated ? `${layout.name} *` : layout.name;
+  node.style.setProperty('--node-x', `${point.x * 100}%`);
+  node.style.setProperty('--node-y', `${(1 - point.y) * 100}%`);
+  node.style.setProperty('--node-color', color);
+  node.title = layout.name;
+
+  if (preview) {
+    node.innerHTML = `
+      <span class="design-space-node-preview">
+        <iframe src="${PortfolioContent.escapeHtml(layoutPreviewSrc(layout))}" tabindex="-1" loading="lazy"></iframe>
+      </span>
+      <span class="design-space-node-label">${PortfolioContent.escapeHtml(layout.name)}</span>
+    `;
+  }
+
+  node.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openLayoutFromDesignSpace(layout);
+  });
+  if (preview) {
+    node.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      openLayoutFromDesignSpace(layout);
+    });
+  }
+  return { node, color };
+}
+
+function renderDesignSpacePlane(plane, legend, { preview = false, mode = 'xy' } = {}) {
+  if (!plane || !legend) return;
+  plane.querySelectorAll('.design-space-node').forEach((node) => node.remove());
+  legend.innerHTML = '';
+  (window.PORTFOLIO_LAYOUTS || []).forEach((layout, index) => {
+    const { node, color } = createDesignSpaceNode(layout, index, { preview, mode });
+    plane.appendChild(node);
+
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'design-space-legend-item';
+    if (layout.id === currentVersion) item.classList.add('active');
+    item.innerHTML = `<span class="design-space-legend-dot" style="--node-color: ${color}"></span>${layout.name}`;
+    item.addEventListener('click', () => openLayoutFromDesignSpace(layout));
+    legend.appendChild(item);
+  });
+}
+
+function syncDesignSpaceAxisLabels() {
+  const xAxis = mappedAxis('x') || { leftLabel: 'Visible', rightLabel: 'Friction' };
+  const yAxis = mappedAxis('y') || { leftLabel: 'Abstract', rightLabel: 'Skeuomorphic' };
+  const mode = getDesignSpaceMode();
+  const horizontalAxis = mode === 'y' ? yAxis : xAxis;
+  document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = xAxis.leftLabel || 'Left'; });
+  document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = xAxis.rightLabel || 'Right'; });
+  document.querySelectorAll('.axis-label--bottom').forEach((label) => { label.textContent = yAxis.leftLabel || 'Bottom'; });
+  document.querySelectorAll('.axis-label--top').forEach((label) => { label.textContent = yAxis.rightLabel || 'Top'; });
+  if (mode !== 'xy') {
+    document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = horizontalAxis.leftLabel || 'Left'; });
+    document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = horizontalAxis.rightLabel || 'Right'; });
+  }
+}
+
+function renderDesignSpace() {
+  const mode = getDesignSpaceMode();
+  document.querySelectorAll('.design-space').forEach((plane) => {
+    plane.dataset.axisMode = mode;
+    plane.closest('.design-space-wrap')?.setAttribute('data-axis-mode', mode);
+  });
+  syncDesignSpaceAxisLabels();
+  renderDesignSpacePlane(
+    document.getElementById('design-space'),
+    document.getElementById('design-space-legend'),
+    { preview: false, mode }
+  );
+  renderDesignSpacePlane(
+    document.getElementById('expanded-design-space'),
+    document.getElementById('expanded-design-space-legend'),
+    { preview: true, mode }
+  );
+  renderSidebarDesignAxes();
+  setDesignSpaceSelection(selectedDesignSpace, { syncPrompt: false });
+}
+
+function setupDesignSpaceInstrument() {
+  if (!customDesignAxes.length) {
+    customDesignAxes = loadDesignAxes();
+    pruneAxisScoresToCurrentLayouts({ persist: true });
+    syncCustomAxesToDesignSpace({ syncPrompt: false });
+  }
+
+  document.querySelectorAll('.design-space').forEach((plane) => {
+    plane.addEventListener('click', (e) => {
+      const rect = plane.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = 1 - ((e.clientY - rect.top) / rect.height);
+      const mode = getDesignSpaceMode();
+      setDesignSpaceSelection(mode === 'xy' ? { x, y } : { x, y: 0.5 });
+    });
+
+    plane.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      setDesignSpaceSelection(selectedDesignSpace);
+    });
+  });
+
+  const addAxis = document.getElementById('add-design-axis');
+  if (addAxis) {
+    addAxis.addEventListener('click', () => {
+      const axis = {
+        id: `axis_${Date.now()}`,
+        leftLabel: '',
+        rightLabel: '',
+        name: 'left to right',
+        value: 0.5,
+        mapRole: '',
+        scores: [],
+      };
+      customDesignAxes.push(axis);
+      saveDesignAxes();
+      renderCustomDesignAxes();
+      renderSidebarDesignAxes();
+      syncCustomAxesToDesignSpace();
+    });
+  }
+
+  const expandedPanel = document.getElementById('design-space-expanded');
+  const container = document.getElementById('edit-container');
+  document.getElementById('expand-design-space')?.addEventListener('click', () => {
+    if (!expandedPanel || !container) return;
+    expandedPanel.hidden = false;
+    container.classList.add('design-space-expanded-open');
+    renderDesignSpace();
+    renderCustomDesignAxes();
+  });
+  document.getElementById('collapse-design-space')?.addEventListener('click', () => {
+    if (!expandedPanel || !container) return;
+    expandedPanel.hidden = true;
+    container.classList.remove('design-space-expanded-open');
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!draggingAxisNote) return;
+    updateAxisScoreFromPointer(
+      draggingAxisNote.axis,
+      draggingAxisNote.layout,
+      e.clientX,
+      draggingAxisNote.track,
+      draggingAxisNote.note
+    );
+  });
+
+  window.addEventListener('pointerup', () => {
+    draggingAxisNote = null;
+  });
+
+  renderDesignSpace();
+  renderCustomDesignAxes();
+  renderSidebarDesignAxes();
+}
+
+function setupCreatePanel() {
+  setupDesignSpaceInstrument();
+  renderDesignSpace();
+  renderCustomDesignAxes();
+  renderSidebarDesignAxes();
+  syncCustomAxesToDesignSpace({ syncPrompt: false });
 }
 
 async function fetchJson(url, options = {}) {
@@ -801,71 +1535,259 @@ async function fetchJson(url, options = {}) {
 }
 
 function setupAI() {
-  const keyInput = document.getElementById('api-key-input');
-  const status = document.getElementById('ai-status');
   const generateBtn = document.getElementById('generate-btn');
   const generateStatus = document.getElementById('generate-status');
+  const questionsEl = document.getElementById('generate-questions');
+  const generatePanel = generateBtn?.closest('.generate-panel');
+  const generateTitle = generatePanel?.querySelector('.generate-panel-head strong');
 
-  const setConnected = (connected) => {
-    status.textContent = connected ? 'connected ✓' : 'not connected';
-    status.className = 'ai-status ' + (connected ? 'ai-status--on' : 'ai-status--off');
+  const setGenerateMode = (mode = 'compose') => {
+    if (generatePanel) generatePanel.dataset.generateMode = mode;
+    if (generateTitle) generateTitle.textContent = mode === 'question' ? 'Design questions' : 'Generate';
   };
 
-  const saved = getApiKey();
-  if (saved) { keyInput.value = saved; setConnected(true); }
+  const resetQuestions = () => {
+    pendingGeneratePrompt = '';
+    pendingGenerateQuestion = null;
+    pendingGenerateAnswers = [];
+    pendingGenerateReady = false;
+    if (questionsEl) {
+      questionsEl.hidden = true;
+      questionsEl.innerHTML = '';
+    }
+    setGenerateMode('compose');
+    generateBtn.textContent = 'Generate version';
+  };
 
-  document.getElementById('connect-ai-btn').addEventListener('click', () => {
-    const key = keyInput.value.trim();
-    if (!key) { setConnected(false); localStorage.removeItem(AI_KEY_STORE); return; }
-    localStorage.setItem(AI_KEY_STORE, key);
-    setConnected(true);
-  });
+  const formatQuestionCategory = (category) => {
+    const labels = {
+      metaphor_place_world: 'World',
+      visit_encounter: 'Visitor path',
+      artist_intent: 'Intent',
+    };
+    return labels[category] || String(category || 'Design choice').replace(/[_-]+/g, ' ');
+  };
+
+  const normalizeGenerateQuestion = (question) => {
+    if (!question || typeof question !== 'object') return null;
+    const options = Array.isArray(question.options)
+      ? question.options.map((option) => {
+        if (typeof option === 'string') {
+          return { label: option, description: '' };
+        }
+        return {
+          label: String(option?.label || '').trim(),
+          description: String(option?.description || '').trim(),
+        };
+      }).filter((option) => option.label).slice(0, 3)
+      : [];
+    if (!question.question || options.length === 0) return null;
+    return {
+      id: String(question.id || `q${pendingGenerateAnswers.length + 1}`),
+      category: String(question.category || ''),
+      question: String(question.question),
+      options,
+    };
+  };
+
+  const renderQuestion = (question) => {
+    if (!questionsEl) return;
+    question = normalizeGenerateQuestion(question);
+    if (!question) throw new Error('AI did not return a usable design question');
+    const answered = pendingGenerateAnswers.map((item) => `
+      <div class="generate-answer-summary">
+        <strong>${PortfolioContent.escapeHtml(item.question)}</strong>
+        <span>${PortfolioContent.escapeHtml(item.answer)}</span>
+      </div>
+    `).join('');
+    questionsEl.innerHTML = `
+      ${answered ? `<div class="generate-answer-list">${answered}</div>` : ''}
+      <fieldset class="generate-question">
+        <div class="generate-question-count">
+          <span>${PortfolioContent.escapeHtml(formatQuestionCategory(question.category))}</span>
+          <span>Question ${pendingGenerateAnswers.length + 1} of 3</span>
+        </div>
+        <legend>${PortfolioContent.escapeHtml(question.question)}</legend>
+        <div class="generate-question-options">
+          ${question.options.map((option, index) => `
+            <label class="generate-question-option">
+              <input type="radio" name="generate-question-current" value="${index}" ${index === 0 ? 'checked' : ''}>
+              <span>
+                <strong>${PortfolioContent.escapeHtml(option.label)}</strong>
+                <small>${PortfolioContent.escapeHtml(option.description || '')}</small>
+              </span>
+            </label>
+          `).join('')}
+        </div>
+        <input class="generate-question-other" type="text" placeholder="Or enter your own answer">
+      </fieldset>
+    `;
+    questionsEl.hidden = false;
+    setGenerateMode('question');
+    generateBtn.textContent = pendingGenerateAnswers.length >= 2 ? 'Use answer and generate' : 'Use answer';
+  };
+
+  const currentQuestionAnswer = () => {
+    const question = pendingGenerateQuestion;
+    if (!question) return null;
+    const fieldset = questionsEl?.querySelector('.generate-question');
+    const custom = fieldset?.querySelector('.generate-question-other')?.value.trim();
+    const selected = fieldset?.querySelector('input[name="generate-question-current"]:checked');
+    const option = question.options[Number(selected?.value || 0)] || question.options[0];
+    return {
+      category: question.category || '',
+      question: question.question,
+      answer: custom || option.label,
+      rationale: custom ? 'custom answer' : option.description,
+    };
+  };
+
+  const askNextQuestion = async (prompt) => {
+    const data = await fetchJson('/api/generate-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        designSpace: selectedDesignSpace,
+        answers: pendingGenerateAnswers,
+      }),
+    });
+    if (data.done) return false;
+    pendingGenerateQuestion = normalizeGenerateQuestion(data.question);
+    if (!pendingGenerateQuestion) throw new Error('AI did not return a usable design question');
+    renderQuestion(pendingGenerateQuestion);
+    return true;
+  };
+
+  const promptWithAnswers = (prompt, answers) => {
+    const answerBlock = answers.map((item) => (
+      `- ${item.question}\n  Answer: ${item.answer}${item.rationale ? `\n  Rationale: ${item.rationale}` : ''}`
+    )).join('\n');
+    return `${prompt}\n\nDesign clarification answers:\n${answerBlock}`;
+  };
 
   generateBtn.addEventListener('click', async () => {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      alert('Connect your Cerebras API key first — paste it in the toolbar at the top.');
-      return;
-    }
-
     const prompt = document.getElementById('ai-prompt').value.trim();
     if (!prompt) {
       alert('Describe the layout you want first.');
       return;
     }
 
+    if (pendingGeneratePrompt !== prompt) resetQuestions();
+
+    if (!pendingGenerateQuestion && pendingGenerateAnswers.length === 0 && !pendingGenerateReady) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Preparing questions...';
+      generateStatus.hidden = false;
+      generateStatus.textContent = 'Choosing the first design question...';
+      generateStatus.className = 'generate-status generate-status--busy';
+
+      try {
+        pendingGeneratePrompt = prompt;
+        const hasQuestion = await askNextQuestion(prompt);
+        if (!hasQuestion) {
+          pendingGenerateReady = true;
+          generateStatus.textContent = 'No more questions needed. Click again to generate.';
+          generateBtn.textContent = 'Generate with answers';
+          return;
+        }
+        generateStatus.textContent = 'Pick one direction or write your own.';
+        generateStatus.className = 'generate-status generate-status--ok';
+      } catch (e) {
+        resetQuestions();
+        generateStatus.textContent = e.message;
+        generateStatus.className = 'generate-status generate-status--err';
+        alert(`Could not ask design questions:\n\n${e.message}`);
+      } finally {
+        generateBtn.disabled = false;
+      }
+      return;
+    }
+
+    if (pendingGenerateQuestion) {
+      const answer = currentQuestionAnswer();
+      if (answer) pendingGenerateAnswers.push(answer);
+      pendingGenerateQuestion = null;
+
+      if (pendingGenerateAnswers.length < 3) {
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Preparing next question...';
+        generateStatus.hidden = false;
+        generateStatus.textContent = 'Choosing a follow-up question...';
+        generateStatus.className = 'generate-status generate-status--busy';
+        try {
+          const hasQuestion = await askNextQuestion(prompt);
+          if (hasQuestion) {
+            generateStatus.textContent = 'Refine the direction before generating.';
+            generateStatus.className = 'generate-status generate-status--ok';
+            return;
+          }
+          pendingGenerateReady = true;
+        } catch (e) {
+          generateStatus.textContent = e.message;
+          generateStatus.className = 'generate-status generate-status--err';
+          alert(`Could not ask follow-up question:\n\n${e.message}`);
+          return;
+        } finally {
+          generateBtn.disabled = false;
+        }
+      }
+      pendingGenerateReady = true;
+      generateStatus.textContent = 'Answers ready. Generating now...';
+    }
+
+    const clarifiedPrompt = promptWithAnswers(prompt, pendingGenerateAnswers);
+    if (questionsEl) questionsEl.hidden = true;
+    setGenerateMode('compose');
+
     generateBtn.disabled = true;
     generateBtn.textContent = 'Generating…';
     generateStatus.hidden = false;
-    generateStatus.textContent = 'Cerebras is building your interface…';
+    generateStatus.textContent = 'AI is building your interface…';
     generateStatus.className = 'generate-status generate-status--busy';
 
     try {
       const data = await fetchJson('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, prompt }),
+        body: JSON.stringify({ prompt: clarifiedPrompt, designSpace: selectedDesignSpace }),
       });
 
       if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
       const layout = data.layout;
+      placeGeneratedLayoutOnAxes(layout);
       if (data.versionColors && layout?.key) {
         ensureVersionColorsObject(layout.key);
         editedTheme.versions[layout.key].colors = { ...data.versionColors };
       }
-      document.getElementById('create-modal').hidden = true;
+      if (data.versionTypography && layout?.key) {
+        Object.entries(data.versionTypography).forEach(([token, values]) => {
+          ensureVersionTypographyObject(layout.key, token);
+          editedTheme.versions[layout.key].typography[token] = { ...values };
+        });
+      }
+      if (data.versionSpacing && layout?.key) {
+        ensureVersionSpacingObject(layout.key);
+        editedTheme.versions[layout.key].spacing = { ...data.versionSpacing };
+      }
       generateStatus.textContent = `Created "${layout.name}" — switching preview…`;
       generateStatus.className = 'generate-status generate-status--ok';
 
       applyLayoutMetadata();
+      renderDesignSpace();
       selectVersion(layout.id);
+      resetQuestions();
     } catch (e) {
       generateStatus.textContent = e.message;
       generateStatus.className = 'generate-status generate-status--err';
       alert(`Generation failed:\n\n${e.message}`);
     } finally {
       generateBtn.disabled = false;
-      generateBtn.textContent = '✨ Generate version';
+      if (pendingGenerateQuestion) {
+        generateBtn.textContent = pendingGenerateAnswers.length >= 2 ? 'Use answer and generate' : 'Use answer';
+      } else {
+        generateBtn.textContent = 'Generate version';
+      }
     }
   });
 }
@@ -1262,6 +2184,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layout = getLayout(version) || getLayout(1);
   const presentationId = layout.presentationId || layout.key;
   const previewColors = getVersionColorsForKey(layout.key);
+  const previewTypography = getVersionTypographyForKey(layout.key);
+  const previewSpacing = getVersionSpacingForKey(layout.key);
   const titleHeading = buildTextHeading('h1', '', 'portfolio.title', 'portfolio.title', 'My Art Portfolio', editedTheme, editedContent, layout.key);
   const editState = JSON.stringify({ theme: editedTheme, content: editedContent, versionKey: layout.key }).replace(/</g, '\\u003c');
   const previewManifest = JSON.stringify(manifest).replace(/</g, '\\u003c');
@@ -1276,11 +2200,12 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       max-height: 100% !important;
       overflow: hidden !important;
     }
-    .view-directory .container {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      padding-bottom: 0.75rem;
+    body[data-edit-mode="1"].view-directory header {
+      padding: 4rem 2rem 2.25rem;
+    }
+    body[data-edit-mode="1"].view-directory h1 {
+      margin-bottom: 1.5rem;
+      font-size: clamp(1.85rem, 4.5vw, var(--font-heading1, 2.75rem));
     }
     .view-directory #preview-content,
     .view-directory #content {
@@ -1300,6 +2225,33 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     .directory-viewer { overflow: hidden; }
     .directory-preview { min-height: 0; overflow: hidden; }
     .directory-preview img { max-height: 100%; object-fit: contain; }
+    `
+    : '';
+  const generatedInlineStyles = layout.generated
+    ? `
+    body[data-edit-mode="1"].${layoutViewClass} {
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    body[data-edit-mode="1"].${layoutViewClass} header {
+      position: relative;
+      z-index: 10;
+    }
+    body[data-edit-mode="1"].${layoutViewClass} main.container {
+      max-width: none;
+      width: 100%;
+      min-height: 100vh;
+      padding: 0;
+      position: relative;
+    }
+    body[data-edit-mode="1"].${layoutViewClass} #preview-content {
+      min-height: 100vh;
+      position: relative;
+    }
+    body[data-edit-mode="1"].${layoutViewClass} #preview-content > * {
+      min-height: 100vh;
+    }
     `
     : '';
 
@@ -1375,10 +2327,21 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       --color-secondary: ${previewColors.secondary || '#ece6da'};
       --color-paper: ${previewColors.paper || DEFAULT_THEME_COLORS.paper};
       --color-panel: ${previewColors.panel || DEFAULT_THEME_COLORS.panel};
-      --space-gridGap: ${editedTheme.spacing.gridGap};
-      --space-artSize: ${editedTheme.spacing.artSize || '190px'};
+      --font-heading1: ${previewTypography.heading1.fontSize};
+      --font-heading1-family: ${previewTypography.heading1.fontFamily};
+      --font-heading1-weight: ${previewTypography.heading1.fontWeight};
+      --font-heading2: ${previewTypography.heading2.fontSize};
+      --font-heading2-family: ${previewTypography.heading2.fontFamily};
+      --font-heading2-weight: ${previewTypography.heading2.fontWeight};
+      --font-body: ${previewTypography.body.fontSize};
+      --font-body-family: ${previewTypography.body.fontFamily};
+      --font-body-weight: ${previewTypography.body.fontWeight};
+      --space-gridGap: ${previewSpacing.gridGap};
+      --space-artSize: ${previewSpacing.artSize || '190px'};
+      --space-imagePadding: ${previewSpacing.imagePadding || '0.75rem'};
     }
     ${directoryInlineStyles}
+    ${generatedInlineStyles}
     h1[data-text-id], h2[data-text-id] { min-height: 1em; display: block; }
     .generated-artwork-image,
     [data-generated-artwork-image="true"] {

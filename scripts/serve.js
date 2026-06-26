@@ -17,8 +17,10 @@
  *   POST /api/content   -> write the posted JSON body to content.json
  *   GET  /api/layouts   -> built-in + AI-generated layout registry
  *   POST /api/layouts/delete -> remove a generated layout and its files
- *   POST /api/operation -> Cerebras: parse cursor request into a local operation
- *   POST /api/generate  -> Cerebras: create new layout (presentation + CSS + JS + SVG assets)
+ *   POST /api/operation -> selected AI provider: parse cursor request into a local operation
+ *   POST /api/design-axis -> selected AI provider: score layouts on a custom design axis
+ *   POST /api/generate-questions -> selected AI provider: ask design questions before generation
+ *   POST /api/generate  -> selected AI provider: create new layout (presentation + CSS + JS + SVG assets)
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
  *   (anything else)     -> static file from the project root
  */
@@ -31,7 +33,9 @@ const { buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
 const { generateTemplate } = require('./generate-template.js');
+const { generateQuestions } = require('./generate-questions.js');
 const { parseCursorOperation } = require('./operation-parser.js');
+const { scoreDesignAxis } = require('./design-axis-parser.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -162,7 +166,6 @@ const server = http.createServer(async (req, res) => {
         // defaults
       }
       const result = await parseCursorOperation({
-        apiKey: body.apiKey,
         target: body.target,
         prompt: body.prompt,
         scope: body.scope,
@@ -177,6 +180,37 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[operation]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/design-axis' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const layouts = listAllLayouts();
+      const result = await scoreDesignAxis({
+        axis: body.axis,
+        layouts,
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[design-axis]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/generate-questions' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const result = await generateQuestions({
+        prompt: body.prompt,
+        designSpace: body.designSpace,
+        answers: Array.isArray(body.answers) ? body.answers : [],
+        layouts: listAllLayouts(),
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[generate-questions]', e.message);
       return sendJSON(res, 400, { error: e.message });
     }
   }
@@ -199,19 +233,28 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         // defaults
       }
+      const existingLayouts = listAllLayouts();
 
-      const { layout, versionColors } = await generateTemplate({
-        apiKey: body.apiKey,
+      const { layout, versionTheme, versionColors, versionTypography, versionSpacing } = await generateTemplate({
         prompt: body.prompt,
         context: {
           collections,
+          existingLayouts,
           primary: theme.colors?.primary,
           accent: theme.colors?.accent,
           background: theme.colors?.background,
+          designSpace: body.designSpace,
         },
       });
 
-      return sendJSON(res, 200, { layout, versionColors, layouts: listAllLayouts() });
+      return sendJSON(res, 200, {
+        layout,
+        versionTheme,
+        versionColors,
+        versionTypography,
+        versionSpacing,
+        layouts: listAllLayouts(),
+      });
     } catch (e) {
       console.error('[generate]', e.message);
       return sendJSON(res, 400, { error: e.message });

@@ -1,50 +1,5 @@
-/** Built-in portfolio layouts and example AI prompts for each. */
-window.PORTFOLIO_LAYOUTS = [
-  {
-    id: 1,
-    key: 'grid',
-    presentationId: 'grid',
-    name: 'Grid',
-    file: 'ver1.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper'],
-    examplePrompt:
-      'A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders.',
-  },
-  {
-    id: 2,
-    key: 'clothesline',
-    presentationId: 'clothesline',
-    name: 'Clothesline',
-    file: 'ver2.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
-    examplePrompt:
-      'Horizontal scroll strips per collection, like prints clipped on a clothesline — peek and swipe sideways.',
-  },
-  {
-    id: 3,
-    key: 'desk',
-    presentationId: 'desk',
-    name: 'Desk',
-    file: 'ver3.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'secondary'],
-    examplePrompt:
-      'A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps.',
-  },
-  {
-    id: 4,
-    key: 'directory',
-    presentationId: 'directory',
-    name: 'Directory',
-    file: 'ver4.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
-    examplePrompt:
-      'A split-pane file browser — collections as folders on the left, click a file to preview the artwork on the right.',
-  },
-];
+/** Browser helpers for portfolio layouts and desk positioning. */
+window.PORTFOLIO_LAYOUTS = [];
 
 window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
 
@@ -57,8 +12,12 @@ window.loadPortfolioLayouts = async function loadPortfolioLayouts() {
         window.PORTFOLIO_LAYOUTS = data.layouts;
       }
     }
-  } catch (e) {
-    // static fallback — built-ins only
+  } catch {
+    try {
+      window.PORTFOLIO_LAYOUTS = await fetch('./models/builtin-layouts.json').then((r) => r.json());
+    } catch {
+      window.PORTFOLIO_LAYOUTS = [];
+    }
   }
   window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
   return window.PORTFOLIO_LAYOUTS;

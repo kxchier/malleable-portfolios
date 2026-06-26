@@ -15,12 +15,24 @@
     const modelEl = el.closest('[data-model-kind]');
     const textEl = el.closest('[data-text-id]');
     if (textEl && (!modelEl || textEl.contains(el))) {
+      const style = window.getComputedStyle(textEl);
       return {
         kind: 'text',
         id: textEl.dataset.textId,
         role: textEl.dataset.textRole,
         path: `content.text.${textEl.dataset.textId}`,
         label: textEl.dataset.textFallback || textEl.textContent.trim() || 'Text',
+        currentStyle: {
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          fontStyle: style.fontStyle,
+          textAlign: style.textAlign,
+          letterSpacing: style.letterSpacing,
+          lineHeight: style.lineHeight,
+          opacity: style.opacity,
+          transform: style.transform === 'none' ? '' : style.transform,
+        },
       };
     }
     if (!modelEl) return null;

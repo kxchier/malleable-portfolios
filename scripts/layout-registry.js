@@ -5,53 +5,11 @@ const { detectColorKeysFromCss } = require('./color-keys.js');
 
 const ROOT = path.join(__dirname, '..');
 const REGISTRY_PATH = path.join(ROOT, 'generated', 'registry.json');
+const BUILTIN_LAYOUTS_PATH = path.join(ROOT, 'models', 'builtin-layouts.json');
 
-const BUILTIN_LAYOUTS = [
-  {
-    id: 1,
-    key: 'grid',
-    presentationId: 'grid',
-    name: 'Grid',
-    file: 'ver1.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper'],
-    examplePrompt:
-      'A clean responsive grid of square thumbnails, grouped by collection, with even spacing and chunky borders.',
-  },
-  {
-    id: 2,
-    key: 'clothesline',
-    presentationId: 'clothesline',
-    name: 'Clothesline',
-    file: 'ver2.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
-    examplePrompt:
-      'Horizontal scroll strips per collection, like prints clipped on a clothesline — peek and swipe sideways.',
-  },
-  {
-    id: 3,
-    key: 'desk',
-    presentationId: 'desk',
-    name: 'Desk',
-    file: 'ver3.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'secondary'],
-    examplePrompt:
-      'A scattered desk layout — prints loosely piled on a flat surface with slight tilts and soft overlaps.',
-  },
-  {
-    id: 4,
-    key: 'directory',
-    presentationId: 'directory',
-    name: 'Directory',
-    file: 'ver4.html',
-    generated: false,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel'],
-    examplePrompt:
-      'A split-pane file browser — collections as folders on the left, click a file to preview the artwork on the right.',
-  },
-];
+function readBuiltinLayouts() {
+  return JSON.parse(fs.readFileSync(BUILTIN_LAYOUTS_PATH, 'utf8'));
+}
 
 function ensureGeneratedDir() {
   const dir = path.join(ROOT, 'generated');
@@ -73,20 +31,71 @@ function writeGeneratedRegistry(layouts) {
   fs.writeFileSync(REGISTRY_PATH, JSON.stringify({ layouts }, null, 2));
 }
 
+function presentationMetaphorHints(presentation) {
+  if (!presentation) return [];
+  return [
+    presentation.id,
+    presentation.metaphor,
+    presentation.layout_family,
+    ...(presentation.components || []),
+    ...(presentation.visual_language?.materials || []),
+    ...Object.values(presentation.layout_engine || {}).flatMap((value) => {
+      if (!value || typeof value !== 'object') return [value];
+      return Object.values(value);
+    }),
+  ].filter(Boolean).map(String);
+}
+
 function enrichGeneratedLayout(layout) {
-  if (!layout.generated || layout.colorKeys?.length) return layout;
+  if (!layout.generated) return layout;
+  let enriched = layout;
+  let presentation = null;
   try {
-    const css = fs.readFileSync(path.join(ROOT, 'generated', layout.key, 'style.css'), 'utf8');
-    return { ...layout, colorKeys: detectColorKeysFromCss(css) };
+    presentation = JSON.parse(fs.readFileSync(path.join(ROOT, 'presentations', `${layout.key}.json`), 'utf8'));
   } catch {
-    return layout;
+    // no presentation to infer from
   }
+  try {
+    if (!enriched.colorKeys?.length) {
+      const css = fs.readFileSync(path.join(ROOT, 'generated', layout.key, 'style.css'), 'utf8');
+      enriched = { ...enriched, colorKeys: detectColorKeysFromCss(css) };
+    }
+  } catch {
+    // keep existing registry metadata
+  }
+  if (!enriched.designSpace) {
+    if (presentation) {
+      if (!enriched.metaphor && presentation?.metaphor) {
+        enriched = { ...enriched, metaphor: presentation.metaphor };
+      }
+      const y = Number(presentation?.visual_language?.abstract_to_skeuomorphic);
+      const hiddenness = { low: 0.16, medium: 0.55, high: 0.86 }[presentation?.encounter?.hiddenness] ?? 0.35;
+      const progressive = presentation?.encounter?.progressive_disclosure ? 0.16 : 0;
+      const x = Math.max(0, Math.min(1, hiddenness + progressive));
+      enriched = {
+        ...enriched,
+        designSpace: {
+          x,
+          y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.35,
+        },
+      };
+    }
+  }
+  if (presentation) {
+    if (!enriched.metaphor && presentation.metaphor) enriched = { ...enriched, metaphor: presentation.metaphor };
+    enriched = {
+      ...enriched,
+      metaphorHints: [...new Set([...(enriched.metaphorHints || []), ...presentationMetaphorHints(presentation)])],
+    };
+  }
+  return enriched;
 }
 
 function listAllLayouts() {
+  const builtins = readBuiltinLayouts();
   const generated = readGeneratedRegistry().map(enrichGeneratedLayout);
   const byId = new Map();
-  BUILTIN_LAYOUTS.forEach((l) => byId.set(l.id, l));
+  builtins.forEach((l) => byId.set(l.id, l));
   generated.forEach((l) => byId.set(l.id, l));
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
@@ -164,7 +173,8 @@ function deleteGeneratedLayout(layoutKey) {
 module.exports = {
   ROOT,
   REGISTRY_PATH,
-  BUILTIN_LAYOUTS,
+  BUILTIN_LAYOUTS_PATH,
+  readBuiltinLayouts,
   readGeneratedRegistry,
   writeGeneratedRegistry,
   listAllLayouts,

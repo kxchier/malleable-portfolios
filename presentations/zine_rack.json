@@ -1,0 +1,72 @@
+{
+  "id": "zine_rack",
+  "layout_family": "upright_spine_rack",
+  "metaphor": "zine_rack",
+  "visual_language": {
+    "abstract_to_skeuomorphic": 0.39,
+    "materials": [
+      "zine_spine",
+      "paper_spread",
+      "rack_shelf",
+      "risograph_texture"
+    ],
+    "density": "medium"
+  },
+  "encounter": {
+    "fast_discovery_to_deep_encounter": 0.38,
+    "navigation": "spine_scan_then_open",
+    "progressive_disclosure": true,
+    "hiddenness": "medium"
+  },
+  "intent": {
+    "professional_legibility": 0.3,
+    "personal_archive": 0.55,
+    "social_encounter": 0.15
+  },
+  "components": [
+    "rack_shelf",
+    "zine_spine",
+    "zine_spread"
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": {
+        "function": "publicIdentifier",
+        "render": "shortText",
+        "editable": true
+      }
+    },
+    "COLLECTION": {
+      "title": {
+        "function": "publicIdentifier",
+        "render": "shortText",
+        "editable": true
+      },
+      "works": {
+        "render": "expanded",
+        "item": {
+          "type": "__WORK__",
+          "thumbnail": [
+            "images"
+          ]
+        }
+      }
+    },
+    "WORK": {
+      "images": {
+        "render": "expanded",
+        "item": {
+          "render": "image"
+        }
+      }
+    }
+  },
+  "layout_engine": {
+    "collection_container": "horizontal_rack",
+    "work_container": "fanned_spread",
+    "work_tile": {
+      "aspect": "natural",
+      "border": "zine_spine"
+    }
+  }
+}
