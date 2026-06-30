@@ -19,6 +19,7 @@
  *   POST /api/layouts/delete -> remove a generated layout and its files
  *   POST /api/operation -> selected AI provider: parse cursor request into a local operation
  *   POST /api/design-axis -> selected AI provider: score layouts on a custom design axis
+ *   POST /api/image-design-tokens -> OpenAI vision: extract structured design tokens from an image
  *   POST /api/generate-questions -> selected AI provider: ask design questions before generation
  *   POST /api/generate  -> selected AI provider: create new layout (presentation + CSS + JS + SVG assets)
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
@@ -36,6 +37,7 @@ const { generateTemplate } = require('./generate-template.js');
 const { generateQuestions } = require('./generate-questions.js');
 const { parseCursorOperation } = require('./operation-parser.js');
 const { scoreDesignAxis } = require('./design-axis-parser.js');
+const { analyzeImageDesignTokens } = require('./image-design-tokens.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -195,6 +197,21 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[design-axis]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/image-design-tokens' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const result = await analyzeImageDesignTokens({
+        image: body.image,
+        mimeType: body.mimeType,
+        fileName: body.fileName,
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[image-design-tokens]', e.message);
       return sendJSON(res, 400, { error: e.message });
     }
   }

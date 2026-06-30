@@ -4,7 +4,9 @@ const EXAMPLE_CSS = `body.view-KEY {
   color: var(--color-primary);
 }
 .KEY-work {
+  flex: 0 0 var(--space-artSize);
   width: var(--space-artSize);
+  min-width: var(--space-artSize);
   padding: var(--space-imagePadding);
   background: var(--color-paper);
 }
@@ -81,7 +83,14 @@ themeColors (REQUIRED):
 themeTypography / themeSpacing (OPTIONAL but encouraged):
 - Use these when the generated interface should change the whole website shell, not just generated components.
 - themeTypography controls the shared body, portfolio title, and collection-title variables.
-- Use only local/system font stacks already likely available, such as Georgia, Times New Roman, Cormorant Garamond, DM Sans, Trebuchet MS, Arial, Courier New, system-ui, serif, sans-serif, monospace.
+- Choose typography with real personality that matches the metaphor. Avoid defaulting to Arial, Trebuchet MS, DM Sans, or system-ui unless the concept is intentionally plain/utilitarian.
+- Use diverse local/system font stacks that are likely available. Examples:
+  - bubbly/playful/aquatic: 'Cooper Black', 'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif
+  - handmade/zine/sketchbook: 'Comic Sans MS', 'Marker Felt', 'Chalkboard SE', 'Bradley Hand', cursive
+  - typewriter/archive/research: 'American Typewriter', 'Courier New', Courier, monospace
+  - elegant/gallery/literary: 'Cormorant Garamond', Georgia, 'Times New Roman', serif
+  - futuristic/technical: 'DIN Alternate', 'Avenir Next Condensed', 'Arial Narrow', system-ui, sans-serif
+- Use heading1 as the most expressive display font; heading2 should harmonize; body can stay more readable.
 - Do NOT import fonts or use external URLs.
 - themeSpacing controls shared spacing variables: gridGap, artSize, imagePadding. Use CSS lengths like "28px", "13rem", "0.8rem".
 
@@ -102,6 +111,8 @@ css (CRITICAL — editor swatches depend on this):
   Only use a fixed px/rem size for artwork panels when the user explicitly asks for a specific fixed-size object/metaphor.
 - Scope under body.view-{key} and unique class prefixes
 - Generated layouts may be full-bleed, but they must not depend on an unstated parent height. If a root uses absolute positioning, overflow hidden, panning, or height: 100%, also set a concrete min-height such as min-height: 100vh on the root/content surface.
+- Do not create a large blank hero, title stage, or decorative spacer before the first collection. The first collection's heading and at least part of its artwork should appear within the first viewport on desktop and mobile.
+- If you include a generated title/nameplate, keep it compact: no more than 1rem top padding above it and no more than 1rem margin before the first collection.
 - Include .images-scroll { overflow-x: auto; display: flex; gap: var(--space-gridGap); } for scroll layouts
 - Work tiles: show the full artwork. Use object-fit: contain on img, object-position: center, and avoid cropping unless the user explicitly asks for cropped thumbnails.
 
@@ -123,9 +134,9 @@ renderScript:
 - Do NOT use fetch, eval, or external URLs. Inline SVG from ctx.assets only.
 
 assets:
-- Generate 0–4 inline SVG strings for decorative chrome (frames, clips, wall patterns, hooks).
+- Generate 0–6 inline SVG strings for decorative chrome and reference motifs (frames, clips, wall patterns, hooks, clouds, stars, creatures, icons, labels, waves, foliage, etc.).
 - SVG should use currentColor or CSS variables where possible for theme integration.
-- Keys are filenames like "frame.svg", "wall-pattern.svg".
+- Keys are filenames like "frame.svg", "wall-pattern.svg", "cloud.svg", "creature.svg".
 
 Minimal CSS pattern:
 ${EXAMPLE_CSS}
@@ -133,7 +144,7 @@ ${EXAMPLE_CSS}
 Minimal renderScript pattern:
 ${EXAMPLE_RENDER}
 
-Be creative with metaphors, layout, positioning, and skeuomorphic decoration. Always render ALL author artwork from ctx.collections. themeColors MUST match the dark/light mood of your CSS.`;
+Be creative with metaphors, layout, positioning, and skeuomorphic decoration, but prioritize getting the artwork on screen quickly. Always render ALL author artwork from ctx.collections. themeColors MUST match the dark/light mood of your CSS.`;
 }
 
 function buildUserPrompt(userPrompt, context = {}) {
@@ -190,14 +201,26 @@ ${customAxisBlock}
 
 Use this coordinate as a research/prototyping constraint. It should shape the presentation model, encounter model, layout engine, and material language. This is not a decorative slider value.`
     : '';
+  const highFidelityReferenceBlock = /REFERENCE_FIDELITY:\s*high/i.test(String(userPrompt || ''))
+    ? `
+High-fidelity image reference constraint:
+- The uploaded image is the primary art direction, not a loose mood board.
+- Preserve the reference's visible visual language: palette, line quality, texture, softness, composition logic, component metaphors, and interaction mood.
+- Convert named visual motifs from the extracted tokens into concrete interface elements. If tokens mention things like swirling clouds, stars, creatures, windows, posters, vines, waves, stickers, etc., they must appear as visible CSS/SVG/DOM details, not just influence colors or wording.
+- Include at least three reference-derived visual motifs in the generated CSS/renderScript/assets, and make at least one motif animated when the tokens mention motion or atmosphere.
+- Create simple inline SVG assets or generated DOM decorations when needed; do not avoid motifs just because no external image asset exists.
+- Do not let clarification answers replace the image with an unrelated world. If the prompt mentions another object or place, translate it through the reference image's style and structure.
+- The generated website should be recognizable as descended from the reference image at first glance.`
+    : '';
   return `User prompt: ${userPrompt}
 
 Portfolio has ${collections.length} collection(s): ${collectionSummary || 'none yet'}.
 Theme colors: primary ${context.primary || '#1a1816'}, accent ${context.accent || '#8b7355'}, background ${context.background || '#f8f6f3'}.
 ${existingMetaphorsBlock}
 ${designSpaceBlock}
+${highFidelityReferenceBlock}
 
-Generate a unique interface matching the prompt. Include decorative SVG assets when the metaphor benefits from them (frames, lines, surfaces, etc.).`;
+Generate a unique interface matching the prompt. Include decorative SVG assets when the metaphor benefits from them (frames, lines, surfaces, atmospheric motifs, icons, creatures, etc.); for REFERENCE_FIDELITY: high prompts, include visible reference-derived motifs as required interface material.`;
 }
 
 module.exports = {

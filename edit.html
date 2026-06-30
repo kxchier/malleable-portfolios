@@ -31,7 +31,10 @@
       <section class="design-space-panel" aria-label="Design space instrument">
         <div class="design-space-head">
           <strong>Design space</strong>
-          <button id="expand-design-space" class="ghost-btn design-space-expand-btn" type="button">Expand</button>
+          <div class="design-space-head-actions">
+            <button id="expand-design-space" class="ghost-btn design-space-expand-btn" type="button">Expand</button>
+            <button id="hide-design-space" class="ghost-btn design-space-hide-btn" type="button">Hide</button>
+          </div>
         </div>
         <div class="design-space-wrap">
           <span class="axis-label axis-label--top">Skeuomorphic</span>
@@ -51,6 +54,13 @@
         </div>
       </section>
     </aside>
+    <button id="show-design-space" class="show-design-space-btn" type="button" hidden aria-label="Show design space">
+      <span class="show-design-space-btn__arrow" aria-hidden="true">›</span>
+      <span class="show-design-space-btn__glyph" aria-hidden="true">
+        <span></span>
+      </span>
+      <span class="show-design-space-btn__text">Design space</span>
+    </button>
 
     <section id="design-space-expanded" class="design-space-expanded" hidden aria-label="Expanded design space">
       <div class="design-space-expanded-head">
@@ -88,6 +98,13 @@
               <strong>Generate</strong>
             </div>
             <div class="prompt-examples" id="prompt-examples"></div>
+            <div class="image-vibe-panel" id="image-vibe-panel">
+              <input id="image-vibe-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+              <button id="image-vibe-pick" class="ghost-btn image-vibe-pick" type="button">Add image</button>
+              <button id="image-vibe-analyze" class="ghost-btn image-vibe-analyze" type="button" disabled>Extract vibe</button>
+              <div id="image-vibe-preview" class="image-vibe-preview" hidden></div>
+              <div id="image-vibe-tokens" class="image-vibe-tokens" hidden></div>
+            </div>
             <textarea id="ai-prompt" rows="5" placeholder="Describe a portfolio interface for this point"></textarea>
             <div id="generate-questions" class="generate-questions" hidden></div>
             <p id="generate-status" class="generate-status" hidden></p>

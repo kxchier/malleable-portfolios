@@ -38,6 +38,90 @@
         ]
       },
       "createdAt": "2026-06-25T21:03:00.054Z"
+    },
+    {
+      "id": 7,
+      "key": "aqua_city",
+      "presentationId": "aqua_city",
+      "name": "Aqua City",
+      "metaphor": "aquatic_ecosystem",
+      "file": "ver7.html",
+      "generated": true,
+      "prompt": "REFERENCE_FIDELITY: high\nUse the uploaded image as a style reference, not a literal scene copy.\nPreserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.\nSummary: A vibrant, immersive nature-meets-urban interface blending aquatic life with green energy and cityscape elements.\nVisual style: photorealistic, high contrast, vivid colors, dynamic water effects\nMood: energetic, fresh, hopeful, futuristic\nPalette: sky blue #6ec1e4 (background), fresh green #4caf50 (accent), sun yellow #ffeb3b (highlight), coral orange #ff7043 (primary), deep ocean blue #0277bd (secondary)\nTypography personality: modern, clean, bold\nLayout composition: layered foreground and background with overlapping elements\nLayout texture: water ripple and splash textures\nComponents: interactive splash overlays, floating fish icons or avatars, wind turbine feature highlights, cityscape background panels, bubble or dome-shaped containers\nInterface metaphor: immersive ecosystem blending water, nature, and urban life\nNavigation: scroll or hover to reveal layered content with fluid transitions\nInteraction pace: lingering with smooth transitions\nGenerator brief: Create a vibrant portfolio interface inspired by a dynamic aquatic ecosystem merging with green energy and urban elements. Use layered water splash effects, colorful tropical fish icons, and transparent dome-shaped info containers to evoke immersion and freshness. Employ a modern, bold typography with vivid blues, greens, and coral accents, and incorporate smooth fluid animations and interactive overlays for a hopefu\n\nDesign clarification answers:",
+      "examplePrompt": "REFERENCE_FIDELITY: high\nUse the uploaded image as a style reference, not a literal scene copy.\nPreserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.\nSummary: A vibrant, immersive nature-meets-urban interface blending aquatic life with green energy and cityscape elements.\nVisual style: photorealistic, high contrast, vivid colors, dynamic water effects\nMood: energetic, fresh, hopeful, futuristic\nPalette: sky blue #6ec1e4 (background), fresh green #4caf50 (accent), sun yellow #ffeb3b (highlight), coral orange #ff7043 (primary), deep ocean blue #0277bd (secondary)\nTypography personality: modern, clean, bold\nLayout composition: layered foreground and background with overlapping elements\nLayout texture: water ripple and splash textures\nComponents: interactive splash overlays, floating fish icons or avatars, wind turbine feature highlights, cityscape background panels, bubble or dome-shaped containers\nInterface metaphor: immersive ecosystem blending water, nature, and urban life\nNavigation: scroll or hover to reveal layered content with fluid transitions\nInteraction pace: lingering with smooth transitions\nGenerator brief: Create a vibrant portfolio interface inspired by a dynamic aquatic ecosystem merging with green energy and urban elements. Use layered water splash effects, colorful tropical fish icons, and transparent dome-shaped info containers to evoke immersion and freshness. Employ a modern, bold typography with vivid blues, greens, and coral accents, and incorporate smooth fluid animations and interactive overlays for a hopefu\n\nDesign clarification answers:",
+      "colorKeys": [
+        "background",
+        "primary",
+        "accent",
+        "paper",
+        "panel"
+      ],
+      "designSpace": {
+        "x": 0.7611008429878736,
+        "y": 0.4239722061378113,
+        "customAxes": [
+          {
+            "id": "axis_visible_friction",
+            "name": "Visible to Friction",
+            "leftLabel": "Visible",
+            "rightLabel": "Friction",
+            "value": 0.7611008429878736
+          },
+          {
+            "id": "axis_abstract_skeuomorphic",
+            "name": "Abstract to Skeuomorphic",
+            "leftLabel": "Abstract",
+            "rightLabel": "Skeuomorphic",
+            "value": 0.4239722061378113
+          }
+        ]
+      },
+      "createdAt": "2026-06-27T23:48:37.143Z"
+    },
+    {
+      "id": 8,
+      "key": "celestial_scroll",
+      "presentationId": "celestial_scroll",
+      "name": "Night Sky",
+      "metaphor": "celestial_scroll",
+      "file": "ver8.html",
+      "generated": true,
+      "prompt": "REFERENCE_FIDELITY: high\nUse the uploaded image as a style reference, not a literal scene copy.\nPreserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.\nSummary: A dreamy, celestial nightscape with whimsical creatures and swirling cloud motifs.\nVisual style: hand-drawn illustration, delicate linework, watercolor texture\nMood: dreamy, mystical, serene\nPalette: midnight blue #2e3a65 (background), soft lavender #a3a9c1 (accent), cloud white #f0f1f5 (highlight), muted gray #8a8f9e (detail), pale cream #f7f4ee (creature fill)\nTypography personality: elegant, whimsical, soft\nLayout composition: layered with flowing vertical and diagonal movement\nLayout texture: watercolor paper grain with subtle brush strokes\nComponents: floating translucent profile card, section poster links with soft edges, decorative swirling dividers\nInterface metaphor: a celestial journey through clouds and stars\nNavigation: scrolling vertical flow with gentle parallax layers\nInteraction pace: lingering and gentle\nGenerator brief: Create a portfolio interface inspired by a dreamy celestial nightscape with swirling clouds and whimsical creatures. Use layered watercolor textures and soft, organic shapes with a muted palette of midnight blues, soft lavenders, and creamy whites. Employ elegant serif typography and gentle parallax scrolling to evoke a serene, mystical journey through the interface, featuring floating translucent profile cards and s\n\nDesign clarification answers:",
+      "examplePrompt": "REFERENCE_FIDELITY: high\nUse the uploaded image as a style reference, not a literal scene copy.\nPreserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.\nSummary: A dreamy, celestial nightscape with whimsical creatures and swirling cloud motifs.\nVisual style: hand-drawn illustration, delicate linework, watercolor texture\nMood: dreamy, mystical, serene\nPalette: midnight blue #2e3a65 (background), soft lavender #a3a9c1 (accent), cloud white #f0f1f5 (highlight), muted gray #8a8f9e (detail), pale cream #f7f4ee (creature fill)\nTypography personality: elegant, whimsical, soft\nLayout composition: layered with flowing vertical and diagonal movement\nLayout texture: watercolor paper grain with subtle brush strokes\nComponents: floating translucent profile card, section poster links with soft edges, decorative swirling dividers\nInterface metaphor: a celestial journey through clouds and stars\nNavigation: scrolling vertical flow with gentle parallax layers\nInteraction pace: lingering and gentle\nGenerator brief: Create a portfolio interface inspired by a dreamy celestial nightscape with swirling clouds and whimsical creatures. Use layered watercolor textures and soft, organic shapes with a muted palette of midnight blues, soft lavenders, and creamy whites. Employ elegant serif typography and gentle parallax scrolling to evoke a serene, mystical journey through the interface, featuring floating translucent profile cards and s\n\nDesign clarification answers:",
+      "colorKeys": [
+        "background",
+        "primary",
+        "accent",
+        "paper"
+      ],
+      "designSpace": {
+        "x": 0.45383852499661903,
+        "y": 0.3723069756608828,
+        "customAxes": [
+          {
+            "id": "axis_visible_friction",
+            "name": "Visible to Friction",
+            "leftLabel": "Visible",
+            "rightLabel": "Friction",
+            "value": 0.45383852499661903
+          },
+          {
+            "id": "axis_abstract_skeuomorphic",
+            "name": "Abstract to Skeuomorphic",
+            "leftLabel": "Abstract",
+            "rightLabel": "Skeuomorphic",
+            "value": 0.3723069756608828
+          },
+          {
+            "id": "axis_1782518606586",
+            "name": "Colorful to Monotone",
+            "leftLabel": "Colorful",
+            "rightLabel": "Monotone",
+            "value": 0.5
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T15:57:19.109Z"
     }
   ]
 }

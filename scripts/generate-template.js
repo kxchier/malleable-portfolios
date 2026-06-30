@@ -21,7 +21,7 @@ const {
   THEME_COLOR_KEYS,
 } = require('./color-keys.js');
 
-const GENERATE_MAX_TOKENS = Number(process.env.GENERATE_MAX_TOKENS || 7000);
+const GENERATE_MAX_TOKENS = Number(process.env.GENERATE_MAX_TOKENS || 12000);
 
 function extractJson(text) {
   const trimmed = String(text || '').trim();
@@ -241,11 +241,23 @@ async function callProvider(apiKey, userPrompt, context = {}) {
     user: buildUserPrompt(userPrompt, context),
     maxTokens: GENERATE_MAX_TOKENS,
     temperature: 0.7,
+    responseFormat: provider === 'cerebras' ? { type: 'json_object' } : null,
   });
 
   const text = result.text;
   if (!text) throw new Error(`${providerLabel(provider)} returned no content`);
-  return extractJson(text);
+  try {
+    return extractJson(text);
+  } catch (error) {
+    const stoppedForLength = ['max_tokens', 'length'].includes(String(result.stopReason || '').toLowerCase());
+    if (stoppedForLength) {
+      throw new Error(
+        `${providerLabel(provider)} response was cut off before the JSON finished. ` +
+        `Try generating again, or set GENERATE_MAX_TOKENS higher than ${GENERATE_MAX_TOKENS} in .env.`
+      );
+    }
+    throw error;
+  }
 }
 
 function escapeHtml(text) {
@@ -258,7 +270,6 @@ function escapeHtml(text) {
 
 function buildVersionNav(activeKey, layouts = []) {
   const links = [
-    { label: 'Home', file: 'index.html' },
     ...layouts.map((layout) => ({ label: layout.name, file: layout.file, key: layout.key })),
     { label: 'Edit', file: 'edit.html' },
   ];
@@ -303,12 +314,15 @@ function buildShellHtml(key, name, layouts = []) {
       min-height: 100vh;
       padding: 0;
     }
+    body.view-${key} > header {
+      position: relative;
+      z-index: 1000;
+      isolation: isolate;
+    }
     body.view-${key} #content {
       min-height: 100vh;
       position: relative;
-    }
-    body.view-${key} #content > * {
-      min-height: 100vh;
+      z-index: 1;
     }
   </style>
   <script src="./scripts/content.js"></script>

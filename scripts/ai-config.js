@@ -4,6 +4,7 @@
  * Put real keys in a local .env file, never in tracked source:
  *   WALO_AI_PROVIDER=anthropic
  *   ANTHROPIC_API_KEY=<your Anthropic key>
+ *   OPENAI_API_KEY=<your OpenAI key>
  */
 const fs = require('fs');
 const path = require('path');
@@ -35,11 +36,13 @@ const AI_PROVIDER = (process.env.WALO_AI_PROVIDER || 'anthropic').toLowerCase();
 const LOCAL_API_KEYS = {
   anthropic: '',
   cerebras: '',
+  openai: '',
 };
 
 const API_KEYS = {
   anthropic: process.env.ANTHROPIC_API_KEY || LOCAL_API_KEYS.anthropic,
   cerebras: process.env.CEREBRAS_API_KEY || LOCAL_API_KEYS.cerebras,
+  openai: process.env.OPENAI_API_KEY || LOCAL_API_KEYS.openai,
 };
 
 function apiKeyFor(provider) {

@@ -1,6 +1,8 @@
 /** Cursor-tied point-and-prompt assistant (edit mode iframe only). */
 (function () {
   if (!document.body.dataset.editMode) return;
+  if (window.__PORTFOLIO_CURSOR_ASSISTANT_READY__) return;
+  window.__PORTFOLIO_CURSOR_ASSISTANT_READY__ = true;
 
   let bubble = null;
   let activeTarget = null;

@@ -1,0 +1,61 @@
+{
+  "id": "celestial_scroll",
+  "layout_family": "vertical_scroll",
+  "metaphor": "celestial_scroll",
+  "visual_language": "hand-drawn watercolor celestial nightscape with layered cloud forms, swirling linework, star clusters, and whimsical creatures drifting through deep midnight sky",
+  "encounter": "Artist as stargazer — works float as illuminated vignettes through a scrolling celestial journey, each collection a new constellation or cloudbank to drift through",
+  "intent": "Evoke serene mystical wonder; collections emerge gently from cloud layers as viewer scrolls downward through the night sky",
+  "components": [
+    {
+      "id": "star_field",
+      "role": "atmospheric_background",
+      "description": "Animated SVG star field scattered across the background"
+    },
+    {
+      "id": "cloud_divider",
+      "role": "section_separator",
+      "description": "Swirling SVG cloud bands between collections"
+    },
+    {
+      "id": "work_vignette",
+      "role": "artwork_tile",
+      "description": "Translucent paper-toned frame with soft cream matting, art centered within"
+    },
+    {
+      "id": "collection_header",
+      "role": "section_label",
+      "description": "Elegant serif heading on a soft translucent banner drifting across the sky"
+    },
+    {
+      "id": "creature_accent",
+      "role": "decorative_motif",
+      "description": "Small whimsical creature SVGs drifting near collections"
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO": {
+      "title": {
+        "editable": true,
+        "role": "portfolio-title"
+      }
+    },
+    "COLLECTION": {
+      "title": {
+        "editable": true,
+        "role": "collection-title"
+      },
+      "works": {
+        "editable": true
+      }
+    },
+    "WORK": {
+      "images": {
+        "editable": true
+      }
+    }
+  },
+  "layout_engine": {
+    "type": "vertical_layered_scroll",
+    "description": "Full-width sections stacked vertically; artworks in horizontal scroll strips per collection; cloud SVGs and stars layer behind as atmosphere; gentle CSS parallax via transform on scroll"
+  }
+}

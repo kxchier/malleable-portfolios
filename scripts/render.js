@@ -284,6 +284,7 @@ window.PortfolioRender = (() => {
   }
 
   let directoryFrameObserver = null;
+  let directoryFrameRaf = 0;
 
   function layoutDirectoryViewport() {
     if (!document.body.classList.contains('view-directory')) return;
@@ -321,7 +322,13 @@ window.PortfolioRender = (() => {
     const frame = window.frameElement;
     if (frame && typeof ResizeObserver !== 'undefined') {
       if (!directoryFrameObserver) {
-        directoryFrameObserver = new ResizeObserver(() => layoutDirectoryViewport());
+        directoryFrameObserver = new ResizeObserver(() => {
+          if (directoryFrameRaf) return;
+          directoryFrameRaf = requestAnimationFrame(() => {
+            directoryFrameRaf = 0;
+            layoutDirectoryViewport();
+          });
+        });
       }
       directoryFrameObserver.disconnect();
       directoryFrameObserver.observe(frame);
@@ -364,7 +371,14 @@ window.PortfolioRender = (() => {
 
     requestAnimationFrame(() => layoutClotheslineRig(rig));
     if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(() => layoutClotheslineRig(rig));
+      let clotheslineRaf = 0;
+      const observer = new ResizeObserver(() => {
+        if (clotheslineRaf) return;
+        clotheslineRaf = requestAnimationFrame(() => {
+          clotheslineRaf = 0;
+          layoutClotheslineRig(rig);
+        });
+      });
       observer.observe(items);
       observer.observe(scroll);
     }

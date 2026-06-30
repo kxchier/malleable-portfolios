@@ -17,6 +17,7 @@ const DESIGN_SPACE_DEFAULT = { x: 0.5, y: 0.5 };
 const DESIGN_SPACE_COLORS = ['#2f3437', '#9b7a4d', '#4f7f78', '#b45c47', '#6f6aa8', '#5f8a4f'];
 const DESIGN_SCAFFOLD_MARKER = 'Design-space scaffold:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
+const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
 let customDesignAxes = [];
 let draggingAxisNote = null;
@@ -51,6 +52,7 @@ async function initEditMode() {
   editedTheme.spacing.artSize = artSizePx + 'px';
   document.documentElement.style.setProperty('--space-artSize', artSizePx + 'px');
   document.getElementById('art-size-display').textContent = artSizePx + 'px';
+  syncSpacingControlsForCurrentVersion();
 
   applyLayoutMetadata();
   renderVersionButtons();
@@ -153,6 +155,29 @@ function getVersionSpacingForKey(versionKey) {
   };
 }
 
+function setCurrentVersionSpacingValue(key, value) {
+  const versionKey = getCurrentVersionKey();
+  ensureVersionSpacingObject(versionKey);
+  editedTheme.versions[versionKey].spacing[key] = value;
+  document.documentElement.style.setProperty(`--space-${key}`, value);
+}
+
+function syncSpacingControlsForCurrentVersion() {
+  const spacing = getVersionSpacingForKey(getCurrentVersionKey());
+  const gridGap = Math.min(40, Math.max(8, Math.round(parseSpacingPx(spacing.gridGap))));
+  const artSize = Math.min(320, Math.max(120, Math.round(parseSpacingPx(spacing.artSize || '190px'))));
+  const gridGapSlider = document.getElementById('grid-gap');
+  const artSizeSlider = document.getElementById('art-size');
+  if (gridGapSlider) gridGapSlider.value = gridGap;
+  if (artSizeSlider) artSizeSlider.value = artSize;
+  document.documentElement.style.setProperty('--space-gridGap', gridGap + 'px');
+  document.documentElement.style.setProperty('--space-artSize', artSize + 'px');
+  const gridGapDisplay = document.getElementById('grid-gap-display');
+  const artSizeDisplay = document.getElementById('art-size-display');
+  if (gridGapDisplay) gridGapDisplay.textContent = gridGap + 'px';
+  if (artSizeDisplay) artSizeDisplay.textContent = artSize + 'px';
+}
+
 function getCurrentVersionColors() {
   return getVersionColorsForKey(getCurrentVersionKey());
 }
@@ -200,6 +225,11 @@ function patchPreview() {
 function setupTextEditBridge() {
   window.addEventListener('message', (e) => {
     if (!e.data) return;
+    if (e.data.source === 'portfolio-preview-nav') {
+      const layout = PORTFOLIO_LAYOUTS.find((item) => item.key === e.data.key || item.presentationId === e.data.key);
+      if (layout) selectVersion(layout.id);
+      return;
+    }
     if (e.data.source === 'portfolio-text-edit') {
       if (e.data.type === 'change') handleTextEditChange(e.data);
       return;
@@ -614,18 +644,16 @@ function applyCursorOperation(operation) {
 
   if (operation.type === 'spacing') {
     if (operation.gridGap) {
-      editedTheme.spacing.gridGap = operation.gridGap;
+      setCurrentVersionSpacingValue('gridGap', operation.gridGap);
       const gridGapSlider = document.getElementById('grid-gap');
       if (gridGapSlider) gridGapSlider.value = parseSpacingPx(operation.gridGap);
       document.getElementById('grid-gap-display').textContent = operation.gridGap;
-      document.documentElement.style.setProperty('--space-gridGap', operation.gridGap);
     }
     if (operation.artSize) {
-      editedTheme.spacing.artSize = operation.artSize;
+      setCurrentVersionSpacingValue('artSize', operation.artSize);
       const artSizeSlider = document.getElementById('art-size');
       if (artSizeSlider) artSizeSlider.value = parseSpacingPx(operation.artSize);
       document.getElementById('art-size-display').textContent = operation.artSize;
-      document.documentElement.style.setProperty('--space-artSize', operation.artSize);
     }
     updatePreview();
     refreshInspectModel();
@@ -706,10 +734,17 @@ function applyLayoutMetadata() {
 function syncDeviceFrameLayoutClass() {
   const layout = getLayout(currentVersion);
   const isDirectory = layout?.key === 'directory';
+  const isGenerated = Boolean(layout?.generated);
   const frame = document.getElementById('device-frame');
   const previewArea = document.querySelector('.preview-area');
-  if (frame) frame.classList.toggle('preview-directory', isDirectory);
-  if (previewArea) previewArea.classList.toggle('preview-directory', isDirectory);
+  if (frame) {
+    frame.classList.toggle('preview-directory', isDirectory);
+    frame.classList.toggle('preview-generated', isGenerated);
+  }
+  if (previewArea) {
+    previewArea.classList.toggle('preview-directory', isDirectory);
+    previewArea.classList.toggle('preview-generated', isGenerated);
+  }
 }
 
 function selectVersion(versionId) {
@@ -717,6 +752,7 @@ function selectVersion(versionId) {
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
     b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
   });
+  syncSpacingControlsForCurrentVersion();
   renderDesignSpace();
   renderCustomDesignAxes();
   syncPaletteVisibility();
@@ -1475,8 +1511,44 @@ function setupDesignSpaceInstrument() {
 
   const expandedPanel = document.getElementById('design-space-expanded');
   const container = document.getElementById('edit-container');
+  const showDesignSpaceBtn = document.getElementById('show-design-space');
+
+  const setDesignSidebarHidden = (hidden) => {
+    if (!container) return;
+    container.classList.toggle('design-sidebar-hidden', hidden);
+    document.body.classList.toggle('design-sidebar-hidden', hidden);
+    if (showDesignSpaceBtn) showDesignSpaceBtn.hidden = !hidden;
+    if (hidden && expandedPanel) {
+      expandedPanel.hidden = true;
+      container.classList.remove('design-space-expanded-open');
+    }
+    try {
+      localStorage.setItem(DESIGN_SIDEBAR_HIDDEN_STORE, hidden ? '1' : '0');
+    } catch {
+      // Sidebar visibility can remain session-local if storage is unavailable.
+    }
+    if (!hidden) {
+      renderDesignSpace();
+      renderSidebarDesignAxes();
+    }
+  };
+
+  try {
+    setDesignSidebarHidden(localStorage.getItem(DESIGN_SIDEBAR_HIDDEN_STORE) === '1');
+  } catch {
+    setDesignSidebarHidden(false);
+  }
+
+  document.getElementById('hide-design-space')?.addEventListener('click', () => {
+    setDesignSidebarHidden(true);
+  });
+  showDesignSpaceBtn?.addEventListener('click', () => {
+    setDesignSidebarHidden(false);
+  });
+
   document.getElementById('expand-design-space')?.addEventListener('click', () => {
     if (!expandedPanel || !container) return;
+    setDesignSidebarHidden(false);
     expandedPanel.hidden = false;
     container.classList.add('design-space-expanded-open');
     renderDesignSpace();
@@ -1540,6 +1612,13 @@ function setupAI() {
   const questionsEl = document.getElementById('generate-questions');
   const generatePanel = generateBtn?.closest('.generate-panel');
   const generateTitle = generatePanel?.querySelector('.generate-panel-head strong');
+  const promptEl = document.getElementById('ai-prompt');
+  const imageInput = document.getElementById('image-vibe-input');
+  const imagePickBtn = document.getElementById('image-vibe-pick');
+  const imageAnalyzeBtn = document.getElementById('image-vibe-analyze');
+  const imagePreview = document.getElementById('image-vibe-preview');
+  const imageTokensEl = document.getElementById('image-vibe-tokens');
+  let selectedImageFile = null;
 
   const setGenerateMode = (mode = 'compose') => {
     if (generatePanel) generatePanel.dataset.generateMode = mode;
@@ -1558,6 +1637,184 @@ function setupAI() {
     setGenerateMode('compose');
     generateBtn.textContent = 'Generate version';
   };
+
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Could not read image file'));
+    reader.readAsDataURL(file);
+  });
+
+  const imageFileToFastDataUrl = async (file) => {
+    if (!file?.type?.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+      return fileToDataUrl(file);
+    }
+
+    const sourceUrl = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.decoding = 'async';
+      const loaded = new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('Could not prepare image for vibe extraction'));
+      });
+      image.src = sourceUrl;
+      await loaded;
+
+      const maxSide = 1024;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+      if (scale >= 1 && file.size < 900_000) return fileToDataUrl(file);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.82);
+    } catch {
+      return fileToDataUrl(file);
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  };
+
+  const updateImagePreview = (file) => {
+    selectedImageFile = file || null;
+    if (imageAnalyzeBtn) imageAnalyzeBtn.disabled = !selectedImageFile;
+    if (!imagePreview) return;
+    if (!selectedImageFile) {
+      imagePreview.hidden = true;
+      imagePreview.innerHTML = '';
+      return;
+    }
+    const url = URL.createObjectURL(selectedImageFile);
+    imagePreview.hidden = false;
+    imagePreview.innerHTML = `
+      <img src="${url}" alt="">
+      <span>${PortfolioContent.escapeHtml(selectedImageFile.name || 'Reference image')}</span>
+    `;
+    imagePreview.querySelector('img')?.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+  };
+
+  const colorChipHtml = (color) => `
+    <span class="image-vibe-chip">
+      <i style="background:${PortfolioContent.escapeHtml(color.hex)}"></i>
+      ${PortfolioContent.escapeHtml(color.name || color.hex)}
+    </span>
+  `;
+
+  const renderImageTokens = (tokens, model) => {
+    if (!imageTokensEl) return;
+    const palette = Array.isArray(tokens.palette) ? tokens.palette.slice(0, 6) : [];
+    imageTokensEl.hidden = false;
+    imageTokensEl.innerHTML = `
+      <div class="image-vibe-token-head">
+        <strong>${PortfolioContent.escapeHtml(tokens.interfaceTranslation?.metaphor || 'Image vibe')}</strong>
+        <span>${PortfolioContent.escapeHtml(model || 'gpt-4.1-mini')}</span>
+      </div>
+      ${tokens.summary ? `<p>${PortfolioContent.escapeHtml(tokens.summary)}</p>` : ''}
+      ${palette.length ? `<div class="image-vibe-palette">${palette.map(colorChipHtml).join('')}</div>` : ''}
+    `;
+  };
+
+  const tokenLine = (label, value) => {
+    const text = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value || '').trim();
+    return text ? `${label}: ${text}` : '';
+  };
+
+  const formatImageTokenPrompt = (tokens) => {
+    const palette = Array.isArray(tokens.palette)
+      ? tokens.palette.map((color) => `${color.name || color.hex} ${color.hex}${color.role ? ` (${color.role})` : ''}`).join(', ')
+      : '';
+    return [
+      'REFERENCE_FIDELITY: high',
+      'Use the uploaded image as a style reference, not a literal scene copy.',
+      'Preserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.',
+      tokenLine('Summary', tokens.summary),
+      tokenLine('Visual style', tokens.visualStyle),
+      tokenLine('Mood', tokens.mood),
+      tokenLine('Palette', palette),
+      tokenLine('Typography personality', tokens.typography?.personality),
+      tokenLine('Layout composition', tokens.layout?.composition),
+      tokenLine('Layout texture', tokens.layout?.texture),
+      tokenLine('Components', tokens.components),
+      tokenLine('Interface metaphor', tokens.interfaceTranslation?.metaphor),
+      tokenLine('Navigation', tokens.interfaceTranslation?.navigation),
+      tokenLine('Interaction pace', tokens.interaction?.pace),
+      tokens.generationPrompt ? `Generator brief: ${tokens.generationPrompt}` : '',
+    ].filter(Boolean).join('\n');
+  };
+
+  const analyzeSelectedImage = async () => {
+    if (!selectedImageFile) return;
+    const previousText = imageAnalyzeBtn?.textContent || 'Extract vibe';
+    if (imageAnalyzeBtn) {
+      imageAnalyzeBtn.disabled = true;
+      imageAnalyzeBtn.textContent = 'Extracting...';
+    }
+    if (generateStatus) {
+      generateStatus.hidden = false;
+      generateStatus.textContent = 'Reading image vibe with GPT-4.1 mini...';
+      generateStatus.className = 'generate-status generate-status--busy';
+    }
+    try {
+      const image = await imageFileToFastDataUrl(selectedImageFile);
+      const data = await fetchJson('/api/image-design-tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image,
+          mimeType: selectedImageFile.type,
+          fileName: selectedImageFile.name,
+        }),
+      });
+      const prompt = formatImageTokenPrompt(data.tokens || {});
+      const existing = promptEl.value.trim();
+      promptEl.value = existing
+        ? `${existing}\n\nImage-derived design tokens:\n${prompt}`
+        : prompt;
+      resetQuestions();
+      pendingGeneratePrompt = promptEl.value.trim();
+      pendingGenerateReady = true;
+      renderImageTokens(data.tokens || {}, data.model);
+      if (generateStatus) {
+        generateStatus.textContent = 'Image vibe extracted. Click Generate to build from the reference.';
+        generateStatus.className = 'generate-status generate-status--ok';
+      }
+    } catch (e) {
+      if (generateStatus) {
+        generateStatus.textContent = e.message;
+        generateStatus.className = 'generate-status generate-status--err';
+      }
+      alert(`Could not extract image vibe:\n\n${e.message}`);
+    } finally {
+      if (imageAnalyzeBtn) {
+        imageAnalyzeBtn.disabled = !selectedImageFile;
+        imageAnalyzeBtn.textContent = previousText;
+      }
+    }
+  };
+
+  imagePickBtn?.addEventListener('click', () => imageInput?.click());
+  imageAnalyzeBtn?.addEventListener('click', analyzeSelectedImage);
+  imageInput?.addEventListener('change', () => {
+    updateImagePreview(imageInput.files?.[0] || null);
+  });
+  generatePanel?.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    e.preventDefault();
+    generatePanel.classList.add('image-vibe-dragover');
+  });
+  generatePanel?.addEventListener('dragleave', () => {
+    generatePanel.classList.remove('image-vibe-dragover');
+  });
+  generatePanel?.addEventListener('drop', (e) => {
+    const file = Array.from(e.dataTransfer?.files || []).find((item) => item.type.startsWith('image/'));
+    if (!file) return;
+    e.preventDefault();
+    generatePanel.classList.remove('image-vibe-dragover');
+    updateImagePreview(file);
+  });
 
   const formatQuestionCategory = (category) => {
     const labels = {
@@ -1667,7 +1924,7 @@ function setupAI() {
   };
 
   generateBtn.addEventListener('click', async () => {
-    const prompt = document.getElementById('ai-prompt').value.trim();
+    const prompt = promptEl.value.trim();
     if (!prompt) {
       alert('Describe the layout you want first.');
       return;
@@ -2051,8 +2308,7 @@ function setupPaletteDrag() {
 function setupGridGapListener() {
   document.getElementById('grid-gap').addEventListener('input', (e) => {
     const value = e.target.value;
-    editedTheme.spacing.gridGap = value + 'px';
-    document.documentElement.style.setProperty('--space-gridGap', value + 'px');
+    setCurrentVersionSpacingValue('gridGap', value + 'px');
     document.getElementById('grid-gap-display').textContent = value + 'px';
     updatePreview();
     refreshInspectModel();
@@ -2062,8 +2318,7 @@ function setupGridGapListener() {
 function setupArtSizeListener() {
   document.getElementById('art-size').addEventListener('input', (e) => {
     const value = e.target.value;
-    editedTheme.spacing.artSize = value + 'px';
-    document.documentElement.style.setProperty('--space-artSize', value + 'px');
+    setCurrentVersionSpacingValue('artSize', value + 'px');
     document.getElementById('art-size-display').textContent = value + 'px';
     updatePreview();
     refreshInspectModel();
@@ -2079,9 +2334,33 @@ function getEditedGridGapPx() {
 function setupPreview() {
   updatePreview();
   document.getElementById('save-btn').addEventListener('click', saveChanges);
-  document.getElementById('preview-btn').addEventListener('click', () => {
-    const layout = getLayout(currentVersion);
-    window.open(`./${layout?.file || 'ver1.html'}`, '_blank');
+  document.getElementById('preview-btn').addEventListener('click', openLivePreviewWindow);
+}
+
+function openLivePreviewWindow() {
+  const previewWindow = window.open('', '_blank');
+  if (!previewWindow) {
+    alert('Could not open preview. Please allow popups for this local editor.');
+    return;
+  }
+
+  previewWindow.document.write('<!DOCTYPE html><title>Loading preview...</title><p style="font-family: system-ui; padding: 2rem;">Loading preview...</p>');
+  previewWindow.document.close();
+
+  window.appData.then(({ manifest }) => {
+    const baseHref = new URL('./', window.location.href).href;
+    const html = buildPreviewHTML(manifest, currentVersion, getPreviewWidth(), {
+      baseHref,
+      editMode: false,
+      enableAssistant: false,
+    });
+    previewWindow.document.open();
+    previewWindow.document.write(html);
+    previewWindow.document.close();
+  }).catch((error) => {
+    previewWindow.document.open();
+    previewWindow.document.write(`<!DOCTYPE html><title>Preview error</title><pre>${PortfolioContent.escapeHtml(error.message)}</pre>`);
+    previewWindow.document.close();
   });
 }
 
@@ -2110,10 +2389,21 @@ async function saveChanges() {
       body: JSON.stringify(editedContent),
     }).catch(() => {});
     const rebuildData = await rebuildRes.json();
-    const { collections, content } = rebuildData;
+    const { content } = rebuildData;
     if (content) contentModel = content;
+    try {
+      const data = await fetchJson('/api/layouts');
+      if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
+    } catch {
+      // Layouts are already in memory; refresh is just for the save label.
+    }
     refreshInspectModel();
-    btn.textContent = `Saved ✓ (${collections.length} collections)`;
+    const layoutCount = (window.PORTFOLIO_LAYOUTS || []).length;
+    const generatedCount = (window.PORTFOLIO_LAYOUTS || []).filter((layout) => layout.generated).length;
+    const layoutLabel = generatedCount
+      ? `${layoutCount} layouts, ${generatedCount} generated`
+      : `${layoutCount} layouts`;
+    btn.textContent = `Saved ✓ (${layoutLabel})`;
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
   } catch (e) {
     btn.textContent = original;
@@ -2165,7 +2455,6 @@ function buildTextHeading(tag, className, id, role, fallback, theme, content, ve
 
 function buildPreviewNav(activeLayout) {
   const links = [
-    { label: 'Home', file: 'index.html' },
     ...PORTFOLIO_LAYOUTS.map((layout) => ({ label: layout.name, file: layout.file, key: layout.key })),
     { label: 'Edit', file: 'edit.html' },
   ];
@@ -2174,13 +2463,14 @@ function buildPreviewNav(activeLayout) {
     if (link.key && link.key === activeLayout.key) {
       return `<span class="active-view">${PortfolioContent.escapeHtml(link.label)}</span>`;
     }
-    return `<a href="./${link.file}" data-preview-nav>${PortfolioContent.escapeHtml(link.label)}</a>`;
+    const keyAttr = link.key ? ` data-preview-layout-key="${PortfolioContent.escapeHtml(link.key)}"` : '';
+    return `<a href="./${link.file}" data-preview-nav${keyAttr}>${PortfolioContent.escapeHtml(link.label)}</a>`;
   }).join('');
 
   return `<p>${items}</p>`;
 }
 
-function buildPreviewHTML(manifest, version, previewWidth = 1100) {
+function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) {
   const layout = getLayout(version) || getLayout(1);
   const presentationId = layout.presentationId || layout.key;
   const previewColors = getVersionColorsForKey(layout.key);
@@ -2192,6 +2482,96 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
   const layoutViewClass = `view-${layout.key}`;
   const directoryViewClass = layout.key === 'directory' ? ' view-directory' : '';
   const previewViewClass = `${layoutViewClass}${directoryViewClass}`;
+  const editMode = options.editMode !== false;
+  const enableAssistant = editMode && options.enableAssistant !== false;
+  const editScripts = editMode
+    ? `
+  <script src="./scripts/text-edit.js"><\/script>
+  ${enableAssistant ? '<script src="./scripts/cursor-assistant.js"><\\/script>' : ''}
+  <script>
+    requestAnimationFrame(() => {
+      if (document.body.dataset.editMode && !document.querySelector('.text-edit-toolbar')) {
+        const textScript = document.createElement('script');
+        textScript.src = './scripts/text-edit.js';
+        document.body.appendChild(textScript);
+      }
+      if (document.body.dataset.editMode && !document.querySelector('.cursor-assistant')) {
+        const assistantScript = document.createElement('script');
+        assistantScript.src = './scripts/cursor-assistant.js';
+        document.body.appendChild(assistantScript);
+      }
+    });
+  <\/script>`
+    : '';
+  const textEditStyles = editMode
+    ? `
+    [data-text-id] { cursor: text; }
+    [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
+    [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
+    .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
+    .text-edit-toolbar {
+      --text-edit-ink: #111111;
+      --text-edit-muted: #5f5f5f;
+      --text-edit-paper: #ffffff;
+      --text-edit-panel: #f7f5ef;
+      --text-edit-line: rgba(17, 17, 17, 0.22);
+      --text-edit-hover: #eee8dc;
+      position: absolute;
+      z-index: 2000;
+      background: var(--text-edit-paper) !important;
+      border: 1px solid var(--text-edit-line);
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+      min-width: 220px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      color: var(--text-edit-ink) !important;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+    .text-edit-toolbar,
+    .text-edit-toolbar * {
+      color: var(--text-edit-ink) !important;
+      text-shadow: none !important;
+    }
+    .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
+    .text-edit-props button {
+      flex: 1;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--text-edit-line);
+      background: var(--text-edit-panel) !important;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+      font-size: 0.75rem;
+    }
+    .text-edit-props button:hover { background: var(--text-edit-hover) !important; }
+    .text-edit-props button.active { background: #111111 !important; color: #ffffff !important; }
+    .text-edit-props button.active * { color: #ffffff !important; }
+    .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+    .text-edit-hint { font-size: 0.72rem; color: var(--text-edit-muted) !important; margin-bottom: 0.35rem; }
+    .text-edit-input, .text-edit-font {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid var(--text-edit-line);
+      border-radius: 4px;
+      font: inherit;
+      font-size: 0.85rem;
+      background: var(--text-edit-paper) !important;
+      color: var(--text-edit-ink) !important;
+      -webkit-text-fill-color: var(--text-edit-ink) !important;
+      caret-color: var(--text-edit-ink);
+      box-sizing: border-box;
+    }
+    .text-edit-size { width: 100%; }
+    .text-edit-size { accent-color: var(--text-edit-ink); }
+    .text-edit-scope { border: none; margin-top: 0.5rem; padding: 0; }
+    .text-edit-scope legend { font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; }
+    .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
+    .text-edit-scope input { accent-color: var(--text-edit-ink); }
+    `
+    : '';
   const directoryInlineStyles = layout.key === 'directory'
     ? `
     html.view-directory, body.view-directory {
@@ -2229,28 +2609,27 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     : '';
   const generatedInlineStyles = layout.generated
     ? `
-    body[data-edit-mode="1"].${layoutViewClass} {
+    body.${layoutViewClass} {
       min-height: 100vh;
       overflow-x: hidden;
       overflow-y: auto;
     }
-    body[data-edit-mode="1"].${layoutViewClass} header {
+    body.${layoutViewClass} header {
       position: relative;
-      z-index: 10;
+      z-index: 1000;
+      isolation: isolate;
     }
-    body[data-edit-mode="1"].${layoutViewClass} main.container {
+    body.${layoutViewClass} main.container {
       max-width: none;
       width: 100%;
       min-height: 100vh;
       padding: 0;
       position: relative;
     }
-    body[data-edit-mode="1"].${layoutViewClass} #preview-content {
+    body.${layoutViewClass} #preview-content {
       min-height: 100vh;
       position: relative;
-    }
-    body[data-edit-mode="1"].${layoutViewClass} #preview-content > * {
-      min-height: 100vh;
+      z-index: 1;
     }
     `
     : '';
@@ -2317,6 +2696,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
 <html class="${previewViewClass.trim()}">
 <head>
   <meta charset="UTF-8">
+  ${options.baseHref ? `<base href="${PortfolioContent.escapeHtml(options.baseHref)}">` : ''}
   <link rel="stylesheet" href="./styles.css">
   ${generatedHead}
   <style>
@@ -2358,50 +2738,6 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
       min-width: var(--space-artSize);
       max-width: var(--space-artSize);
     }
-    [data-text-id] { cursor: text; }
-    [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
-    [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
-    .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
-    .text-edit-toolbar {
-      --text-edit-ink: #111111;
-      --text-edit-muted: #5f5f5f;
-      --text-edit-paper: #ffffff;
-      --text-edit-panel: #f7f5ef;
-      --text-edit-line: rgba(17, 17, 17, 0.22);
-      --text-edit-hover: #eee8dc;
-      position: absolute;
-      z-index: 2000;
-      background: var(--text-edit-paper) !important;
-      border: 1px solid var(--text-edit-line);
-      border-radius: 8px;
-      padding: 0.65rem 0.75rem;
-      min-width: 220px;
-      font-family: system-ui, sans-serif;
-      font-size: 0.82rem;
-      line-height: 1.3;
-      color: var(--text-edit-ink) !important;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-    }
-    .text-edit-toolbar,
-    .text-edit-toolbar * {
-      color: var(--text-edit-ink) !important;
-      text-shadow: none !important;
-    }
-    .text-edit-props { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
-    .text-edit-props button {
-      flex: 1;
-      padding: 0.3rem 0.5rem;
-      border: 1px solid var(--text-edit-line);
-      background: var(--text-edit-panel) !important;
-      border-radius: 4px;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 650;
-      font-size: 0.75rem;
-    }
-    .text-edit-props button:hover { background: var(--text-edit-hover) !important; }
-    .text-edit-props button.active { background: #111111 !important; color: #ffffff !important; }
-    .text-edit-props button.active * { color: #ffffff !important; }
     body.color-focus-background { outline: 4px solid var(--color-accent); outline-offset: -4px; }
     body.color-focus-primary header,
     body.color-focus-primary h1,
@@ -2416,30 +2752,10 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     body.color-focus-panel .images-scroll,
     body.color-focus-panel .directory-tree,
     body.color-focus-panel .directory-viewer { outline: 3px solid var(--color-accent); outline-offset: 3px; }
-    .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-    .text-edit-hint { font-size: 0.72rem; color: var(--text-edit-muted) !important; margin-bottom: 0.35rem; }
-    .text-edit-input, .text-edit-font {
-      width: 100%;
-      padding: 0.35rem 0.5rem;
-      border: 1px solid var(--text-edit-line);
-      border-radius: 4px;
-      font: inherit;
-      font-size: 0.85rem;
-      background: var(--text-edit-paper) !important;
-      color: var(--text-edit-ink) !important;
-      -webkit-text-fill-color: var(--text-edit-ink) !important;
-      caret-color: var(--text-edit-ink);
-      box-sizing: border-box;
-    }
-    .text-edit-size { width: 100%; }
-    .text-edit-size { accent-color: var(--text-edit-ink); }
-    .text-edit-scope { border: none; margin-top: 0.5rem; padding: 0; }
-    .text-edit-scope legend { font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; }
-    .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
-    .text-edit-scope input { accent-color: var(--text-edit-ink); }
+    ${textEditStyles}
   </style>
 </head>
-<body data-edit-mode="1" class="${previewViewClass.trim()}">
+<body${editMode ? ' data-edit-mode="1"' : ''} class="${previewViewClass.trim()}">
   <header>
     ${titleHeading}
     ${buildPreviewNav(layout)}
@@ -2468,11 +2784,43 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100) {
     }
   });
   document.querySelectorAll('[data-preview-nav]').forEach((link) => {
-    link.addEventListener('click', (e) => e.preventDefault());
+    link.addEventListener('click', (e) => {
+      const key = link.dataset.previewLayoutKey;
+      if (!key) {
+        if (window.parent !== window) e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      if (window.parent !== window) {
+        window.parent.postMessage({ source: 'portfolio-preview-nav', key }, '*');
+        return;
+      }
+
+      const editor = window.opener;
+      const layout = editor?.PORTFOLIO_LAYOUTS?.find((item) => item.key === key || item.presentationId === key);
+      if (!editor || editor.closed || !layout || typeof editor.buildPreviewHTML !== 'function' || !editor.appData) {
+        window.location.href = link.href;
+        return;
+      }
+
+      editor.appData.then(({ manifest }) => {
+        if (typeof editor.selectVersion === 'function') editor.selectVersion(layout.id);
+        const baseHref = new URL('./', editor.location.href).href;
+        const html = editor.buildPreviewHTML(manifest, layout.id, window.__PREVIEW_WIDTH__ || 1100, {
+          baseHref,
+          editMode: false,
+          enableAssistant: false,
+        });
+        document.open();
+        document.write(html);
+        document.close();
+      }).catch(() => {
+        window.location.href = link.href;
+      });
+    });
   });
   <\/script>
-  <script src="./scripts/text-edit.js"><\/script>
-  <script src="./scripts/cursor-assistant.js"><\/script>
+  ${editScripts}
 </body>
 </html>`;
 }

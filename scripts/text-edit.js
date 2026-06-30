@@ -1,6 +1,8 @@
 /** In-preview click-to-edit toolbar (edit mode iframe only). */
 (function () {
   if (!document.body.dataset.editMode) return;
+  if (window.__PORTFOLIO_TEXT_EDIT_READY__) return;
+  window.__PORTFOLIO_TEXT_EDIT_READY__ = true;
 
   const PC = window.PortfolioContent;
   let toolbar = null;
@@ -148,11 +150,28 @@
       selected.dataset.textRole,
       versionKey()
     );
+    const computed = window.getComputedStyle(selected);
+    const currentFont = style.fontFamily || computed.fontFamily;
+    const currentSizePx = Math.round(parseFloat(computed.fontSize || style.fontSize) || 24);
+    const fontSelect = toolbar.querySelector('.text-edit-font');
+    const currentFontOption = fontSelect.querySelector('[data-current-font="true"]');
+    if (currentFontOption) currentFontOption.remove();
+    if (currentFont && !Array.from(fontSelect.options).some((opt) => opt.value === currentFont)) {
+      const opt = document.createElement('option');
+      opt.value = currentFont;
+      opt.textContent = `Current: ${currentFont}`;
+      opt.dataset.currentFont = 'true';
+      fontSelect.prepend(opt);
+    }
+
+    const sizeInput = toolbar.querySelector('.text-edit-size');
+    if (currentSizePx > Number(sizeInput.max)) sizeInput.max = String(Math.ceil(currentSizePx / 8) * 8);
+    if (currentSizePx < Number(sizeInput.min)) sizeInput.min = String(Math.max(1, currentSizePx));
+
     toolbar.querySelector('.text-edit-input').value = selected.textContent;
-    toolbar.querySelector('.text-edit-font').value = style.fontFamily;
-    const px = parseInt(style.fontSize, 10) || 24;
-    toolbar.querySelector('.text-edit-size').value = px;
-    toolbar.querySelector('.text-edit-size-val').textContent = px + 'px';
+    fontSelect.value = currentFont;
+    sizeInput.value = currentSizePx;
+    toolbar.querySelector('.text-edit-size-val').textContent = currentSizePx + 'px';
   }
 
   function selectElement(el) {

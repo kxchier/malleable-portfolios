@@ -26,6 +26,13 @@ window.GeneratedRuntime = (() => {
   function buildHelpers(models, versionKey) {
     const PC = window.PortfolioContent;
 
+    function portfolioTitle() {
+      const placeholder = document.createElement('span');
+      placeholder.hidden = true;
+      placeholder.dataset.generatedShellTitle = 'true';
+      return placeholder;
+    }
+
     function collectionSection(collection, collectionIndex) {
       const section = document.createElement('section');
       section.className = 'generated-collection';
@@ -57,8 +64,17 @@ window.GeneratedRuntime = (() => {
     function workTile(imgPath, opts = {}) {
       const tile = document.createElement('div');
       tile.className = opts.className || 'generated-work-tile scroll-item';
+      if (!tile.classList.contains('generated-work-tile')) {
+        tile.classList.add('generated-work-tile');
+      }
       if (opts.draggable !== false) tile.dataset.canvasDraggable = 'true';
-      if (opts.fixedSize === true) tile.dataset.fixedSize = 'true';
+      if (opts.fixedSize === true) {
+        tile.dataset.fixedSize = 'true';
+      } else {
+        tile.style.setProperty('width', 'var(--space-artSize)');
+        tile.style.setProperty('min-width', 'var(--space-artSize)');
+        tile.style.setProperty('flex-basis', 'var(--space-artSize)');
+      }
       if (opts.collectionIndex != null || opts.workIndex != null) {
         const ci = opts.collectionIndex ?? 0;
         const wi = opts.workIndex ?? 0;
@@ -85,7 +101,7 @@ window.GeneratedRuntime = (() => {
       return assets[name] || '';
     }
 
-    return { collectionSection, workTile, inlineAsset };
+    return { collectionSection, workTile, inlineAsset, portfolioTitle };
   }
 
   function bindCollectionHeading(el, collection, models, versionKey) {
@@ -299,7 +315,9 @@ window.GeneratedRuntime = (() => {
       );
     }
 
-    bindCanvasDrag(root);
+    if (document.body.dataset.editMode) {
+      bindCanvasDrag(root);
+    }
 
     return resolvedModels;
   }

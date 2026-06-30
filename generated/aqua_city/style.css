@@ -1,0 +1,389 @@
+
+/* ===== AQUA CITY PORTFOLIO ===== */
+
+body.view-aqua_city {
+  background-color: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-body-family);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Animated water background */
+body.view-aqua_city::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, color-mix(in srgb, var(--color-panel) 40%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--color-accent) 20%, transparent) 0%, transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 60%, white) 0%, var(--color-background) 40%, color-mix(in srgb, var(--color-panel) 80%, black) 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Bubble float animation */
+@keyframes aqua-bubble-rise {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  50% { transform: translateY(-30px) scale(1.05); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1); opacity: 0.7; }
+}
+
+@keyframes aqua-fish-swim {
+  0% { transform: translateX(0) scaleX(1); }
+  45% { transform: translateX(8px) scaleX(1); }
+  50% { transform: translateX(8px) scaleX(-1); }
+  95% { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes aqua-wave-flow {
+  0% { d: path('M0,20 C80,5 160,35 240,20 C320,5 400,35 480,20 L480,60 L0,60 Z'); }
+  50% { d: path('M0,30 C80,15 160,45 240,30 C320,15 400,45 480,30 L480,60 L0,60 Z'); }
+  100% { d: path('M0,20 C80,5 160,35 240,20 C320,5 400,35 480,20 L480,60 L0,60 Z'); }
+}
+
+@keyframes aqua-ripple {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes aqua-shimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* ---- ROOT CONTAINER ---- */
+.aqua-city-root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 0 0 80px 0;
+}
+
+/* ---- SURFACE HEADER ---- */
+.aqua-city-header {
+  position: relative;
+  z-index: 10;
+  padding: 0.5rem 2rem 0 2rem;
+  text-align: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-background) 90%, white) 0%, transparent 100%);
+}
+
+.aqua-city-title {
+  font-family: var(--font-heading1-family);
+  font-size: var(--font-heading1);
+  font-weight: var(--font-heading1-weight);
+  color: var(--color-panel);
+  text-shadow:
+    0 2px 12px color-mix(in srgb, var(--color-panel) 60%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-background) 80%, white);
+  letter-spacing: 0.04em;
+  margin: 0 0 0.3rem 0;
+  cursor: pointer;
+}
+
+/* ---- WAVE DIVIDER ---- */
+.aqua-city-wave-divider {
+  display: block;
+  width: 100%;
+  height: 60px;
+  margin: 0;
+  overflow: visible;
+}
+
+/* ---- CITYSCAPE BACKGROUND STRIP ---- */
+.aqua-city-cityscape {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  margin-top: -10px;
+  z-index: 2;
+}
+
+.aqua-city-cityscape svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- TURBINE ROW ---- */
+.aqua-city-turbines {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 60px;
+  padding: 0 2rem 8px 2rem;
+  height: 80px;
+  z-index: 3;
+  position: relative;
+}
+
+.aqua-turbine {
+  animation: aqua-bubble-rise 3s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+.aqua-turbine:nth-child(2) { animation-delay: 1s; }
+.aqua-turbine:nth-child(3) { animation-delay: 2s; }
+
+/* ---- COLLECTIONS AREA ---- */
+.aqua-city-collections {
+  position: relative;
+  z-index: 5;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-gridGap);
+}
+
+/* ---- DOME CONTAINER (collection) ---- */
+.aqua-dome-section {
+  position: relative;
+  border-radius: 60% 60% 40% 40% / 30% 30% 20% 20%;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-paper) 85%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 60%, white) 60%,
+    color-mix(in srgb, var(--color-panel) 20%, transparent) 100%
+  );
+  border: 2.5px solid color-mix(in srgb, var(--color-background) 60%, white);
+  box-shadow:
+    0 8px 40px color-mix(in srgb, var(--color-panel) 30%, transparent),
+    inset 0 2px 20px color-mix(in srgb, white 40%, transparent),
+    inset 0 -4px 30px color-mix(in srgb, var(--color-panel) 20%, transparent);
+  padding: 32px 32px 28px 32px;
+  backdrop-filter: blur(2px);
+  overflow: hidden;
+  transition: box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+.aqua-dome-section:hover {
+  box-shadow:
+    0 16px 60px color-mix(in srgb, var(--color-panel) 45%, transparent),
+    inset 0 2px 20px color-mix(in srgb, white 50%, transparent),
+    inset 0 -4px 30px color-mix(in srgb, var(--color-accent) 15%, transparent);
+  transform: translateY(-2px);
+}
+
+/* Dome shimmer highlight */
+.aqua-dome-section::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 15%;
+  width: 70%;
+  height: 30%;
+  background: linear-gradient(180deg, color-mix(in srgb, white 35%, transparent), transparent);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: aqua-shimmer 4s ease-in-out infinite;
+}
+
+/* ---- COLLECTION HEADING ---- */
+.aqua-dome-title {
+  font-family: var(--font-heading2-family);
+  font-size: var(--font-heading2);
+  font-weight: var(--font-heading2-weight);
+  color: var(--color-panel);
+  text-align: center;
+  margin: 0 0 16px 0;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 8px color-mix(in srgb, var(--color-panel) 40%, transparent);
+  position: relative;
+  z-index: 2;
+}
+
+/* ---- CORAL DIVIDER ---- */
+.aqua-coral-divider {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.aqua-coral-divider svg {
+  height: 22px;
+  width: auto;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+/* ---- WORKS SCROLL STRIP ---- */
+.aqua-works-strip {
+  display: flex;
+  gap: var(--space-gridGap);
+  overflow-x: auto;
+  padding: 12px 4px 20px 4px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-panel) 50%, transparent) transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.aqua-works-strip::-webkit-scrollbar {
+  height: 5px;
+}
+
+.aqua-works-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aqua-works-strip::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-panel) 50%, transparent);
+  border-radius: 3px;
+}
+
+/* ---- WORK TILE (fish bubble) ---- */
+.aqua-work-tile {
+  position: relative;
+  flex: 0 0 var(--space-artSize);
+  width: var(--space-artSize);
+  min-width: var(--space-artSize);
+  border-radius: 50% 50% 45% 45% / 40% 40% 30% 30%;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-paper) 90%, white) 0%,
+    color-mix(in srgb, var(--color-background) 50%, white) 100%
+  );
+  border: 2px solid color-mix(in srgb, var(--color-background) 70%, white);
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--color-panel) 25%, transparent),
+    inset 0 2px 8px color-mix(in srgb, white 40%, transparent);
+  padding: var(--space-imagePadding);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  animation: aqua-bubble-rise 4s ease-in-out infinite;
+}
+
+.aqua-work-tile:nth-child(2n) { animation-delay: 0.8s; animation-duration: 5s; }
+.aqua-work-tile:nth-child(3n) { animation-delay: 1.6s; animation-duration: 3.5s; }
+.aqua-work-tile:nth-child(4n) { animation-delay: 2.4s; animation-duration: 4.5s; }
+
+.aqua-work-tile:hover {
+  transform: translateY(-10px) scale(1.06);
+  box-shadow:
+    0 16px 40px color-mix(in srgb, var(--color-panel) 40%, transparent),
+    inset 0 2px 12px color-mix(in srgb, white 60%, transparent);
+  animation-play-state: paused;
+  z-index: 10;
+}
+
+/* Bubble highlight on tile */
+.aqua-work-tile::before {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 20%;
+  width: 30%;
+  height: 18%;
+  background: color-mix(in srgb, white 50%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Splash ripple on hover */
+.aqua-work-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 3px solid color-mix(in srgb, var(--color-accent) 60%, transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.aqua-work-tile:hover::after {
+  opacity: 1;
+  animation: aqua-ripple 0.6s ease-out forwards;
+}
+
+.aqua-work-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 50% 50% 40% 40% / 35% 35% 25% 25%;
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+
+/* ---- FISH ICON FLOAT ---- */
+.aqua-fish-icon {
+  position: absolute;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 1;
+  animation: aqua-fish-swim 6s ease-in-out infinite;
+}
+
+/* ---- BUBBLE COUNT BADGE ---- */
+.aqua-bubble-badge {
+  position: absolute;
+  bottom: -8px;
+  right: -4px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 50%, transparent);
+  z-index: 5;
+}
+
+/* ---- SECTION INTRO BAR ---- */
+.aqua-dome-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.aqua-dome-fish-icon {
+  animation: aqua-fish-swim 4s ease-in-out infinite;
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+
+/* ---- BOTTOM SEABED ---- */
+.aqua-seabed {
+  position: relative;
+  z-index: 4;
+  margin-top: 40px;
+  height: 80px;
+  overflow: hidden;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 600px) {
+  .aqua-dome-section {
+    border-radius: 30px;
+    padding: 20px 14px 18px 14px;
+  }
+
+  .aqua-work-tile {
+    min-width: var(--space-artSize);
+  }
+
+  .aqua-city-turbines {
+    gap: 32px;
+  }
+}

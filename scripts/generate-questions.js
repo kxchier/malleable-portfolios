@@ -32,6 +32,7 @@ Return ONLY valid JSON:
 
 Ask one question at a time.
 Ask at most 3 total questions across the whole conversation.
+If the request includes REFERENCE_FIDELITY: high, the uploaded image is the main art direction. Do not ask the user to replace the image's metaphor/place-world with a different one. Preserve the reference image's palette, texture, composition, mood, and component language.
 Use previous answers to choose a relevant next question within the requested category.
 Ask questions in this category order unless the user's prompt already fully answers one:
 1. metaphor_place_world - the place, object, container, or metaphor world that frames the portfolio.
@@ -45,7 +46,14 @@ Do not ask about implementation details, CSS, file formats, API keys, or screen 
 Make options concrete and different from each other.`;
 }
 
-function questionCategoryForIndex(index) {
+function isHighFidelityReference(prompt) {
+  return /REFERENCE_FIDELITY:\s*high/i.test(String(prompt || ''));
+}
+
+function questionCategoryForIndex(index, prompt = '') {
+  if (isHighFidelityReference(prompt)) {
+    return ['visit_encounter', 'artist_intent'][index] || 'artist_intent';
+  }
   return ['metaphor_place_world', 'visit_encounter', 'artist_intent'][index] || 'artist_intent';
 }
 
@@ -67,9 +75,12 @@ function buildQuestionUserPrompt({ prompt, designSpace, layouts, answers }) {
     usedMetaphors,
     previousAnswers: answers || [],
     questionNumber: (answers || []).length + 1,
-    targetCategory: questionCategoryForIndex((answers || []).length),
-    categoryOrder: ['metaphor_place_world', 'visit_encounter', 'artist_intent'],
-    maxQuestions: 3,
+    targetCategory: questionCategoryForIndex((answers || []).length, prompt),
+    categoryOrder: isHighFidelityReference(prompt)
+      ? ['visit_encounter', 'artist_intent']
+      : ['metaphor_place_world', 'visit_encounter', 'artist_intent'],
+    maxQuestions: isHighFidelityReference(prompt) ? 2 : 3,
+    referenceFidelity: isHighFidelityReference(prompt) ? 'high' : 'normal',
   }, null, 2);
 }
 
@@ -89,6 +100,7 @@ function normalizeQuestion(item, fallbackIndex = 1) {
 
 async function generateQuestions({ prompt, designSpace, layouts, answers = [] }) {
   if (!prompt?.trim()) throw new Error('missing prompt');
+  if (isHighFidelityReference(prompt) && answers.length === 0) return { done: true };
   if (answers.length >= 3) return { done: true };
 
   const result = await callTextModel({

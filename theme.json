@@ -60,6 +60,67 @@
         "artSize": "11rem",
         "imagePadding": "0.6rem"
       }
+    },
+    "aqua_city": {
+      "colors": {
+        "background": "#6ec1e4",
+        "primary": "#ff7043",
+        "accent": "#4caf50",
+        "paper": "#e0f7fa",
+        "panel": "#0277bd"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'Cooper Black', 'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', sans-serif",
+          "fontSize": "2.8rem",
+          "fontWeight": "700"
+        },
+        "heading2": {
+          "fontFamily": "'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif",
+          "fontSize": "1.5rem",
+          "fontWeight": "700"
+        },
+        "body": {
+          "fontFamily": "'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif",
+          "fontSize": "1rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "24px",
+        "artSize": "200px",
+        "imagePadding": "10px"
+      }
+    },
+    "celestial_scroll": {
+      "colors": {
+        "background": "#2e3a65",
+        "primary": "#f0f1f5",
+        "accent": "#a3a9c1",
+        "paper": "#1e2a4f"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif",
+          "fontSize": "2.6rem",
+          "fontWeight": "400"
+        },
+        "heading2": {
+          "fontFamily": "'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif",
+          "fontSize": "1.4rem",
+          "fontWeight": "400"
+        },
+        "body": {
+          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontSize": "1rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "2.2rem",
+        "artSize": "200px",
+        "imagePadding": "1rem"
+      }
     }
   }
 }
