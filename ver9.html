@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Art Portfolio — Aqua City</title>
+  <title>Art Portfolio — Card Catalog</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./generated/aqua_city/style.css">
+  <link rel="stylesheet" href="./generated/card_catalog/style.css">
   <style>
-    body.view-aqua_city .generated-layout-container {
+    body.view-card_catalog .generated-layout-container {
       max-width: none;
       width: 100%;
       min-height: 100vh;
       padding: 0;
     }
-    body.view-aqua_city > header {
+    body.view-card_catalog > header {
       position: relative;
       z-index: 1000;
       isolation: isolate;
     }
-    body.view-aqua_city #content {
+    body.view-card_catalog #content {
       min-height: 100vh;
       position: relative;
       z-index: 1;
@@ -28,12 +28,12 @@
   <script src="./scripts/loader.js"></script>
   <script src="./scripts/model-loader.js"></script>
   <script src="./scripts/generated-runtime.js"></script>
-  <script src="./generated/aqua_city/render.js"></script>
+  <script src="./generated/card_catalog/render.js"></script>
 </head>
-<body class="view-aqua_city">
+<body class="view-card_catalog">
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p><a href="./ver1.html">Grid</a><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><a href="./ver4.html">Directory</a><a href="./ver5.html">Zine Rack</a><span class="active-view">Aqua City</span><a href="./ver8.html">Night Sky</a><a href="./ver9.html">Card Catalog</a><a href="./edit.html">Edit</a></p>
+    <p><a href="./ver1.html">Grid</a><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><a href="./ver4.html">Directory</a><a href="./ver5.html">Zine Rack</a><a href="./ver7.html">Aqua City</a><a href="./ver8.html">Night Sky</a><span class="active-view">Card Catalog</span><a href="./edit.html">Edit</a></p>
   </header>
 
   <main class="container generated-layout-container">
@@ -42,22 +42,22 @@
 
   <script>
     window.appData.then(async (data) => {
-      const models = await PortfolioModels.load('aqua_city', {
+      const models = await PortfolioModels.load('card_catalog', {
         theme: data.theme,
         contentOverrides: data.content,
         contentModel: data.contentModel,
       });
       if (window.PortfolioContent) {
-        PortfolioContent.applyColorVars(data.theme, 'aqua_city');
-        PortfolioContent.applyTypographyVars(data.theme, 'aqua_city');
+        PortfolioContent.applyColorVars(data.theme, 'card_catalog');
+        PortfolioContent.applyTypographyVars(data.theme, 'card_catalog');
       }
-      const versionSpacing = data.theme?.versions?.['aqua_city']?.spacing || {};
+      const versionSpacing = data.theme?.versions?.['card_catalog']?.spacing || {};
       Object.entries(versionSpacing).forEach(([spacingKey, value]) => {
         document.documentElement.style.setProperty(`--space-${spacingKey}`, value);
       });
       await GeneratedRuntime.mount({
         root: document.getElementById('content'),
-        layoutKey: 'aqua_city',
+        layoutKey: 'card_catalog',
         models,
       });
     });

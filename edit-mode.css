@@ -252,6 +252,7 @@
 .design-sidebar {
   width: var(--design-sidebar-w);
   flex: 0 0 var(--design-sidebar-w);
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: 0.75rem 0.85rem 1rem;
@@ -1231,15 +1232,30 @@
 .sidebar-axis {
   display: grid;
   gap: 0.7rem;
+  min-width: 0;
 }
 
 .sidebar-axis-labels {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
   color: var(--ed-muted);
   font-size: 0.58rem;
   font-weight: 650;
+}
+
+.sidebar-axis-labels span {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.sidebar-axis-labels span:last-child {
+  text-align: right;
 }
 
 .sidebar-axis-notes {
@@ -1275,6 +1291,24 @@
   box-shadow:
     0 0 0 2px var(--ed-text),
     0 0 0 5px rgba(47, 52, 55, 0.1);
+}
+
+.axis-term-ladder {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  color: var(--ed-muted);
+  font-size: 0.56rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.axis-term-ladder--sidebar {
+  margin-top: -0.4rem;
+  font-size: 0.52rem;
 }
 
 .design-space-expanded {
@@ -1464,6 +1498,8 @@
   border: 1px solid #e5e1d9;
   border-radius: 6px;
   background: #fcfbf9;
+  min-width: 0;
+  overflow: visible;
 }
 
 .custom-axis-fields {
@@ -1526,13 +1562,27 @@
 
 .custom-axis-rank-row {
   margin-top: 0.28rem;
+  padding-top: 0.65rem;
   display: grid;
-  grid-template-columns: minmax(2.9rem, auto) 1fr minmax(2.9rem, auto);
+  grid-template-columns: minmax(0, 4.25rem) minmax(0, 1fr) minmax(0, 4.25rem);
   align-items: center;
   gap: 0.35rem;
+  min-width: 0;
+  overflow: hidden;
   color: var(--ed-muted);
   font-size: 0.58rem;
   font-weight: 650;
+}
+
+.custom-axis-rank-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.custom-axis-rank-row > span:last-child {
+  text-align: right;
 }
 
 .custom-axis-notes {

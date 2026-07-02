@@ -16,6 +16,7 @@ const DEFAULT_THEME_COLORS = {
 const DESIGN_SPACE_DEFAULT = { x: 0.5, y: 0.5 };
 const DESIGN_SPACE_COLORS = ['#2f3437', '#9b7a4d', '#4f7f78', '#b45c47', '#6f6aa8', '#5f8a4f'];
 const DESIGN_SCAFFOLD_MARKER = 'Design-space scaffold:';
+const DESIGN_DIRECTION_MARKER = 'Design direction:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
 const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
@@ -843,6 +844,67 @@ function axisName(axis) {
   return `${axis.leftLabel || 'left'} to ${axis.rightLabel || 'right'}`;
 }
 
+function axisTerms(leftLabel, rightLabel, middle = []) {
+  const terms = [
+    { value: 0, label: leftLabel },
+    ...middle,
+    { value: 1, label: rightLabel },
+  ];
+  return terms.map((term) => ({
+    value: clamp01(term.value),
+    label: String(term.label || '').slice(0, 48),
+    description: String(term.description || '').slice(0, 100),
+  }));
+}
+
+function defaultTermsForAxis(axis) {
+  const id = String(axis?.id || '');
+  const left = String(axis?.leftLabel || '');
+  const right = String(axis?.rightLabel || '');
+  if (!left || !right) return [];
+  if (id === 'axis_visible_friction' || /visible/i.test(left) || /friction/i.test(right)) {
+    return axisTerms(left || 'Visible', right || 'Friction', [
+      { value: 0.18, label: 'open overview', description: 'everything is easy to scan' },
+      { value: 0.36, label: 'browseable field', description: 'visible with light exploration' },
+      { value: 0.55, label: 'guided encounter', description: 'some deliberate movement required' },
+      { value: 0.74, label: 'slow reveal', description: 'visitor uncovers work through interaction' },
+    ]);
+  }
+  if (id === 'axis_abstract_skeuomorphic' || /abstract/i.test(left) || /skeuomorphic/i.test(right)) {
+    return axisTerms(left || 'Abstract', right || 'Skeuomorphic', [
+      { value: 0.16, label: 'diagrammatic', description: 'interface-native structure' },
+      { value: 0.32, label: 'symbolic object', description: 'object idea without full materiality' },
+      { value: 0.5, label: 'material hint', description: 'texture and surface begin to matter' },
+      { value: 0.68, label: 'tactile artifact', description: 'feels handled or physical' },
+      { value: 0.84, label: 'world fragment', description: 'a small believable scene' },
+    ]);
+  }
+  if (/(color|colour|vibrant|chromatic|saturated)/i.test(left) && /(mono|monochrome|monotone|gray|grey|neutral|desaturated)/i.test(right)) {
+    return axisTerms(left, right, [
+      { value: 0.18, label: 'color-forward', description: 'palette is expressive and varied' },
+      { value: 0.34, label: 'tinted palette', description: 'color leads but feels restrained' },
+      { value: 0.5, label: 'muted chroma', description: 'color is present but quiet' },
+      { value: 0.66, label: 'near-neutral', description: 'mostly restrained with slight color' },
+      { value: 0.82, label: 'tonal monochrome', description: 'value and texture carry the mood' },
+    ]);
+  }
+  if (/(mono|monochrome|monotone|gray|grey|neutral|desaturated)/i.test(left) && /(color|colour|vibrant|chromatic|saturated)/i.test(right)) {
+    return axisTerms(left, right, [
+      { value: 0.18, label: 'tonal monochrome', description: 'value and texture carry the mood' },
+      { value: 0.34, label: 'near-neutral', description: 'mostly restrained with slight color' },
+      { value: 0.5, label: 'muted chroma', description: 'color is present but quiet' },
+      { value: 0.66, label: 'tinted palette', description: 'color leads but feels restrained' },
+      { value: 0.82, label: 'color-forward', description: 'palette is expressive and varied' },
+    ]);
+  }
+  return axisTerms(left, right, [
+    { value: 0.2, label: `mostly ${left}`, description: `leans toward ${left}` },
+    { value: 0.4, label: `${left} with ${right}`, description: 'left concept with a right-side influence' },
+    { value: 0.6, label: `${right} with ${left}`, description: 'right concept with a left-side influence' },
+    { value: 0.8, label: `mostly ${right}`, description: `leans toward ${right}` },
+  ]);
+}
+
 function createDefaultDesignAxes() {
   const layouts = window.PORTFOLIO_LAYOUTS || [];
   return [
@@ -853,6 +915,12 @@ function createDefaultDesignAxes() {
       name: 'Visible to Friction',
       value: 0.5,
       mapRole: 'x',
+      terms: axisTerms('Visible', 'Friction', [
+        { value: 0.18, label: 'open overview', description: 'everything is easy to scan' },
+        { value: 0.36, label: 'browseable field', description: 'visible with light exploration' },
+        { value: 0.55, label: 'guided encounter', description: 'some deliberate movement required' },
+        { value: 0.74, label: 'slow reveal', description: 'visitor uncovers work through interaction' },
+      ]),
       scores: layouts.map((layout) => ({
         key: layout.key,
         name: layout.name,
@@ -867,6 +935,13 @@ function createDefaultDesignAxes() {
       name: 'Abstract to Skeuomorphic',
       value: 0.5,
       mapRole: 'y',
+      terms: axisTerms('Abstract', 'Skeuomorphic', [
+        { value: 0.16, label: 'diagrammatic', description: 'interface-native structure' },
+        { value: 0.32, label: 'symbolic object', description: 'object idea without full materiality' },
+        { value: 0.5, label: 'material hint', description: 'texture and surface begin to matter' },
+        { value: 0.68, label: 'tactile artifact', description: 'feels handled or physical' },
+        { value: 0.84, label: 'world fragment', description: 'a small believable scene' },
+      ]),
       scores: layouts.map((layout) => ({
         key: layout.key,
         name: layout.name,
@@ -879,23 +954,34 @@ function createDefaultDesignAxes() {
 
 function sanitizeStoredAxes(axes) {
   if (!Array.isArray(axes)) return [];
-  return axes.map((axis) => ({
-    id: String(axis.id || `axis_${Date.now()}`).slice(0, 80),
-    leftLabel: String(axis.leftLabel || '').slice(0, 48),
-    rightLabel: String(axis.rightLabel || '').slice(0, 48),
-    name: String(axis.name || axisName(axis)).slice(0, 80),
-    value: clamp01(axis.value ?? 0.5),
-    mapRole: ['x', 'y'].includes(axis.mapRole) ? axis.mapRole : '',
-    scores: Array.isArray(axis.scores)
-      ? axis.scores.map((score) => ({
+  return axes.map((axis) => {
+    const normalized = {
+      id: String(axis.id || `axis_${Date.now()}`).slice(0, 80),
+      leftLabel: String(axis.leftLabel || '').slice(0, 48),
+      rightLabel: String(axis.rightLabel || '').slice(0, 48),
+      name: String(axis.name || axisName(axis)).slice(0, 80),
+      value: clamp01(axis.value ?? 0.5),
+      mapRole: ['x', 'y'].includes(axis.mapRole) ? axis.mapRole : '',
+      terms: Array.isArray(axis.terms)
+        ? axis.terms.map((term) => ({
+        value: clamp01(term.value ?? 0.5),
+        label: String(term.label || '').slice(0, 48),
+        description: String(term.description || '').slice(0, 100),
+        })).filter((term) => term.label).sort((a, b) => a.value - b.value)
+        : [],
+      scores: Array.isArray(axis.scores)
+        ? axis.scores.map((score) => ({
         key: String(score.key || '').slice(0, 80),
         name: String(score.name || '').slice(0, 80),
         value: clamp01(score.value ?? 0.5),
         rationale: String(score.rationale || '').slice(0, 100),
         manual: !!score.manual,
-      })).filter((score) => score.key)
-      : [],
-  })).filter((axis) => axis.id);
+        })).filter((score) => score.key)
+        : [],
+    };
+    if (!normalized.terms.length) normalized.terms = defaultTermsForAxis(normalized);
+    return normalized;
+  }).filter((axis) => axis.id);
 }
 
 function currentLayoutKeys() {
@@ -944,6 +1030,37 @@ function axisScoreForLayout(axis, layout, fallback = 0.5) {
   return clamp01(score?.value ?? fallback);
 }
 
+function axisTermForValue(axis, value) {
+  const terms = Array.isArray(axis?.terms) ? axis.terms.filter((term) => term.label) : [];
+  if (!terms.length) return null;
+  const v = clamp01(value);
+  const sorted = terms.slice().sort((a, b) => clamp01(a.value) - clamp01(b.value));
+  let nearest = sorted[0];
+  sorted.forEach((term) => {
+    if (Math.abs(clamp01(term.value) - v) < Math.abs(clamp01(nearest.value) - v)) nearest = term;
+  });
+  return nearest;
+}
+
+function axisTermText(axis, value) {
+  const term = axisTermForValue(axis, value);
+  return term ? term.label : `${Math.round(clamp01(value) * 100)}%`;
+}
+
+function activeAxisConcept(axis) {
+  const activeScore = (axis.scores || []).find((score) => {
+    const layout = (window.PORTFOLIO_LAYOUTS || []).find((item) => item.key === score.key);
+    return layout?.id === currentVersion;
+  });
+  const value = clamp01(activeScore?.value ?? axis.value ?? 0.5);
+  const concept = axisTermForValue(axis, value);
+  return {
+    label: concept?.label || axisTermText(axis, value),
+    description: concept?.description || '',
+    value,
+  };
+}
+
 function getLayoutDesignSpace(layout) {
   const point = layout?.designSpace || {};
   const xAxis = mappedAxis('x');
@@ -965,8 +1082,10 @@ function designSpaceReadout(point = selectedDesignSpace) {
   const yAxis = mappedAxis('y');
   const xLabel = xAxis ? `${xAxis.leftLabel} to ${xAxis.rightLabel}` : 'x axis';
   const yLabel = yAxis ? `${yAxis.leftLabel} to ${yAxis.rightLabel}` : 'y axis';
+  const xTerm = xAxis ? axisTermText(xAxis, point.x) : clamp01(point.x).toFixed(2);
+  const yTerm = yAxis ? axisTermText(yAxis, point.y) : clamp01(point.y).toFixed(2);
   const custom = customDesignAxes.length ? ` · ${customDesignAxes.length} axes` : '';
-  return `${xLabel}: ${clamp01(point.x).toFixed(2)}, ${yLabel}: ${clamp01(point.y).toFixed(2)}${custom}`;
+  return `${xLabel}: ${xTerm}, ${yLabel}: ${yTerm}${custom}`;
 }
 
 function nearestDesignSpaceLayouts(point, limit = 2) {
@@ -984,40 +1103,31 @@ function nearestDesignSpaceLayouts(point, limit = 2) {
 function buildDesignPromptScaffold(point = selectedDesignSpace) {
   const x = clamp01(point.x);
   const y = clamp01(point.y);
-  const layoutKeys = currentLayoutKeys();
   const nearby = nearestDesignSpaceLayouts(point).join(' + ') || 'the existing portfolio templates';
   const axes = customDesignAxes
     .filter((axis) => axis.leftLabel && axis.rightLabel)
     .map((axis) => {
       const value = clamp01(axis.value ?? 0.5);
-      const nearbyOnAxis = Array.isArray(axis.scores)
-        ? axis.scores
-          .filter((score) => layoutKeys.has(score.key))
-          .slice()
-          .sort((a, b) => Math.abs(clamp01(a.value) - value) - Math.abs(clamp01(b.value) - value))
-          .slice(0, 3)
-          .map((score) => `${score.name || score.key} ${clamp01(score.value).toFixed(2)}`)
-          .join(', ')
-        : '';
-      const role = axis.mapRole ? `; marked as ${axis.mapRole.toUpperCase()} map axis` : '';
-      return `- ${axis.name || axisName(axis)}: ${value.toFixed(2)} (0 = ${axis.leftLabel}, 1 = ${axis.rightLabel})${role}${nearbyOnAxis ? `; nearby/corrected interfaces: ${nearbyOnAxis}` : ''}`;
+      const currentTerm = axisTermForValue(axis, value);
+      const concept = currentTerm ? currentTerm.label : axisTermText(axis, value);
+      return `- ${axis.name || axisName(axis)}: ${concept}`;
     });
   const xAxis = mappedAxis('x') || { leftLabel: 'Visible', rightLabel: 'Friction', name: 'Visible to Friction' };
   const yAxis = mappedAxis('y') || { leftLabel: 'Abstract', rightLabel: 'Skeuomorphic', name: 'Abstract to Skeuomorphic' };
+  const concept = `${axisTermText(xAxis, x)} + ${axisTermText(yAxis, y)}`;
 
-  return `${DESIGN_SCAFFOLD_MARKER}
-- x ${xAxis.name || axisName(xAxis)}: ${x.toFixed(2)} (0 = ${xAxis.leftLabel}, 1 = ${xAxis.rightLabel})
-- y ${yAxis.name || axisName(yAxis)}: ${y.toFixed(2)} (0 = ${yAxis.leftLabel}, 1 = ${yAxis.rightLabel})
-- Nearby template anchors: ${nearby}
-- User-defined axis constraints:
-${axes.length ? axes.join('\n') : '- none'}
-- Manual note positions are artist corrections. Treat them as stronger evidence than the initial AI ranking.
-- Treat this as a research prototype position, not a generic style axis.`;
+  return `${DESIGN_DIRECTION_MARKER}
+Make something that feels like: ${concept}.
+Use these as starting points: ${nearby}.
+${axes.length ? `Other cues:\n${axes.join('\n')}` : 'Other cues: follow the selected point in the design map.'}`;
 }
 
 function promptWithoutDesignScaffold(value) {
   const text = String(value || '').trim();
-  const index = text.indexOf(DESIGN_SCAFFOLD_MARKER);
+  const markers = [DESIGN_DIRECTION_MARKER, DESIGN_SCAFFOLD_MARKER]
+    .map((marker) => text.indexOf(marker))
+    .filter((index) => index >= 0);
+  const index = markers.length ? Math.min(...markers) : -1;
   return (index >= 0 ? text.slice(0, index) : text).trim();
 }
 
@@ -1053,10 +1163,11 @@ function setDesignSpaceSelection(point, { syncPrompt = true } = {}) {
       rightLabel: axis.rightLabel,
       value: clamp01(axis.value ?? 0.5),
       scores: axis.scores || [],
+      terms: axis.terms || [],
       mapRole: axis.mapRole || '',
     })),
-    xAxis: xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel } : null,
-    yAxis: yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel } : null,
+    xAxis: xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel, terms: xAxis.terms || [] } : null,
+    yAxis: yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel, terms: yAxis.terms || [] } : null,
   };
 
   document.querySelectorAll('.design-space-selection').forEach((selection) => {
@@ -1081,10 +1192,11 @@ function syncCustomAxesToDesignSpace({ syncPrompt = true } = {}) {
     rightLabel: axis.rightLabel,
     value: clamp01(axis.value ?? 0.5),
     scores: axis.scores || [],
+    terms: axis.terms || [],
     mapRole: axis.mapRole || '',
   }));
-  selectedDesignSpace.xAxis = xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel } : null;
-  selectedDesignSpace.yAxis = yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel } : null;
+  selectedDesignSpace.xAxis = xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel, terms: xAxis.terms || [] } : null;
+  selectedDesignSpace.yAxis = yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel, terms: yAxis.terms || [] } : null;
   document.querySelectorAll('.design-space-selection').forEach((selection) => {
     selection.style.left = `${selectedDesignSpace.x * 100}%`;
     selection.style.top = `${(1 - selectedDesignSpace.y) * 100}%`;
@@ -1196,6 +1308,10 @@ function renderCustomDesignAxes() {
   list.innerHTML = '';
 
   customDesignAxes.forEach((axis, axisIndex) => {
+    const activeConcept = activeAxisConcept(axis);
+    const conceptLabel = Array.isArray(axis.terms) && axis.terms.length
+      ? `<div class="axis-term-ladder" title="${PortfolioContent.escapeHtml(activeConcept.description || `${Math.round(activeConcept.value * 100)}% on this axis`)}">Closest concept: ${PortfolioContent.escapeHtml(activeConcept.label)}</div>`
+      : '';
     const row = document.createElement('div');
     row.className = 'custom-axis';
     row.innerHTML = `
@@ -1218,6 +1334,7 @@ function renderCustomDesignAxes() {
         <div class="custom-axis-notes" aria-label="Ranked website notes"></div>
         <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
       </div>
+      ${conceptLabel}
     `;
 
     row.querySelectorAll('input[type="text"]').forEach((input) => {
@@ -1226,6 +1343,7 @@ function renderCustomDesignAxes() {
         axis[field] = input.value.trim();
         axis.name = axisName(axis);
         axis.scores = [];
+        axis.terms = defaultTermsForAxis(axis);
         saveDesignAxes();
         renderCustomDesignAxes();
         renderSidebarDesignAxes();
@@ -1295,6 +1413,10 @@ function renderSidebarDesignAxes() {
   list.innerHTML = '';
 
   customDesignAxes.forEach((axis) => {
+    const activeConcept = activeAxisConcept(axis);
+    const conceptLabel = Array.isArray(axis.terms) && axis.terms.length
+      ? `<div class="axis-term-ladder axis-term-ladder--sidebar" title="${PortfolioContent.escapeHtml(activeConcept.description || `${Math.round(activeConcept.value * 100)}% on this axis`)}">Closest concept: ${PortfolioContent.escapeHtml(activeConcept.label)}</div>`
+      : '';
     const row = document.createElement('div');
     row.className = 'sidebar-axis';
     row.innerHTML = `
@@ -1303,6 +1425,7 @@ function renderSidebarDesignAxes() {
         <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
       </div>
       <div class="sidebar-axis-notes" aria-label="${PortfolioContent.escapeHtml(axis.name || axisName(axis))} ranked websites"></div>
+      ${conceptLabel}
     `;
 
     const notes = row.querySelector('.sidebar-axis-notes');
@@ -1342,6 +1465,7 @@ async function scoreCustomDesignAxis(axis) {
     name: layoutNameByKey(score.key),
     ...(manualScores.get(score.key) || {}),
   }));
+  axis.terms = Array.isArray(data.terms) ? data.terms : axis.terms || [];
   saveDesignAxes();
   syncCustomAxesToDesignSpace();
   renderCustomDesignAxes();

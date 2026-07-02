@@ -122,6 +122,52 @@
         ]
       },
       "createdAt": "2026-06-30T15:57:19.109Z"
+    },
+    {
+      "id": 9,
+      "key": "card_catalog",
+      "presentationId": "card_catalog",
+      "name": "Card Catalog",
+      "metaphor": "card_catalog",
+      "file": "ver9.html",
+      "generated": true,
+      "prompt": "A skeuomorphic filing cabinet portfolio where each collection is a labeled drawer. The user must click a drawer to open it, revealing the images inside as papers or folders. Keep the cabinet closed by default and show the full artwork inside the opened drawer.\n\nDesign clarification answers:\n- The filing cabinet is your starting world. What material universe should it live in?\n  Answer: Warm wooden card catalog in a library reading ro\n  Rationale: Polished oak, brass pulls, typed index cards — each drawer has the heft of a library reference system\n- When a visitor opens a drawer, how do the artworks reveal themselves?\n  Answer: Hanging folder drop\n  Rationale: Folders accordion-drop into view; visitor clicks a folder tab to lay it flat and see the full artwork spread inside\n- What is this card catalog portfolio mainly doing for you right now?\n  Answer: Professional archive\n  Rationale: Every drawer is a dated series; the cabinet reads as a complete, citable body of work",
+      "examplePrompt": "A skeuomorphic filing cabinet portfolio where each collection is a labeled drawer. The user must click a drawer to open it, revealing the images inside as papers or folders. Keep the cabinet closed by default and show the full artwork inside the opened drawer.\n\nDesign clarification answers:\n- The filing cabinet is your starting world. What material universe should it live in?\n  Answer: Warm wooden card catalog in a library reading ro\n  Rationale: Polished oak, brass pulls, typed index cards — each drawer has the heft of a library reference system\n- When a visitor opens a drawer, how do the artworks reveal themselves?\n  Answer: Hanging folder drop\n  Rationale: Folders accordion-drop into view; visitor clicks a folder tab to lay it flat and see the full artwork spread inside\n- What is this card catalog portfolio mainly doing for you right now?\n  Answer: Professional archive\n  Rationale: Every drawer is a dated series; the cabinet reads as a complete, citable body of work",
+      "colorKeys": [
+        "background",
+        "primary",
+        "accent",
+        "paper",
+        "panel"
+      ],
+      "designSpace": {
+        "x": 0.38,
+        "y": 0.68,
+        "customAxes": [
+          {
+            "id": "axis_visible_friction",
+            "name": "Visible to Friction",
+            "leftLabel": "Visible",
+            "rightLabel": "Friction",
+            "value": 0.38
+          },
+          {
+            "id": "axis_abstract_skeuomorphic",
+            "name": "Abstract to Skeuomorphic",
+            "leftLabel": "Abstract",
+            "rightLabel": "Skeuomorphic",
+            "value": 0.68
+          },
+          {
+            "id": "axis_1782518606586",
+            "name": "Colorful to Monotone",
+            "leftLabel": "Colorful",
+            "rightLabel": "Monotone",
+            "value": 0.5
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T23:43:24.719Z"
     }
   ]
 }

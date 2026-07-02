@@ -171,6 +171,16 @@ Do NOT generate another interface with the same metaphor, place-world, object wo
   const xAxis = designSpace?.xAxis || { name: 'Visible to Friction', leftLabel: 'immediately visible', rightLabel: 'deliberate friction and slower encounter' };
   const yAxis = designSpace?.yAxis || { name: 'Abstract to Skeuomorphic', leftLabel: 'abstract/interface-native', rightLabel: 'tactile/skeuomorphic/object-like' };
   const customAxes = Array.isArray(designSpace?.customAxes) ? designSpace.customAxes : [];
+  const axisTermForValue = (axis, value) => {
+    const terms = Array.isArray(axis?.terms) ? axis.terms.filter((term) => term.label) : [];
+    if (!terms.length) return null;
+    const v = Math.max(0, Math.min(1, Number(value) || 0));
+    return terms.slice().sort((a, b) => Math.abs((Number(a.value) || 0) - v) - Math.abs((Number(b.value) || 0) - v))[0];
+  };
+  const termText = (axis, value) => {
+    const term = axisTermForValue(axis, value);
+    return term ? `${term.label}${term.description ? ` (${term.description})` : ''}` : '';
+  };
   const customAxisBlock = customAxes.length
     ? `
 User-defined concept axes:
@@ -187,7 +197,11 @@ ${customAxes.map((axis) => {
       .map((score) => `${score.name || score.key} ${Number(score.value).toFixed(2)}${score.manual ? ' artist-corrected' : ''}`)
       .join(', ')
     : '';
-  return `- ${axis.name || `${left} to ${right}`}: ${value.toFixed(2)} (0 = ${left}, 1 = ${right})${role}${nearby ? `; nearby/corrected interfaces: ${nearby}` : ''}`;
+  const ladder = Array.isArray(axis.terms) && axis.terms.length
+    ? `; semantic ladder: ${axis.terms.map((term) => `${term.label} ${Number(term.value).toFixed(2)}`).join(' -> ')}`
+    : '';
+  const current = termText(axis, value);
+  return `- ${axis.name || `${left} to ${right}`}: ${value.toFixed(2)} (0 = ${left}, 1 = ${right})${role}${current ? `; current concept: ${current}` : ''}${ladder}${nearby ? `; nearby/corrected interfaces: ${nearby}` : ''}`;
 }).join('\n')}
 
 Use these axes as artist-authored semantic interpolation controls. Artist-corrected note positions are stronger evidence than initial AI rankings. If the selected value is between endpoint concepts, synthesize a coherent middle ground rather than choosing one endpoint literally.`
@@ -197,9 +211,10 @@ Use these axes as artist-authored semantic interpolation controls. Artist-correc
 Design space selection:
 - x ${xAxis.name || `${xAxis.leftLabel} to ${xAxis.rightLabel}`}: ${designX.toFixed(2)} (0 = ${xAxis.leftLabel}, 1 = ${xAxis.rightLabel})
 - y ${yAxis.name || `${yAxis.leftLabel} to ${yAxis.rightLabel}`}: ${designY.toFixed(2)} (0 = ${yAxis.leftLabel}, 1 = ${yAxis.rightLabel})
+- Interpreted concept words: ${termText(xAxis, designX) || 'between x-axis concepts'} + ${termText(yAxis, designY) || 'between y-axis concepts'}
 ${customAxisBlock}
 
-Use this coordinate as a research/prototyping constraint. It should shape the presentation model, encounter model, layout engine, and material language. This is not a decorative slider value.`
+Use this coordinate as a research/prototyping constraint. It should shape the presentation model, encounter model, layout engine, and material language. This is not a decorative slider value. Prefer the interpreted concept words over exposing numbers in the generated idea.`
     : '';
   const highFidelityReferenceBlock = /REFERENCE_FIDELITY:\s*high/i.test(String(userPrompt || ''))
     ? `

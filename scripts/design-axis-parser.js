@@ -193,15 +193,20 @@ function buildAxisSystemPrompt() {
 
 Output ONLY valid JSON:
 {
+  "terms": [
+    { "value": 0.0, "label": "left endpoint phrase", "description": "brief meaning" }
+  ],
   "scores": {
     "layout_key": { "value": 0.0, "rationale": "brief phrase" }
   }
 }
 
 The axis runs from leftLabel at 0 to rightLabel at 1.
+Also create 6-8 short semantic terms that populate the axis between the endpoints. These are artist-facing concept words, not numbers.
 Use the layout metaphor, short description, design-space metadata, and compact visualStyle summary.
 For visual axes such as colorful/monotone, edgy/soft, dense/spacious, dark/light, warm/cool, tactile/flat, use visualStyle evidence over metaphor guesses.
 Return one score for every provided layout key.
+Term labels should be 1-4 words; descriptions under 12 words.
 Keep rationales under 8 words.`;
 }
 
@@ -254,6 +259,13 @@ async function scoreDesignAxis({ apiKey, provider, axis, layouts }) {
   ]));
 
   return {
+    terms: Array.isArray(parsed.terms)
+      ? parsed.terms.map((term) => ({
+        value: clamp01(term.value),
+        label: String(term.label || '').slice(0, 48),
+        description: String(term.description || '').slice(0, 100),
+      })).filter((term) => term.label).sort((a, b) => a.value - b.value)
+      : [],
     scores: layouts.map((layout) => byKey.get(layout.key) || {
       key: layout.key,
       value: 0.5,

@@ -121,6 +121,37 @@
         "artSize": "200px",
         "imagePadding": "1rem"
       }
+    },
+    "card_catalog": {
+      "colors": {
+        "background": "#f8f6f3",
+        "primary": "#1a1816",
+        "accent": "#8b7355",
+        "paper": "#f0ead8",
+        "panel": "#c8b89a"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'American Typewriter', 'Courier New', Courier, monospace",
+          "fontSize": "2rem",
+          "fontWeight": "700"
+        },
+        "heading2": {
+          "fontFamily": "'American Typewriter', 'Courier New', Courier, monospace",
+          "fontSize": "1.1rem",
+          "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontSize": "0.9rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "18px",
+        "artSize": "260px",
+        "imagePadding": "12px"
+      }
     }
   }
 }
