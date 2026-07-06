@@ -11,8 +11,16 @@ window.GeneratedLayouts['zine_rack'] = {
     const spreadPanels = [];
 
     collections.forEach((col, ci) => {
+      const collectionIndex = col.originalIndex ?? ci;
+      const collectionTextId = 'collection.' + collectionIndex;
       const sectionRow = document.createElement('div');
-      sectionRow.className = 'zr-section-row';
+      sectionRow.className = 'generated-collection zr-section-row';
+      sectionRow.dataset.collectionIndex = String(collectionIndex);
+      sectionRow.dataset.modelKind = 'collection';
+      sectionRow.dataset.modelPath = 'collections.' + collectionIndex;
+      sectionRow.dataset.collectionId = 'collection_' + collectionIndex;
+      sectionRow.dataset.modelLabel = col.name;
+      sectionRow.setAttribute('aria-label', col.name + ' collection');
 
       // Rack shelf row
       const shelf = document.createElement('div');
@@ -22,9 +30,12 @@ window.GeneratedLayouts['zine_rack'] = {
 
       const rackLabel = document.createElement('span');
       rackLabel.className = 'zr-rack-label';
-      rackLabel.setAttribute('data-text-id', 'collection-' + col.originalIndex + '-title');
-      rackLabel.setAttribute('data-text-role', 'collection-title');
+      rackLabel.setAttribute('data-text-id', collectionTextId);
+      rackLabel.setAttribute('data-text-role', 'collection.title');
       rackLabel.setAttribute('data-text-fallback', col.name);
+      rackLabel.dataset.modelKind = 'text';
+      rackLabel.dataset.modelPath = 'content.text.' + collectionTextId;
+      rackLabel.dataset.modelLabel = col.name + ' title';
       rackLabel.textContent = col.name;
       shelf.appendChild(rackLabel);
 
@@ -34,8 +45,12 @@ window.GeneratedLayouts['zine_rack'] = {
         spineWrap.setAttribute('role', 'listitem');
         spineWrap.setAttribute('tabindex', '0');
         spineWrap.setAttribute('aria-label', 'Open work ' + (wi + 1) + ' in ' + col.name);
-        spineWrap.dataset.collectionIndex = String(col.originalIndex);
+        spineWrap.dataset.modelKind = 'work';
+        spineWrap.dataset.modelPath = 'collections.' + collectionIndex + '.works.' + wi;
+        spineWrap.dataset.collectionIndex = String(collectionIndex);
         spineWrap.dataset.workIndex = String(wi);
+        spineWrap.dataset.workId = 'work_' + collectionIndex + '_' + wi;
+        spineWrap.dataset.modelLabel = 'Work ' + (wi + 1) + ' in ' + col.name;
 
         const spine = document.createElement('div');
         spine.className = 'zr-spine';
@@ -74,9 +89,12 @@ window.GeneratedLayouts['zine_rack'] = {
       spreadHeader.className = 'zr-spread-header';
 
       const h2 = document.createElement('h2');
-      h2.setAttribute('data-text-id', 'collection-' + col.originalIndex + '-title');
-      h2.setAttribute('data-text-role', 'collection-title');
+      h2.setAttribute('data-text-id', collectionTextId);
+      h2.setAttribute('data-text-role', 'collection.title');
       h2.setAttribute('data-text-fallback', col.name);
+      h2.dataset.modelKind = 'text';
+      h2.dataset.modelPath = 'content.text.' + collectionTextId;
+      h2.dataset.modelLabel = col.name + ' title';
       h2.textContent = col.name;
       spreadHeader.appendChild(h2);
 
@@ -97,7 +115,7 @@ window.GeneratedLayouts['zine_rack'] = {
         const page = helpers.workTile(img, {
           className: 'zr-page-mat',
           alt: 'Artwork ' + (wi + 1),
-          collectionIndex: col.originalIndex,
+          collectionIndex,
           workIndex: wi
         });
         const pageWrap = document.createElement('div');
@@ -139,7 +157,14 @@ window.GeneratedLayouts['zine_rack'] = {
         const pages = panel.querySelectorAll('.zr-page');
         if (pages[focusWi]) {
           setTimeout(() => {
-            pages[focusWi].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            const scroller = panel.querySelector('.zr-pages-scroll');
+            const page = pages[focusWi];
+            if (!scroller) return;
+            const targetLeft = page.offsetLeft - (scroller.clientWidth - page.offsetWidth) / 2;
+            scroller.scrollTo({
+              left: Math.max(0, targetLeft),
+              behavior: 'smooth',
+            });
           }, 50);
         }
       }

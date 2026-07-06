@@ -30,7 +30,7 @@
     <aside class="design-sidebar" aria-label="Design space navigation">
       <section class="design-space-panel" aria-label="Design space instrument">
         <div class="design-space-head">
-          <strong>Design space</strong>
+          <strong>Design Space</strong>
           <div class="design-space-head-actions">
             <button id="expand-design-space" class="ghost-btn design-space-expand-btn" type="button">Expand</button>
             <button id="hide-design-space" class="ghost-btn design-space-hide-btn" type="button">Hide</button>
@@ -64,10 +64,7 @@
 
     <section id="design-space-expanded" class="design-space-expanded" hidden aria-label="Expanded design space">
       <div class="design-space-expanded-head">
-        <div>
-          <p class="design-space-kicker">Design space</p>
-          <h2>Portfolio interface map</h2>
-        </div>
+        <h2>Design Space</h2>
         <button id="collapse-design-space" class="ghost-btn" type="button">Close</button>
       </div>
       <div class="design-space-expanded-body">
@@ -105,6 +102,7 @@
               <div id="image-vibe-preview" class="image-vibe-preview" hidden></div>
               <div id="image-vibe-tokens" class="image-vibe-tokens" hidden></div>
             </div>
+            <div id="design-direction-card" class="design-direction-card" hidden></div>
             <textarea id="ai-prompt" rows="5" placeholder="Describe a portfolio interface for this point"></textarea>
             <div id="generate-questions" class="generate-questions" hidden></div>
             <p id="generate-status" class="generate-status" hidden></p>
@@ -131,6 +129,7 @@
         <button id="device-desktop" class="device-btn active">Desktop</button>
         <button id="device-mobile" class="device-btn">Mobile</button>
       </div>
+      <div id="preview-reference-chip" class="preview-reference-chip" hidden></div>
     </div>
     <section class="preview-area">
       <div id="device-frame" class="device-frame desktop">
@@ -139,6 +138,19 @@
           <span class="device-size" id="device-size">Desktop</span>
         </div>
         <div id="preview-frame"></div>
+      </div>
+      <button id="asset-assistant-btn" class="sparkle-btn portfolio-scope-sparkle" type="button" aria-label="Ask AI to change this portfolio" title="Ask AI to change this portfolio">
+        <span class="sparkle-btn__icon" aria-hidden="true">✦</span>
+      </button>
+      <div id="cursor-undo-toast" class="cursor-undo-toast" hidden>
+        <span>Applied local edit.</span>
+        <button id="cursor-undo-btn" type="button">Undo</button>
+        <button id="cursor-done-btn" type="button" aria-label="Dismiss">Done</button>
+      </div>
+      <div id="asset-review-toast" class="asset-review-toast" hidden>
+        <span id="asset-review-message">Previewing page edit.</span>
+        <button id="asset-review-undo" type="button">Undo</button>
+        <button id="asset-review-apply" type="button">Apply</button>
       </div>
     </section>
     </div>
@@ -164,6 +176,25 @@
       </div>
       <p id="publish-result" class="publish-result" hidden></p>
     </div>
+  </div>
+
+  <div id="asset-assistant-modal" class="modal-overlay asset-assistant-modal" hidden>
+    <form class="modal asset-assistant-card" id="asset-assistant-form">
+      <div class="asset-assistant-head">
+        <div>
+          <h2>Ask AI</h2>
+          <p>Current portfolio version</p>
+        </div>
+        <button id="asset-assistant-close" class="asset-assistant-icon" type="button" aria-label="Close">&times;</button>
+      </div>
+      <textarea id="asset-assistant-prompt" rows="3" placeholder="Make the whole page more colorful, add soft background stars, change the scrolling..."></textarea>
+      <p id="asset-assistant-status" class="generate-status" hidden></p>
+      <div class="asset-assistant-actions">
+        <button id="asset-assistant-undo" class="ghost-btn asset-assistant-undo" type="button" hidden>Undo</button>
+        <button id="asset-assistant-cancel" class="ghost-btn" type="button">Cancel</button>
+        <button id="asset-assistant-submit" class="publish-btn" type="submit">Apply change</button>
+      </div>
+    </form>
   </div>
 
   <script src="./scripts/layouts.js"></script>

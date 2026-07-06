@@ -384,7 +384,50 @@ window.PortfolioRender = (() => {
     }
   }
 
+  function layoutOverrideFor(presentation, contentOverrides) {
+    const value = contentOverrides?.layoutOverrides?.[presentation.id]?.collectionDisplay;
+    return ['grid', 'horizontal', 'vertical'].includes(value) ? value : '';
+  }
+
+  function applyPresentationOverrides(root, presentation, contentOverrides) {
+    const overrides = contentOverrides?.layoutOverrides?.[presentation.id] || {};
+    const display = ['grid', 'horizontal', 'vertical'].includes(overrides.collectionDisplay)
+      ? overrides.collectionDisplay
+      : '';
+    const material = ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'].includes(overrides.materialTexture)
+      ? overrides.materialTexture
+      : '';
+    root.dataset.layoutOverride = display;
+    root.dataset.materialTexture = material;
+    ['grid', 'horizontal', 'vertical'].forEach((mode) => {
+      root.classList.toggle(`layout-override-${mode}`, display === mode);
+    });
+    ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'].forEach((texture) => {
+      root.classList.toggle(`layout-material-${texture}`, material === texture);
+    });
+  }
+
+  function renderOverrideWorkContainer(section, collection, mode) {
+    const container = document.createElement('div');
+    container.className = `layout-override-works layout-override-works--${mode}`;
+    collection.images.forEach((img, index) => {
+      appendImage(container, img, 'layout-override-work generated-work-tile', undefined, {
+        collectionIndex: collection.originalIndex,
+        workIndex: index,
+        workId: `work_${collection.originalIndex}_${index}`,
+        label: imageBasename(img),
+      });
+    });
+    section.appendChild(container);
+  }
+
   function renderWorkContainer(section, collection, presentation) {
+    const override = layoutOverrideFor(presentation, window.__PORTFOLIO_CONTENT_OVERRIDES__ || {});
+    if (override) {
+      renderOverrideWorkContainer(section, collection, override);
+      return;
+    }
+
     const engine = presentation.layout_engine?.work_container || 'css_grid';
     const component = PortfolioComponents.workContainerForEngine(engine);
     if (!component) return;
@@ -463,12 +506,14 @@ window.PortfolioRender = (() => {
   function renderCollections(root, collections, models) {
     const { presentation, manifest, theme, contentOverrides } = models;
     root.innerHTML = '';
+    window.__PORTFOLIO_CONTENT_OVERRIDES__ = contentOverrides || {};
     bindModelTarget(root, {
       modelKind: 'presentation',
       modelPath: `presentations.${presentation.id}`,
       presentationId: presentation.id,
       modelLabel: `${presentation.id} presentation`,
     });
+    applyPresentationOverrides(root, presentation, contentOverrides || {});
 
     const visibleCollections = collections.filter((collection) => {
       const id = PortfolioContent.collectionId(collection.originalIndex);
@@ -488,6 +533,9 @@ window.PortfolioRender = (() => {
 
     if (window.PortfolioContent) {
       PortfolioContent.applyPageText(manifest, theme, contentOverrides, presentation.id);
+    }
+    if (window.PortfolioDecorations) {
+      PortfolioDecorations.mount(root, contentOverrides, presentation.id);
     }
   }
 

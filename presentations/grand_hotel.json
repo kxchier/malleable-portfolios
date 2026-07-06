@@ -1,0 +1,48 @@
+{
+  "id": "grand_hotel",
+  "layout_family": "symmetrical_facade",
+  "metaphor": "hotel_facade",
+  "visual_language": "vintage whimsical hotel, pastel pink facade, muted gold ornaments, matte painted textures, symmetrical composition, mountain backdrop, ornate arched windows",
+  "encounter": "Visitor arrives at a grand vintage hotel lobby. Collections are floors or wings of the hotel. Works are framed prints displayed on the corridor walls.",
+  "intent": "Evoke nostalgia and storybook elegance through strict symmetry, pastel pastels, and gold ornamental details drawn from a Wes Anderson-style grand hotel.",
+  "components": [
+    {
+      "id": "hotel_facade_banner",
+      "role": "PORTFOLIO.hero",
+      "editable": true
+    },
+    {
+      "id": "floor_section",
+      "role": "COLLECTION.frame",
+      "editable": true
+    },
+    {
+      "id": "framed_work",
+      "role": "WORK.tile",
+      "editable": true
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO.title": {
+      "editable": true,
+      "placement": "facade_signage"
+    },
+    "COLLECTION.title": {
+      "editable": true,
+      "placement": "floor_banner"
+    },
+    "COLLECTION.works": {
+      "editable": true
+    },
+    "WORK.images": {
+      "editable": true
+    }
+  },
+  "layout_engine": {
+    "type": "facade_floors",
+    "symmetry": "horizontal",
+    "scroll": "vertical",
+    "works_per_row": "auto",
+    "backdrop": "mountain_scenic"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "id": "signal_tower",
+  "layout_family": "earned_reveal",
+  "metaphor": "broadcast_console",
+  "visual_language": "Analogue broadcast console — static-field entry screen, frequency dials, waveform readouts, phosphor-green CRT glow, aviation-red warning accents, midnight sky background, and steel/CRT-glass panels for resolved transmissions. Symbolic objects: tuning dial, signal bar, waveform strip, frequency label.",
+  "encounter": "Visitor lands on a static interference field — fragments of artwork ghost through the noise. Each collection is a broadcast frequency on a console row. Clicking a flickering signal clears the static and resolves the full collection below. The interface rewards patient tuning over instant summary.",
+  "intent": "Living archive broadcast — every frequency / collection coexists; deep tuners surface older and newer work equally. No hierarchy by recency.",
+  "components": [
+    {
+      "id": "console_header",
+      "role": "PORTFOLIO.title",
+      "description": "Compact broadcast header: tower callsign / portfolio name + signal strength bar"
+    },
+    {
+      "id": "frequency_dial",
+      "role": "COLLECTION.title",
+      "description": "A console row per collection: dial graphic, frequency label (collection name), signal indicator, click to intercept"
+    },
+    {
+      "id": "static_field",
+      "role": "COLLECTION.works",
+      "description": "Collapsed by default — animated static texture with ghosted artwork fragments bleeding through. Click triggers resolve."
+    },
+    {
+      "id": "resolved_band",
+      "role": "COLLECTION.works",
+      "description": "Fully resolved transmission: artwork grid appears with clear paper mat tiles after intercept."
+    },
+    {
+      "id": "work_tile",
+      "role": "WORK.images",
+      "description": "Paper-matted artwork tile within resolved band"
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO.title": {
+      "editable": true,
+      "component": "console_header"
+    },
+    "COLLECTION.title": {
+      "editable": true,
+      "component": "frequency_dial"
+    },
+    "COLLECTION.works": {
+      "editable": true,
+      "component": "resolved_band"
+    },
+    "WORK.images": {
+      "editable": true,
+      "component": "work_tile"
+    }
+  },
+  "layout_engine": {
+    "type": "vertical_console_stack",
+    "collection_reveal": "click_to_resolve",
+    "default_state": "intercepted_static",
+    "transition": "static_clear_to_grid",
+    "grid": "responsive_auto_fit"
+  }
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "file": "wood-grain-overlay.svg",
+    "src": "layout-assets/desk/assets/wood-grain-overlay.svg",
+    "alt": "wood grain texture streaks",
+    "x": 50,
+    "y": 55,
+    "size": 180,
+    "rotate": 1,
+    "opacity": 0.45
+  },
+  {
+    "file": "coffee-ring-stain.svg",
+    "src": "layout-assets/desk/assets/coffee-ring-stain.svg",
+    "alt": "coffee cup ring stain",
+    "x": 82,
+    "y": 72,
+    "size": 72,
+    "rotate": 5,
+    "opacity": 0.38
+  },
+  {
+    "file": "pencil-resting.svg",
+    "src": "layout-assets/desk/assets/pencil-resting.svg",
+    "alt": "pencil resting on desk",
+    "x": 22,
+    "y": 80,
+    "size": 140,
+    "rotate": -12,
+    "opacity": 0.62
+  },
+  {
+    "file": "tape-strip.svg",
+    "src": "layout-assets/desk/assets/tape-strip.svg",
+    "alt": "piece of tape on desk surface",
+    "x": 38,
+    "y": 30,
+    "size": 90,
+    "rotate": 8,
+    "opacity": 0.42
+  },
+  {
+    "file": "paper-corner-curl.svg",
+    "src": "layout-assets/desk/assets/paper-corner-curl.svg",
+    "alt": "curled paper corner",
+    "x": 68,
+    "y": 22,
+    "size": 100,
+    "rotate": -7,
+    "opacity": 0.55
+  },
+  {
+    "file": "desk-knot-grain.svg",
+    "src": "layout-assets/desk/assets/desk-knot-grain.svg",
+    "alt": "wood knot detail",
+    "x": 15,
+    "y": 45,
+    "size": 80,
+    "rotate": 3,
+    "opacity": 0.35
+  }
+]

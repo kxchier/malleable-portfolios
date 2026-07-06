@@ -4,16 +4,19 @@ const EXAMPLE_CSS = `body.view-KEY {
   color: var(--color-primary);
 }
 .KEY-work {
-  flex: 0 0 var(--space-artSize);
-  width: var(--space-artSize);
-  min-width: var(--space-artSize);
+  min-width: 0;
   padding: var(--space-imagePadding);
   background: var(--color-paper);
 }
-.images-scroll {
-  overflow-x: auto;
-  display: flex;
+.KEY-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--space-artSize)), 1fr));
   gap: var(--space-gridGap);
+}
+.KEY-work img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }`;
 
 const EXAMPLE_RENDER = `window.GeneratedLayouts = window.GeneratedLayouts || {};
@@ -21,12 +24,12 @@ window.GeneratedLayouts['KEY'] = {
   mount(root, ctx) {
     const { collections, helpers } = ctx;
     collections.forEach((col, ci) => {
-      const section = helpers.collectionSection(col, ci);
+      const section = helpers.collectionFrame(col, col.originalIndex ?? ci, { className: 'KEY-section' });
       const list = document.createElement('div');
-      list.className = 'KEY-list images-scroll';
+      list.className = 'KEY-list';
       col.images.forEach((img, wi) => {
         list.appendChild(helpers.workTile(img, {
-          className: 'KEY-work scroll-item',
+          className: 'KEY-work',
           alt: 'artwork',
           collectionIndex: col.originalIndex,
           workIndex: wi,
@@ -79,6 +82,8 @@ themeColors (REQUIRED):
 - Always include: background, primary, accent, paper.
 - Include panel ONLY if CSS uses var(--color-panel). Include secondary ONLY if CSS uses var(--color-secondary).
 - Do NOT include unused swatch colors — the editor hides swatches that are not used.
+- Choose a palette that belongs to the generated metaphor and encounter, even when it differs strongly from the current portfolio/editor colors.
+- Treat the current portfolio colors as optional context, not a style constraint. Do not default to cream, beige, brown, or paper tones unless the user prompt, reference image, or metaphor specifically calls for them.
 
 themeTypography / themeSpacing (OPTIONAL but encouraged):
 - Use these when the generated interface should change the whole website shell, not just generated components.
@@ -103,7 +108,7 @@ css (CRITICAL — editor swatches depend on this):
   --font-heading2-family, --font-heading2, --font-heading2-weight,
   --font-body-family, --font-body, --font-body-weight.
 - Headings: var(--color-primary) or color-mix with var(--color-accent)
-- Frames/mats: var(--color-paper), var(--color-accent)
+- Frames/mats/surfaces: var(--color-paper), var(--color-accent), var(--color-panel), or var(--color-secondary) as appropriate to the metaphor. These variables do not have to mean literal beige paper; they can be steel, glass, signal lights, water, sky, concrete, fabric, etc.
 - For darker/lighter variants use color-mix(in srgb, var(--color-accent) 70%, black) — NOT hardcoded hex for swatch colors
 - Spacing and sizing controls: generated layouts should respond to the editor sliders by default.
   Use var(--space-gridGap) for gaps between works/sections and var(--space-artSize) for artwork tile or panel width/size.
@@ -113,7 +118,8 @@ css (CRITICAL — editor swatches depend on this):
 - Generated layouts may be full-bleed, but they must not depend on an unstated parent height. If a root uses absolute positioning, overflow hidden, panning, or height: 100%, also set a concrete min-height such as min-height: 100vh on the root/content surface.
 - Do not create a large blank hero, title stage, or decorative spacer before the first collection. The first collection's heading and at least part of its artwork should appear within the first viewport on desktop and mobile.
 - If you include a generated title/nameplate, keep it compact: no more than 1rem top padding above it and no more than 1rem margin before the first collection.
-- Include .images-scroll { overflow-x: auto; display: flex; gap: var(--space-gridGap); } for scroll layouts
+- Choose a collection display mode that fits the metaphor. Options include: responsive grid, quilt/patchwork grid, masonry board, vertical stacked story, freeform collage field, pinned wall, drawer/file reveal, carousel/horizontal strip, full-scene/world navigation, or nested rooms/shelves. A horizontal strip is one available choice, not the assumed structure.
+- When choosing a horizontal strip, include .images-scroll { overflow-x: auto; display: flex; gap: var(--space-gridGap); }. For grids, patchworks, masonry boards, fields, rooms, and shelves, use CSS grid/flex/positioning that matches that display mode.
 - Work tiles: show the full artwork. Use object-fit: contain on img, object-position: center, and avoid cropping unless the user explicitly asks for cropped thumbnails.
 
 presentation:
@@ -124,7 +130,9 @@ renderScript:
 - MUST register: window.GeneratedLayouts = window.GeneratedLayouts || {};
 - MUST set window.GeneratedLayouts['KEY'] = { mount(root, ctx) { ... } };
 - ctx provides: collections (array with name, images, originalIndex), helpers, assets, presentation, theme.
-- helpers.collectionSection(col, collectionIndex) — returns <section> with editable h2. Prefer this for collection sections so generated text keeps direct manipulation.
+- helpers.collectionFrame(col, collectionIndex, { className, tagName }) — returns the visible outer collection section with editable h2 and collection edit metadata. Prefer this for generated collection sections, especially when the section has a visible card/frame/patch/shelf/drawer/panel surface. Left/right section spacing edits rely on the collection metadata being on this visible outer wrapper.
+- helpers.collectionSection(col, collectionIndex) — legacy helper returning a basic <section> with editable h2. Use only when that exact section is also the visible outer collection wrapper.
+- If you create a decorative outer wrapper around a helper-created collection section, put the collection metadata on the visible outer wrapper instead. Do not hide the editable collection target inside an inner shell, because cursor edits like padding, margins, borders, and backgrounds must affect the visible section.
 - helpers.workTile(imgPath, { className, alt, collectionIndex, workIndex, fixedSize }) — returns div with img for author artwork. Always pass collectionIndex: col.originalIndex and workIndex: wi so clicked images can be edited directly. Leave fixedSize unset/false so the size slider controls it; use fixedSize: true only for explicitly fixed-size concepts.
 - helpers.portfolioTitle() — optional; headings are usually in the page shell.
 - Any generated portfolio/collection/work label text that should be editable must receive data-text-id, data-text-role, and data-text-fallback, or be created through the helper APIs.
@@ -144,7 +152,7 @@ ${EXAMPLE_CSS}
 Minimal renderScript pattern:
 ${EXAMPLE_RENDER}
 
-Be creative with metaphors, layout, positioning, and skeuomorphic decoration, but prioritize getting the artwork on screen quickly. Always render ALL author artwork from ctx.collections. themeColors MUST match the dark/light mood of your CSS.`;
+Be creative with metaphors, layout, positioning, color world, and skeuomorphic decoration, but prioritize getting the artwork on screen quickly. Always render ALL author artwork from ctx.collections. themeColors MUST match the metaphor, material world, and dark/light mood of your CSS, not merely copy the current portfolio palette.`;
 }
 
 function buildUserPrompt(userPrompt, context = {}) {
@@ -186,8 +194,22 @@ Do NOT generate another interface with the same metaphor, place-world, object wo
 User-defined concept axes:
 ${customAxes.map((axis) => {
   const value = Number.isFinite(Number(axis.value)) ? Number(axis.value) : 0.5;
-  const left = axis.leftLabel || 'left concept';
-  const right = axis.rightLabel || 'right concept';
+  const endpointCue = (image, label) => {
+    if (!image || typeof image !== 'object') return '';
+    const summary = String(image.summary || '').trim();
+    const keywords = Array.isArray(image.keywords) && image.keywords.length ? ` keywords ${image.keywords.join(', ')}` : '';
+    const palette = Array.isArray(image.palette) && image.palette.length ? ` palette ${image.palette.join(', ')}` : '';
+    return summary || palette || keywords ? `${label} endpoint image cue:${keywords}${summary ? ` ${summary}` : ''}${palette}` : '';
+  };
+  const endpointLabel = (side) => {
+    const label = String(side === 'right' ? axis.rightLabel || '' : axis.leftLabel || '').trim();
+    if (label) return label;
+    const image = side === 'right' ? axis.rightImage : axis.leftImage;
+    if (image && typeof image === 'object') return String(image.fileName || `${side} image reference`).slice(0, 80);
+    return `${side} concept`;
+  };
+  const left = endpointLabel('left');
+  const right = endpointLabel('right');
   const role = axis.mapRole ? `; marked as ${String(axis.mapRole).toUpperCase()} rectangle axis` : '';
   const nearby = Array.isArray(axis.scores)
     ? axis.scores
@@ -201,10 +223,11 @@ ${customAxes.map((axis) => {
     ? `; semantic ladder: ${axis.terms.map((term) => `${term.label} ${Number(term.value).toFixed(2)}`).join(' -> ')}`
     : '';
   const current = termText(axis, value);
-  return `- ${axis.name || `${left} to ${right}`}: ${value.toFixed(2)} (0 = ${left}, 1 = ${right})${role}${current ? `; current concept: ${current}` : ''}${ladder}${nearby ? `; nearby/corrected interfaces: ${nearby}` : ''}`;
+  const endpoints = [endpointCue(axis.leftImage, left), endpointCue(axis.rightImage, right)].filter(Boolean).join('; ');
+  return `- ${axis.name || `${left} to ${right}`}: ${value.toFixed(2)} (0 = ${left}, 1 = ${right})${role}${current ? `; current concept: ${current}` : ''}${ladder}${nearby ? `; nearby/corrected interfaces: ${nearby}` : ''}${endpoints ? `; ${endpoints}` : ''}`;
 }).join('\n')}
 
-Use these axes as artist-authored semantic interpolation controls. Artist-corrected note positions are stronger evidence than initial AI rankings. If the selected value is between endpoint concepts, synthesize a coherent middle ground rather than choosing one endpoint literally.`
+Use these axes as artist-authored semantic interpolation controls. Artist-corrected note positions are stronger evidence than initial AI rankings. Endpoint image cues define the visual language at each end of an axis. If the selected value is between endpoint concepts or endpoint images, synthesize a coherent middle ground rather than choosing one endpoint literally.`
     : '';
   const designSpaceBlock = designSpace
     ? `
@@ -220,17 +243,22 @@ Use this coordinate as a research/prototyping constraint. It should shape the pr
     ? `
 High-fidelity image reference constraint:
 - The uploaded image is the primary art direction, not a loose mood board.
-- Preserve the reference's visible visual language: palette, line quality, texture, softness, composition logic, component metaphors, and interaction mood.
+- A reference image asset is available to generated CSS/renderScript as ${context.referenceImageAssetName ? `url("assets/${context.referenceImageAssetName}")` : 'a generated reference image asset when provided'}. Use it as a translucent underlay, texture, traced backdrop, or collage layer unless the user explicitly says not to.
+- Preserve the reference's visible visual language: palette, line quality, texture, material system, softness, composition density, component metaphors, and interaction mood.
+- Treat "Layout contract", "Required motifs", "Required materials", "Must preserve", "Material system", and "Motif vocabulary" lines as implementation requirements. They should show up in CSS class names, DOM structures, SVG assets, background layers, or visible generated chrome.
+- Do not satisfy the image by choosing a generic adjacent metaphor like diary, scrapbook, notebook, zine, gallery, or card grid unless the prompt explicitly asks for that exact object. Build a new interface surface from the reference's actual mechanics instead.
+- The first viewport must visibly resemble the reference before any interaction: use a reference-derived palette, layered background treatment, and multiple motifs or marks from the token vocabulary.
 - Convert named visual motifs from the extracted tokens into concrete interface elements. If tokens mention things like swirling clouds, stars, creatures, windows, posters, vines, waves, stickers, etc., they must appear as visible CSS/SVG/DOM details, not just influence colors or wording.
-- Include at least three reference-derived visual motifs in the generated CSS/renderScript/assets, and make at least one motif animated when the tokens mention motion or atmosphere.
+- Include at least five reference-derived visual motifs or material details in the generated CSS/renderScript/assets, and make at least one motif animated when the tokens mention motion or atmosphere.
 - Create simple inline SVG assets or generated DOM decorations when needed; do not avoid motifs just because no external image asset exists.
 - Do not let clarification answers replace the image with an unrelated world. If the prompt mentions another object or place, translate it through the reference image's style and structure.
+- Use the reference palette for themeColors; do not drift to plain cream/black handwriting unless those are dominant in the reference.
 - The generated website should be recognizable as descended from the reference image at first glance.`
     : '';
   return `User prompt: ${userPrompt}
 
 Portfolio has ${collections.length} collection(s): ${collectionSummary || 'none yet'}.
-Theme colors: primary ${context.primary || '#1a1816'}, accent ${context.accent || '#8b7355'}, background ${context.background || '#f8f6f3'}.
+Current portfolio colors for optional continuity only: primary ${context.primary || '#1a1816'}, accent ${context.accent || '#8b7355'}, background ${context.background || '#f8f6f3'}. Do not copy this palette unless the user asks for continuity or it genuinely fits the generated metaphor.
 ${existingMetaphorsBlock}
 ${designSpaceBlock}
 ${highFidelityReferenceBlock}

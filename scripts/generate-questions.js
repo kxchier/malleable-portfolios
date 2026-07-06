@@ -42,6 +42,7 @@ If previous answers cover all three categories, return { "done": true }.
 The question must have exactly 3 options.
 Focus on the category's design decision, not generic style preferences.
 When targetCategory is metaphor_place_world, every option must be a new metaphor/place-world not already represented in existingInterfaces. Avoid semantically equivalent versions of those existing metaphors; change the actual object world, material system, and encounter.
+Options may imply distinct material and color worlds, and they do not need to preserve the current portfolio palette unless the user asks for continuity.
 Do not ask about implementation details, CSS, file formats, API keys, or screen sizes.
 Make options concrete and different from each other.`;
 }

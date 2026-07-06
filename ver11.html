@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — Quilt</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./generated/quilt_patch/style.css">
+  <style>
+    body.view-quilt_patch .generated-layout-container {
+      max-width: none;
+      width: 100%;
+      min-height: 100vh;
+      padding: 0;
+    }
+    body.view-quilt_patch > header {
+      position: relative;
+      z-index: 1000;
+      isolation: isolate;
+    }
+    body.view-quilt_patch #content {
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+  <script src="./scripts/content.js"></script>
+  <script src="./scripts/loader.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/quilt_patch/render.js"></script>
+</head>
+<body class="view-quilt_patch">
+  <header>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+  </header>
+
+  <main class="container generated-layout-container">
+    <div id="content"></div>
+  </main>
+
+  <script>
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('quilt_patch', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
+      });
+      if (window.PortfolioContent) {
+        PortfolioContent.applyColorVars(data.theme, 'quilt_patch');
+        PortfolioContent.applyTypographyVars(data.theme, 'quilt_patch');
+      }
+      const versionSpacing = data.theme?.versions?.['quilt_patch']?.spacing || {};
+      Object.entries(versionSpacing).forEach(([spacingKey, value]) => {
+        document.documentElement.style.setProperty(`--space-${spacingKey}`, value);
+      });
+      await GeneratedRuntime.mount({
+        root: document.getElementById('content'),
+        layoutKey: 'quilt_patch',
+        models,
+      });
+    });
+  </script>
+</body>
+</html>

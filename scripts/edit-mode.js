@@ -5,8 +5,10 @@ let editedContent = { text: {} };
 let contentModel = null;
 let inspectController = null;
 let previewIframe = null;
+let previewResizeObserver = null;
 let closePalettePopover = null;
 let renderPaletteForLayout = null;
+const DESKTOP_PREVIEW_WIDTH = 1280;
 const DEFAULT_THEME_COLORS = {
   background: '#f8f6f3',
   secondary: '#e8e4de',
@@ -20,12 +22,16 @@ const DESIGN_DIRECTION_MARKER = 'Design direction:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
 const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
+let designSpacePointSelected = false;
 let customDesignAxes = [];
 let draggingAxisNote = null;
+let activeDesignDirectionPrompt = '';
 let pendingGeneratePrompt = '';
 let pendingGenerateQuestion = null;
 let pendingGenerateAnswers = [];
 let pendingGenerateReady = false;
+let openAssetAssistant = () => {};
+let cursorUndoSnapshot = null;
 
 async function initEditMode() {
   if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
@@ -62,6 +68,9 @@ async function initEditMode() {
   setupPaletteDrag();
   setupPreview();
   setupTextEditBridge();
+  setupCursorUndoToast();
+  setupAssetAssistant();
+  setupDesignDirectionCard();
   setupAI();
   setupDeleteLayout();
   setupPublish();
@@ -211,7 +220,7 @@ function handleTextEditChange({ id, role, scope, property, value }) {
   refreshInspectModel();
 }
 
-function patchPreview() {
+function patchPreview({ remount = false } = {}) {
   if (previewIframe?.contentWindow) {
     previewIframe.contentWindow.postMessage({
       source: 'portfolio-editor',
@@ -219,8 +228,19 @@ function patchPreview() {
       theme: editedTheme,
       content: editedContent,
       versionKey: getCurrentVersionKey(),
+      remount,
     }, '*');
   }
+}
+
+function syncEditChromeAfterLocalEdit() {
+  syncPaletteVisibility();
+  syncPaletteSwatches();
+  syncSpacingControlsForCurrentVersion();
+  renderVersionButtons();
+  syncDeleteLayoutButton();
+  syncPreviewReferenceChip();
+  refreshInspectModel();
 }
 
 function setupTextEditBridge() {
@@ -237,6 +257,10 @@ function setupTextEditBridge() {
     }
     if (e.data.source === 'portfolio-cursor-assistant') {
       handleCursorAssistantMessage(e.data);
+      return;
+    }
+    if (e.data.source === 'portfolio-page-assistant' && e.data.type === 'open') {
+      openAssetAssistant(e.data.anchor);
     }
   });
 }
@@ -264,7 +288,14 @@ function handleCursorAssistantMessage(msg) {
       });
   }
   if (msg.type === 'apply') {
+    if (!msg.operation || msg.operation.type === 'noop' || msg.operation.type === 'needsGeneration') {
+      applyCursorOperation(msg.operation);
+      return;
+    }
+    cursorUndoSnapshot = cloneEditState();
     applyCursorOperation(msg.operation);
+    syncEditChromeAfterLocalEdit();
+    showCursorUndoToast();
   }
 }
 
@@ -272,8 +303,47 @@ function proposalFor(operation, message) {
   return { operation, message };
 }
 
+function cloneEditState() {
+  return {
+    theme: JSON.parse(JSON.stringify(editedTheme)),
+    content: JSON.parse(JSON.stringify(editedContent)),
+  };
+}
+
+function undoCursorOperation() {
+  if (!cursorUndoSnapshot) return;
+  editedTheme = cursorUndoSnapshot.theme;
+  editedContent = cursorUndoSnapshot.content;
+  cursorUndoSnapshot = null;
+  syncEditChromeAfterLocalEdit();
+  updatePreview();
+  hideCursorUndoToast();
+}
+
+function showCursorUndoToast() {
+  const toast = document.getElementById('cursor-undo-toast');
+  if (!toast) return;
+  toast.hidden = false;
+}
+
+function hideCursorUndoToast() {
+  const toast = document.getElementById('cursor-undo-toast');
+  if (!toast) return;
+  toast.hidden = true;
+}
+
+function setupCursorUndoToast() {
+  const undoBtn = document.getElementById('cursor-undo-btn');
+  const doneBtn = document.getElementById('cursor-done-btn');
+  undoBtn?.addEventListener('click', undoCursorOperation);
+  doneBtn?.addEventListener('click', () => {
+    cursorUndoSnapshot = null;
+    hideCursorUndoToast();
+  });
+}
+
 function normalizeCursorScope(scope) {
-  return ['this', 'role', 'all-headings', 'all-images'].includes(scope) ? scope : 'this';
+  return ['this', 'role', 'all-headings', 'all-images', 'all-sections'].includes(scope) ? scope : 'this';
 }
 
 async function proposeCursorOperation({ target, prompt, scope, presentationId }) {
@@ -314,6 +384,9 @@ const TEXT_STYLE_VALUE_PATTERNS = {
   opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
 };
 
+const SPACING_VALUE_PATTERN = /^(\d{1,4}(\.\d+)?(px|rem|em|%)|0|auto)$/;
+const SPACING_SHORTHAND_PATTERN = /^((\d{1,4}(\.\d+)?(px|rem|em|%)|0|auto)(\s+|$)){1,4}$/;
+
 const ELEMENT_STYLE_VALUE_PATTERNS = {
   aspectRatio: /^(\d{1,3}(\.\d+)?\/\d{1,3}(\.\d+)?|auto)$/,
   background: /^(transparent|#[0-9a-fA-F]{3,8}|rgba?\([0-9.,\s%]+\)|color-mix\(in srgb, var\(--color-[a-z-]+\) \d{1,3}%, (black|white|transparent|var\(--color-[a-z-]+\))\))$/,
@@ -325,7 +398,13 @@ const ELEMENT_STYLE_VALUE_PATTERNS = {
   boxShadow: /^(none|0\s+\d{1,2}px\s+\d{1,3}px\s+rgba?\([0-9.,\s%]+\))$/,
   clipPath: /^(circle\(\d{1,3}%\)|ellipse\(\d{1,3}%\s+\d{1,3}%\)|inset\(\d{1,3}%\s+round\s+\d{1,3}(px|%)\))$/,
   filter: /^(none|grayscale\(\d{1,3}%\)|sepia\(\d{1,3}%\)|blur\(\d{1,2}px\)|contrast\(\d(\.\d{1,2})?\)|saturate\(\d(\.\d{1,2})?\)|brightness\(\d(\.\d{1,2})?\))$/,
+  gap: SPACING_VALUE_PATTERN,
   height: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
+  margin: SPACING_SHORTHAND_PATTERN,
+  marginBottom: SPACING_VALUE_PATTERN,
+  marginLeft: SPACING_VALUE_PATTERN,
+  marginRight: SPACING_VALUE_PATTERN,
+  marginTop: SPACING_VALUE_PATTERN,
   maxHeight: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|none|100%)$/,
   maxWidth: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|none|100%)$/,
   objectFit: /^(contain|cover|fill|none|scale-down)$/,
@@ -333,7 +412,13 @@ const ELEMENT_STYLE_VALUE_PATTERNS = {
   opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
   outline: /^(none|\d{1,2}px\s+(solid|dashed|dotted)\s+(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\)))$/,
   overflow: /^(hidden|visible|clip|auto)$/,
-  padding: /^(\d{1,3}(\.\d+)?(px|rem|em|%)|var\(--space-imagePadding\))$/,
+  padding: /^(\d{1,3}(\.\d+)?(px|rem|em|%)|0|var\(--space-imagePadding\))(\s+(\d{1,3}(\.\d+)?(px|rem|em|%)|0)){0,3}$/,
+  paddingBottom: SPACING_VALUE_PATTERN,
+  paddingLeft: SPACING_VALUE_PATTERN,
+  paddingRight: SPACING_VALUE_PATTERN,
+  paddingTop: SPACING_VALUE_PATTERN,
+  rowGap: SPACING_VALUE_PATTERN,
+  columnGap: SPACING_VALUE_PATTERN,
   transform: TEXT_STYLE_VALUE_PATTERNS.transform,
   transformOrigin: TEXT_STYLE_VALUE_PATTERNS.transformOrigin,
   width: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
@@ -432,6 +517,40 @@ function sanitizeElementStylePatch(patch) {
   return clean;
 }
 
+function parseSpacingParts(value) {
+  if (typeof value !== 'string') return null;
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length || parts.length > 4) return null;
+  if (parts.length === 1) return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+  if (parts.length === 2) return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+  if (parts.length === 3) return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[1] };
+  return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+}
+
+function normalizeCollectionSectionSpacingPatch(patch = {}) {
+  const normalized = { ...patch };
+  const marginParts = parseSpacingParts(normalized.margin);
+  const paddingParts = parseSpacingParts(normalized.padding);
+
+  if (paddingParts) {
+    if (normalized.paddingTop == null && paddingParts.top !== '0') normalized.paddingTop = paddingParts.top;
+    if (normalized.paddingRight == null) normalized.paddingRight = paddingParts.right;
+    if (normalized.paddingBottom == null && paddingParts.bottom !== '0') normalized.paddingBottom = paddingParts.bottom;
+    if (normalized.paddingLeft == null) normalized.paddingLeft = paddingParts.left;
+    delete normalized.padding;
+  }
+
+  if (marginParts) {
+    if (normalized.marginTop == null && marginParts.top !== '0') normalized.marginTop = marginParts.top;
+    if (normalized.marginBottom == null && marginParts.bottom !== '0') normalized.marginBottom = marginParts.bottom;
+    if (normalized.marginLeft == null) normalized.marginLeft = marginParts.left;
+    if (normalized.marginRight == null) normalized.marginRight = marginParts.right;
+    delete normalized.margin;
+  }
+
+  return normalized;
+}
+
 function targetStyleId(target) {
   if (!target) return null;
   if (target.path) return target.path;
@@ -460,8 +579,11 @@ function validateCursorOperation(rawOperation, fallback) {
 
   if (operation.type === 'stylePatch') {
     if (target?.kind !== 'text') {
-      const patch = sanitizeElementStylePatch(operation.patch);
-      const imagePatch = sanitizeElementStylePatch(operation.imagePatch);
+      const rawPatch = sanitizeElementStylePatch(operation.patch);
+      const patch = target?.kind === 'collection'
+        ? normalizeCollectionSectionSpacingPatch(rawPatch)
+        : rawPatch;
+      const imagePatch = target?.kind === 'collection' ? {} : sanitizeElementStylePatch(operation.imagePatch);
       if (!Object.keys(patch).length && !Object.keys(imagePatch).length) {
         throw new Error('The operation parser returned text styles for a non-text target.');
       }
@@ -506,8 +628,11 @@ function validateCursorOperation(rawOperation, fallback) {
     if (!styleId || !target || target.kind === 'presentation') {
       throw new Error('The operation parser did not identify a specific clicked element to style.');
     }
-    const patch = sanitizeElementStylePatch(operation.patch);
-    const imagePatch = sanitizeElementStylePatch(operation.imagePatch);
+    const rawPatch = sanitizeElementStylePatch(operation.patch);
+    const patch = target?.kind === 'collection'
+      ? normalizeCollectionSectionSpacingPatch(rawPatch)
+      : rawPatch;
+    const imagePatch = target?.kind === 'collection' ? {} : sanitizeElementStylePatch(operation.imagePatch);
     if (!Object.keys(patch).length && !Object.keys(imagePatch).length) {
       throw new Error('The operation parser did not return any safe element style properties to apply.');
     }
@@ -523,6 +648,34 @@ function validateCursorOperation(rawOperation, fallback) {
   }
 
   if (operation.type === 'spacing') {
+    const sectionPatch = sanitizeElementStylePatch({
+      margin: operation.margin,
+      marginTop: operation.marginTop,
+      marginBottom: operation.marginBottom,
+      marginLeft: operation.marginLeft,
+      marginRight: operation.marginRight,
+      padding: operation.padding,
+      paddingTop: operation.paddingTop,
+      paddingBottom: operation.paddingBottom,
+      paddingLeft: operation.paddingLeft,
+      paddingRight: operation.paddingRight,
+      gap: operation.gap,
+      rowGap: operation.rowGap,
+      columnGap: operation.columnGap,
+    });
+    const styleId = targetStyleId(target);
+    if (target?.kind === 'collection' && styleId && Object.keys(sectionPatch).length) {
+      const normalizedSectionPatch = normalizeCollectionSectionSpacingPatch(sectionPatch);
+      return {
+        type: 'elementStylePatch',
+        target,
+        styleId,
+        scope: normalizeCursorScope(operation.scope || fallback.scope),
+        versionKey: fallback.versionKey,
+        patch: normalizedSectionPatch,
+        imagePatch: {},
+      };
+    }
     return {
       type: 'spacing',
       target,
@@ -536,12 +689,156 @@ function validateCursorOperation(rawOperation, fallback) {
   throw new Error(`Unsupported operation type: ${operation.type}`);
 }
 
+const PORTFOLIO_COLOR_KEYS = ['background', 'primary', 'secondary', 'accent', 'paper', 'panel'];
+const TYPOGRAPHY_TOKENS = ['heading1', 'heading2', 'body'];
+const LAYOUT_DISPLAY_VALUES = ['grid', 'horizontal', 'vertical'];
+const MATERIAL_TEXTURE_VALUES = ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'];
+
+function sanitizeColorPatch(colors) {
+  const clean = {};
+  Object.entries(colors || {}).forEach(([key, value]) => {
+    if (!PORTFOLIO_COLOR_KEYS.includes(key)) return;
+    const str = String(value || '').trim();
+    if (/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$/.test(str)) clean[key] = str;
+  });
+  return clean;
+}
+
+function sanitizeTypographyPatch(typography) {
+  const clean = {};
+  TYPOGRAPHY_TOKENS.forEach((token) => {
+    const entry = typography?.[token];
+    if (!entry || typeof entry !== 'object') return;
+    const next = {};
+    ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight'].forEach((prop) => {
+      if (entry[prop] == null) return;
+      const str = String(entry[prop]).trim();
+      const pattern = TEXT_STYLE_VALUE_PATTERNS[prop];
+      if (pattern?.test(str)) next[prop] = str;
+    });
+    if (Object.keys(next).length) clean[token] = next;
+  });
+  return clean;
+}
+
+function sanitizeSpacingPatch(operation) {
+  const clean = {};
+  ['gridGap', 'artSize', 'imagePadding'].forEach((prop) => {
+    if (operation?.[prop] == null) return;
+    const str = String(operation[prop]).trim();
+    if (/^(\d{1,4}(\.\d+)?)(px|rem|em|%)$/.test(str)) clean[prop] = str;
+  });
+  return clean;
+}
+
+function requestIsCollectionContainerSpacing(prompt) {
+  const text = String(prompt || '').toLowerCase();
+  const mentionsCollection = /\b(collection|collections|section|sections|container|containers|panel|panels|frame|frames|quilt|patch)\b/.test(text);
+  const mentionsOuterSpacing = /\b(outside|outer|margin|margins|side|sides|left|right|horizontal|breathing room|inward|edge|edges)\b/.test(text);
+  const explicitlyBetweenItems = /\bbetween (the )?(images|items|works|artworks)|image gap|item gap|work gap|grid gap\b/.test(text);
+  return mentionsCollection && mentionsOuterSpacing && !explicitlyBetweenItems;
+}
+
+function requestIsPaletteOnly(prompt) {
+  const text = String(prompt || '').toLowerCase();
+  const asksForPalette = /\b(color|colors|colour|colours|palette|pastel|vintage|retro|warm|cool|brighter|darker|muted|saturated|wes\s+anderson|anderson|budapest)\b/.test(text);
+  const asksForAssets = /\b(add|draw|create|place|put|sprinkle|scatter)\b.*\b(asset|assets|decoration|decorations|motif|motifs|doodle|doodles|sticker|stickers|icon|icons|ornament|ornaments|object|objects|background art|illustration|illustrations)\b/.test(text);
+  return asksForPalette && !asksForAssets;
+}
+
+function paletteOnlyFallbackOperation(versionKey) {
+  return {
+    type: 'colorPatch',
+    versionKey,
+    colors: {
+      background: '#f0e6d2',
+      primary: '#2f251f',
+      accent: '#b45f4d',
+      paper: '#f4c6d0',
+      panel: '#d4af37',
+      secondary: '#8fa78f',
+    },
+  };
+}
+
+function validatePortfolioOperations(rawOperations, fallback) {
+  const source = Array.isArray(rawOperations) ? rawOperations : (rawOperations ? [rawOperations] : []);
+  const operations = [];
+
+  source.forEach((operation) => {
+    if (!operation || typeof operation !== 'object') return;
+
+    if (operation.type === 'colorPatch') {
+      const colors = sanitizeColorPatch(operation.colors);
+      if (Object.keys(colors).length) operations.push({ type: 'colorPatch', versionKey: fallback.versionKey, colors });
+      return;
+    }
+
+    if (operation.type === 'typographyPatch') {
+      const typography = sanitizeTypographyPatch(operation.typography);
+      if (Object.keys(typography).length) operations.push({ type: 'typographyPatch', versionKey: fallback.versionKey, typography });
+      return;
+    }
+
+    if (operation.type === 'spacing') {
+      if (requestIsCollectionContainerSpacing(fallback.prompt) && (operation.gridGap || operation.gap)) return;
+      const spacing = sanitizeSpacingPatch(operation);
+      if (Object.keys(spacing).length) operations.push({ type: 'spacing', versionKey: fallback.versionKey, ...spacing });
+      return;
+    }
+
+    if (operation.type === 'layoutOverride') {
+      const next = { type: 'layoutOverride', versionKey: fallback.versionKey };
+      if (LAYOUT_DISPLAY_VALUES.includes(operation.collectionDisplay)) next.collectionDisplay = operation.collectionDisplay;
+      if (MATERIAL_TEXTURE_VALUES.includes(operation.materialTexture)) next.materialTexture = operation.materialTexture;
+      if (next.collectionDisplay || next.materialTexture) operations.push(next);
+      return;
+    }
+
+    if (operation.type === 'elementStylePatch') {
+      const scope = operation.scope === 'all-sections' ? 'all-sections' : 'all-images';
+      const rawPatch = sanitizeElementStylePatch(operation.patch);
+      const patch = scope === 'all-sections'
+        ? normalizeCollectionSectionSpacingPatch(rawPatch)
+        : rawPatch;
+      const imagePatch = scope === 'all-sections' ? {} : sanitizeElementStylePatch(operation.imagePatch);
+      if (!Object.keys(patch).length && !Object.keys(imagePatch).length) return;
+      operations.push({
+        type: 'elementStylePatch',
+        versionKey: fallback.versionKey,
+        scope,
+        patch,
+        imagePatch,
+      });
+      return;
+    }
+
+    if (operation.type === 'decorativeAssets') {
+      if (requestIsPaletteOnly(fallback.prompt)) return;
+      const prompt = String(operation.prompt || '').trim();
+      if (prompt) operations.push({ type: 'decorativeAssets', prompt: prompt.slice(0, 600) });
+    }
+  });
+
+  if (!operations.length && requestIsPaletteOnly(fallback.prompt)) {
+    operations.push(paletteOnlyFallbackOperation(fallback.versionKey));
+  }
+
+  return operations;
+}
+
 function messageForOperation(operation) {
   if (operation.type === 'stylePatch') {
     return `Apply ${Object.keys(operation.patch).join(', ')} to ${operation.target?.label || 'this text'} in this presentation.`;
   }
   if (operation.type === 'elementStylePatch') {
     const props = [...Object.keys(operation.patch || {}), ...Object.keys(operation.imagePatch || {})];
+    if (operation.scope === 'all-sections') {
+      return `Apply ${props.join(', ')} to all sections in this presentation.`;
+    }
+    if (operation.scope === 'all-images') {
+      return `Apply ${props.join(', ')} to all images in this presentation.`;
+    }
     return `Apply ${props.join(', ')} to only ${operation.target?.label || 'the clicked element'}.`;
   }
   if (operation.type === 'noop') return operation.message || 'No safe local edit was available for that request.';
@@ -624,22 +921,26 @@ function applyCursorOperation(operation) {
     if (operation.visible !== false) {
       editedContent.visibility.collections[collectionTextId].hiddenIn = hiddenIn.filter((id) => id !== operation.presentationId);
     }
-    updatePreview();
-    refreshInspectModel();
+    patchPreview({ remount: true });
+    syncEditChromeAfterLocalEdit();
     return;
   }
 
   if (operation.type === 'elementStylePatch') {
     ensureElementStyles();
     const bucket = (editedContent.elementStyles.versions[operation.versionKey] ||= {});
-    const styleId = operation.scope === 'all-images' ? '__all_work__' : operation.styleId;
+    const styleId = operation.scope === 'all-images'
+      ? '__all_work__'
+      : operation.scope === 'all-sections'
+        ? '__all_collection__'
+        : operation.styleId;
     const current = bucket[styleId] || {};
     bucket[styleId] = {
       patch: { ...(current.patch || {}), ...(operation.patch || {}) },
       imagePatch: { ...(current.imagePatch || {}), ...(operation.imagePatch || {}) },
     };
-    updatePreview();
-    refreshInspectModel();
+    patchPreview({ remount: true });
+    syncEditChromeAfterLocalEdit();
     return;
   }
 
@@ -656,8 +957,8 @@ function applyCursorOperation(operation) {
       if (artSizeSlider) artSizeSlider.value = parseSpacingPx(operation.artSize);
       document.getElementById('art-size-display').textContent = operation.artSize;
     }
-    updatePreview();
-    refreshInspectModel();
+    patchPreview({ remount: true });
+    syncEditChromeAfterLocalEdit();
     return;
   }
 
@@ -668,6 +969,78 @@ function applyCursorOperation(operation) {
   if (operation.type === 'needsGeneration') {
     return;
   }
+}
+
+function ensureLayoutOverrides(versionKey) {
+  if (!editedContent.layoutOverrides) editedContent.layoutOverrides = {};
+  if (!editedContent.layoutOverrides[versionKey]) editedContent.layoutOverrides[versionKey] = {};
+  return editedContent.layoutOverrides[versionKey];
+}
+
+function ensureDecorations(versionKey) {
+  if (!editedContent.decorations) editedContent.decorations = {};
+  if (!editedContent.decorations.versions) editedContent.decorations.versions = {};
+  if (!Array.isArray(editedContent.decorations.versions[versionKey])) {
+    editedContent.decorations.versions[versionKey] = [];
+  }
+  return editedContent.decorations.versions[versionKey];
+}
+
+function applyPortfolioOperation(operation) {
+  if (!operation) return false;
+  const versionKey = operation.versionKey || getCurrentVersionKey();
+
+  if (operation.type === 'colorPatch') {
+    ensureVersionColorsObject(versionKey);
+    editedTheme.versions[versionKey].colors = {
+      ...editedTheme.versions[versionKey].colors,
+      ...(operation.colors || {}),
+    };
+    syncPaletteSwatches();
+    return true;
+  }
+
+  if (operation.type === 'typographyPatch') {
+    Object.entries(operation.typography || {}).forEach(([token, values]) => {
+      if (!TYPOGRAPHY_TOKENS.includes(token)) return;
+      ensureVersionTypographyObject(versionKey, token);
+      editedTheme.versions[versionKey].typography[token] = {
+        ...editedTheme.versions[versionKey].typography[token],
+        ...values,
+      };
+    });
+    return true;
+  }
+
+  if (operation.type === 'spacing') {
+    ensureVersionSpacingObject(versionKey);
+    ['gridGap', 'artSize', 'imagePadding'].forEach((key) => {
+      if (operation[key]) editedTheme.versions[versionKey].spacing[key] = operation[key];
+    });
+    syncSpacingControlsForCurrentVersion();
+    return true;
+  }
+
+  if (operation.type === 'layoutOverride') {
+    const overrides = ensureLayoutOverrides(versionKey);
+    if (operation.collectionDisplay) overrides.collectionDisplay = operation.collectionDisplay;
+    if (operation.materialTexture) overrides.materialTexture = operation.materialTexture;
+    return true;
+  }
+
+  if (operation.type === 'elementStylePatch') {
+    ensureElementStyles();
+    const bucket = (editedContent.elementStyles.versions[versionKey] ||= {});
+    const styleId = operation.scope === 'all-sections' ? '__all_collection__' : '__all_work__';
+    const current = bucket[styleId] || {};
+    bucket[styleId] = {
+      patch: { ...(current.patch || {}), ...(operation.patch || {}) },
+      imagePatch: { ...(current.imagePatch || {}), ...(operation.imagePatch || {}) },
+    };
+    return true;
+  }
+
+  return false;
 }
 
 function setupDeviceToggle() {
@@ -692,7 +1065,7 @@ function setupDeviceToggle() {
 
 function getPreviewWidth() {
   const frame = document.getElementById('device-frame');
-  return frame.classList.contains('mobile') ? 390 : 1100;
+  return frame.classList.contains('mobile') ? 390 : DESKTOP_PREVIEW_WIDTH;
 }
 
 function applyLayoutMetadata() {
@@ -748,17 +1121,33 @@ function syncDeviceFrameLayoutClass() {
   }
 }
 
-function selectVersion(versionId) {
+function syncDesignSpaceActiveState() {
+  document.querySelectorAll('.design-space-node').forEach((node) => {
+    node.classList.toggle('active', Number(node.dataset.layoutId) === currentVersion);
+  });
+  document.querySelectorAll('.design-space-legend-item').forEach((item) => {
+    item.classList.toggle('active', Number(item.dataset.layoutId) === currentVersion);
+  });
+}
+
+function selectVersion(versionId, { renderMap = true } = {}) {
   currentVersion = versionId;
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
     b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
   });
   syncSpacingControlsForCurrentVersion();
-  renderDesignSpace();
+  if (renderMap) {
+    renderDesignSpace();
+  } else {
+    syncDesignSpaceActiveState();
+    renderSidebarDesignAxes();
+    setDesignSpaceSelection(selectedDesignSpace, { syncPrompt: false });
+  }
   renderCustomDesignAxes();
   syncPaletteVisibility();
   syncPaletteSwatches();
   syncDeleteLayoutButton();
+  syncPreviewReferenceChip();
   updatePreview();
   refreshInspectModel();
 }
@@ -769,6 +1158,22 @@ function syncDeleteLayoutButton() {
   const layout = getLayout(currentVersion);
   btn.hidden = !layout?.generated;
   btn.title = layout?.generated ? `Delete “${layout.name}” and remove its files` : '';
+}
+
+function syncPreviewReferenceChip() {
+  const chip = document.getElementById('preview-reference-chip');
+  if (!chip) return;
+  const layout = getLayout(currentVersion);
+  if (!layout?.referenceImage) {
+    chip.hidden = true;
+    chip.innerHTML = '';
+    return;
+  }
+  chip.hidden = false;
+  chip.innerHTML = `
+    <img src="${PortfolioContent.escapeHtml(layout.referenceImage)}" alt="">
+    <span>Reference</span>
+  `;
 }
 
 function renderVersionButtons() {
@@ -782,12 +1187,21 @@ function renderVersionButtons() {
     btn.type = 'button';
     btn.className = 'version-btn' + (layout.id === currentVersion ? ' active' : '');
     btn.dataset.version = String(layout.id);
-    btn.textContent = layout.generated ? `${layout.name} ✦` : layout.name;
+    if (layout.referenceImage) {
+      btn.classList.add('version-btn--reference');
+      btn.innerHTML = `
+        <img class="version-btn-reference" src="${PortfolioContent.escapeHtml(layout.referenceImage)}" alt="">
+        <span>${PortfolioContent.escapeHtml(layout.generated ? `${layout.name} ✦` : layout.name)}</span>
+      `;
+    } else {
+      btn.textContent = layout.generated ? `${layout.name} ✦` : layout.name;
+    }
     btn.title = layout.examplePrompt || layout.prompt || layout.name;
     btn.addEventListener('click', () => selectVersion(layout.id));
     container.insertBefore(btn, createBtn || null);
   });
   syncDeleteLayoutButton();
+  syncPreviewReferenceChip();
 }
 
 function setupDeleteLayout() {
@@ -841,7 +1255,217 @@ function clamp01(value) {
 }
 
 function axisName(axis) {
-  return `${axis.leftLabel || 'left'} to ${axis.rightLabel || 'right'}`;
+  return `${axisEndpointLabel(axis, 'left')} to ${axisEndpointLabel(axis, 'right')}`;
+}
+
+function sanitizeAxisEndpointImage(image) {
+  if (!image || typeof image !== 'object') return null;
+  const dataUrl = String(image.dataUrl || '');
+  if (!/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(dataUrl)) return null;
+  return {
+    dataUrl: dataUrl.slice(0, 140000),
+    fileName: String(image.fileName || 'Endpoint image').slice(0, 80),
+    summary: String(image.summary || '').slice(0, 240),
+    keywords: Array.isArray(image.keywords)
+      ? image.keywords.map((keyword) => String(keyword || '').trim().slice(0, 32)).filter(Boolean).slice(0, 3)
+      : [],
+    palette: Array.isArray(image.palette)
+      ? image.palette.map((color) => String(color || '').slice(0, 24)).filter(Boolean).slice(0, 6)
+      : [],
+  };
+}
+
+function axisEndpointImage(axis, side) {
+  if (axis?.endpointMode === 'concept') return null;
+  return sanitizeAxisEndpointImage(side === 'right' ? axis?.rightImage : axis?.leftImage);
+}
+
+function axisEndpointConcept(axis, side) {
+  if (axis?.endpointMode === 'image') return '';
+  return String(side === 'right' ? axis?.rightLabel || '' : axis?.leftLabel || '').trim();
+}
+
+function axisEndpointLabel(axis, side) {
+  const concept = axisEndpointConcept(axis, side);
+  if (concept) return concept;
+  const image = axisEndpointImage(axis, side);
+  if (image) return image.fileName || `${side} image`;
+  return side;
+}
+
+function axisHasEndpoint(axis, side) {
+  return !!(axisEndpointConcept(axis, side) || axisEndpointImage(axis, side));
+}
+
+function axisHasBothEndpoints(axis) {
+  return axisHasEndpoint(axis, 'left') && axisHasEndpoint(axis, 'right');
+}
+
+function axisEndpointPrompt(image, label) {
+  const endpoint = sanitizeAxisEndpointImage(image);
+  if (!endpoint) return '';
+  const keywords = endpoint.keywords.length ? ` Keywords: ${endpoint.keywords.join(', ')}.` : '';
+  const palette = endpoint.palette.length ? ` Palette: ${endpoint.palette.join(', ')}.` : '';
+  const summary = endpoint.summary ? ` ${endpoint.summary}` : '';
+  return `${label} endpoint image reference:${keywords}${summary}${palette}`.trim();
+}
+
+function axisEndpointKeywordsFromTokens(tokens) {
+  const candidates = [
+    ...(Array.isArray(tokens?.keywords) ? tokens.keywords : []),
+    ...(Array.isArray(tokens?.mood) ? tokens.mood : []),
+    ...(Array.isArray(tokens?.visualStyle) ? tokens.visualStyle : []),
+    tokens?.layout?.density,
+    tokens?.interfaceTranslation?.metaphor,
+  ];
+  const seen = new Set();
+  return candidates
+    .map((item) => String(item || '').trim().toLowerCase())
+    .filter((item) => item && item.length <= 32 && !seen.has(item) && seen.add(item))
+    .slice(0, 3);
+}
+
+function axisEndpointSummaryFromTokens(tokens) {
+  return [
+    tokens?.summary,
+    Array.isArray(tokens?.visualStyle) && tokens.visualStyle.length ? `style: ${tokens.visualStyle.slice(0, 3).join(', ')}` : '',
+    Array.isArray(tokens?.mood) && tokens.mood.length ? `mood: ${tokens.mood.slice(0, 3).join(', ')}` : '',
+    tokens?.layout?.density ? `density: ${tokens.layout.density}` : '',
+    tokens?.interfaceTranslation?.metaphor ? `metaphor: ${tokens.interfaceTranslation.metaphor}` : '',
+  ].filter(Boolean).join('; ').slice(0, 240);
+}
+
+async function imageFileToFastDataUrlForAnalysis(file) {
+  if (!file?.type?.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('Could not read image file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('Could not prepare image for endpoint analysis'));
+      image.src = sourceUrl;
+    });
+
+    const maxSide = 1024;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    if (scale >= 1 && file.size < 900_000) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Could not read image file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+async function enrichAxisEndpointImage(file, endpointData) {
+  try {
+    const image = await imageFileToFastDataUrlForAnalysis(file);
+    const data = await fetchJson('/api/image-design-tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image,
+        mimeType: file.type,
+        fileName: file.name,
+      }),
+    });
+    const tokens = data.tokens || {};
+    const palette = Array.isArray(tokens.palette) && tokens.palette.length
+      ? tokens.palette.map((color) => color.name || color.hex).filter(Boolean).slice(0, 6)
+      : endpointData.palette;
+    return {
+      ...endpointData,
+      keywords: axisEndpointKeywordsFromTokens(tokens),
+      summary: axisEndpointSummaryFromTokens(tokens) || endpointData.summary,
+      palette,
+    };
+  } catch {
+    return endpointData;
+  }
+}
+
+function axisEndpointImageToData(file) {
+  return new Promise((resolve, reject) => {
+    const sourceUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      try {
+        const maxSide = 220;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const buckets = new Map();
+        let saturation = 0;
+        let lightness = 0;
+        const step = 16;
+        for (let i = 0; i < pixels.length; i += 4 * step) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          saturation += max ? (max - min) / max : 0;
+          lightness += (max + min) / 510;
+          const key = [r, g, b].map((channel) => Math.round(channel / 32) * 32).join(',');
+          buckets.set(key, (buckets.get(key) || 0) + 1);
+        }
+        const count = Math.max(1, Math.floor(pixels.length / (4 * step)));
+        const palette = [...buckets.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([key]) => {
+            const [r, g, b] = key.split(',').map((n) => Math.max(0, Math.min(255, Number(n) || 0)));
+            return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+          });
+        const avgSaturation = saturation / count;
+        const avgLightness = lightness / count;
+        const summary = [
+          avgSaturation > 0.42 ? 'high-chroma' : avgSaturation < 0.18 ? 'muted' : 'moderately colored',
+          avgLightness > 0.62 ? 'light-toned' : avgLightness < 0.34 ? 'dark-toned' : 'mid-toned',
+          image.naturalWidth > image.naturalHeight * 1.25 ? 'wide composition' : image.naturalHeight > image.naturalWidth * 1.25 ? 'vertical composition' : 'balanced composition',
+        ].join(', ');
+        resolve({
+          dataUrl: canvas.toDataURL('image/jpeg', 0.72),
+          fileName: file.name || 'Endpoint image',
+          summary,
+          palette,
+        });
+      } catch (error) {
+        reject(error);
+      } finally {
+        URL.revokeObjectURL(sourceUrl);
+      }
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(sourceUrl);
+      reject(new Error('Could not read endpoint image'));
+    };
+    image.src = sourceUrl;
+  });
 }
 
 function axisTerms(leftLabel, rightLabel, middle = []) {
@@ -859,9 +1483,9 @@ function axisTerms(leftLabel, rightLabel, middle = []) {
 
 function defaultTermsForAxis(axis) {
   const id = String(axis?.id || '');
-  const left = String(axis?.leftLabel || '');
-  const right = String(axis?.rightLabel || '');
-  if (!left || !right) return [];
+  const left = axisEndpointLabel(axis, 'left');
+  const right = axisEndpointLabel(axis, 'right');
+  if (!axisHasBothEndpoints(axis)) return [];
   if (id === 'axis_visible_friction' || /visible/i.test(left) || /friction/i.test(right)) {
     return axisTerms(left || 'Visible', right || 'Friction', [
       { value: 0.18, label: 'open overview', description: 'everything is easy to scan' },
@@ -955,11 +1579,21 @@ function createDefaultDesignAxes() {
 function sanitizeStoredAxes(axes) {
   if (!Array.isArray(axes)) return [];
   return axes.map((axis) => {
+    const rawLeftImage = sanitizeAxisEndpointImage(axis.leftImage);
+    const rawRightImage = sanitizeAxisEndpointImage(axis.rightImage);
+    const endpointMode = axis.endpointMode === 'image' || axis.leftMode === 'image' || axis.rightMode === 'image' || rawLeftImage || rawRightImage
+      ? 'image'
+      : 'concept';
+    const leftImage = endpointMode === 'image' ? rawLeftImage : null;
+    const rightImage = endpointMode === 'image' ? rawRightImage : null;
     const normalized = {
       id: String(axis.id || `axis_${Date.now()}`).slice(0, 80),
-      leftLabel: String(axis.leftLabel || '').slice(0, 48),
-      rightLabel: String(axis.rightLabel || '').slice(0, 48),
-      name: String(axis.name || axisName(axis)).slice(0, 80),
+      endpointMode,
+      leftLabel: endpointMode === 'image' ? '' : String(axis.leftLabel || '').slice(0, 48),
+      rightLabel: endpointMode === 'image' ? '' : String(axis.rightLabel || '').slice(0, 48),
+      leftImage,
+      rightImage,
+      name: '',
       value: clamp01(axis.value ?? 0.5),
       mapRole: ['x', 'y'].includes(axis.mapRole) ? axis.mapRole : '',
       terms: Array.isArray(axis.terms)
@@ -979,6 +1613,7 @@ function sanitizeStoredAxes(axes) {
         })).filter((score) => score.key)
         : [],
     };
+    normalized.name = String(axisName(normalized)).slice(0, 80);
     if (!normalized.terms.length) normalized.terms = defaultTermsForAxis(normalized);
     return normalized;
   }).filter((axis) => axis.id);
@@ -1023,6 +1658,12 @@ function saveDesignAxes() {
 
 function mappedAxis(role) {
   return customDesignAxes.find((axis) => axis.mapRole === role) || null;
+}
+
+function mappedDesignAxes() {
+  return ['x', 'y']
+    .map((role) => mappedAxis(role))
+    .filter(Boolean);
 }
 
 function axisScoreForLayout(axis, layout, fallback = 0.5) {
@@ -1080,8 +1721,8 @@ function designSpaceBand(value, low, mid, high) {
 function designSpaceReadout(point = selectedDesignSpace) {
   const xAxis = mappedAxis('x');
   const yAxis = mappedAxis('y');
-  const xLabel = xAxis ? `${xAxis.leftLabel} to ${xAxis.rightLabel}` : 'x axis';
-  const yLabel = yAxis ? `${yAxis.leftLabel} to ${yAxis.rightLabel}` : 'y axis';
+  const xLabel = xAxis ? axisName(xAxis) : 'x axis';
+  const yLabel = yAxis ? axisName(yAxis) : 'y axis';
   const xTerm = xAxis ? axisTermText(xAxis, point.x) : clamp01(point.x).toFixed(2);
   const yTerm = yAxis ? axisTermText(yAxis, point.y) : clamp01(point.y).toFixed(2);
   const custom = customDesignAxes.length ? ` · ${customDesignAxes.length} axes` : '';
@@ -1104,13 +1745,17 @@ function buildDesignPromptScaffold(point = selectedDesignSpace) {
   const x = clamp01(point.x);
   const y = clamp01(point.y);
   const nearby = nearestDesignSpaceLayouts(point).join(' + ') || 'the existing portfolio templates';
-  const axes = customDesignAxes
-    .filter((axis) => axis.leftLabel && axis.rightLabel)
+  const axes = mappedDesignAxes()
+    .filter(axisHasBothEndpoints)
     .map((axis) => {
       const value = clamp01(axis.value ?? 0.5);
       const currentTerm = axisTermForValue(axis, value);
       const concept = currentTerm ? currentTerm.label : axisTermText(axis, value);
-      return `- ${axis.name || axisName(axis)}: ${concept}`;
+      const endpointRefs = [
+        axisEndpointPrompt(axis.leftImage, axisEndpointLabel(axis, 'left')),
+        axisEndpointPrompt(axis.rightImage, axisEndpointLabel(axis, 'right')),
+      ].filter(Boolean).join(' ');
+      return `- ${axis.name || axisName(axis)}: ${concept}${endpointRefs ? ` (${endpointRefs})` : ''}`;
     });
   const xAxis = mappedAxis('x') || { leftLabel: 'Visible', rightLabel: 'Friction', name: 'Visible to Friction' };
   const yAxis = mappedAxis('y') || { leftLabel: 'Abstract', rightLabel: 'Skeuomorphic', name: 'Abstract to Skeuomorphic' };
@@ -1135,12 +1780,66 @@ function syncDesignPromptScaffold() {
   const textarea = document.getElementById('ai-prompt');
   if (!textarea) return;
   const base = promptWithoutDesignScaffold(textarea.value);
-  textarea.value = [base || 'Generate a portfolio interface.', buildDesignPromptScaffold(selectedDesignSpace)]
-    .filter(Boolean)
-    .join('\n\n');
+  textarea.value = base;
+  if (!designSpacePointSelected) {
+    activeDesignDirectionPrompt = '';
+    renderDesignDirectionCard();
+    return;
+  }
+  activeDesignDirectionPrompt = buildDesignPromptScaffold(selectedDesignSpace);
+  renderDesignDirectionCard();
 }
 
-function setDesignSpaceSelection(point, { syncPrompt = true } = {}) {
+function designDirectionSummary(prompt = activeDesignDirectionPrompt) {
+  return String(prompt || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && line !== DESIGN_DIRECTION_MARKER)
+    .join(' ');
+}
+
+function renderDesignDirectionCard() {
+  const card = document.getElementById('design-direction-card');
+  if (!card) return;
+  if (!activeDesignDirectionPrompt) {
+    card.hidden = true;
+    card.innerHTML = '';
+    return;
+  }
+  card.hidden = false;
+  card.innerHTML = `
+    <div>
+      <strong>Design direction</strong>
+      <p>${PortfolioContent.escapeHtml(designDirectionSummary())}</p>
+    </div>
+    <button class="design-direction-remove" type="button" aria-label="Remove design direction">&times;</button>
+  `;
+}
+
+function setupDesignDirectionCard() {
+  const card = document.getElementById('design-direction-card');
+  if (!card) return;
+  card.addEventListener('click', (event) => {
+    if (!event.target.closest('.design-direction-remove')) return;
+    activeDesignDirectionPrompt = '';
+    designSpacePointSelected = false;
+    renderDesignDirectionCard();
+    pendingGeneratePrompt = '';
+    pendingGenerateQuestion = null;
+    pendingGenerateAnswers = [];
+    pendingGenerateReady = false;
+    const questionsEl = document.getElementById('generate-questions');
+    if (questionsEl) {
+      questionsEl.hidden = true;
+      questionsEl.innerHTML = '';
+    }
+    const generateBtn = document.getElementById('generate-btn');
+    if (generateBtn) generateBtn.textContent = 'Generate version';
+  });
+}
+
+function setDesignSpaceSelection(point, { syncPrompt = true, userSelected = false } = {}) {
+  if (userSelected) designSpacePointSelected = true;
   const mode = getDesignSpaceMode();
   const xAxis = mappedAxis('x');
   const yAxis = mappedAxis('y');
@@ -1156,18 +1855,21 @@ function setDesignSpaceSelection(point, { syncPrompt = true } = {}) {
   selectedDesignSpace = {
     x: mode === 'y' ? 0.5 : clamp01(point.x),
     y: mode === 'x' ? 0.5 : clamp01(mode === 'y' ? point.x : point.y),
-    customAxes: customDesignAxes.map((axis) => ({
+    customAxes: mappedDesignAxes().map((axis) => ({
       id: axis.id,
       name: axis.name,
       leftLabel: axis.leftLabel,
       rightLabel: axis.rightLabel,
+      leftImage: sanitizeAxisEndpointImage(axis.leftImage),
+      rightImage: sanitizeAxisEndpointImage(axis.rightImage),
+      endpointMode: axis.endpointMode || 'concept',
       value: clamp01(axis.value ?? 0.5),
       scores: axis.scores || [],
       terms: axis.terms || [],
       mapRole: axis.mapRole || '',
     })),
-    xAxis: xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel, terms: xAxis.terms || [] } : null,
-    yAxis: yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel, terms: yAxis.terms || [] } : null,
+    xAxis: xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: axisEndpointLabel(xAxis, 'left'), rightLabel: axisEndpointLabel(xAxis, 'right'), terms: xAxis.terms || [] } : null,
+    yAxis: yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: axisEndpointLabel(yAxis, 'left'), rightLabel: axisEndpointLabel(yAxis, 'right'), terms: yAxis.terms || [] } : null,
   };
 
   document.querySelectorAll('.design-space-selection').forEach((selection) => {
@@ -1180,23 +1882,34 @@ function setDesignSpaceSelection(point, { syncPrompt = true } = {}) {
   if (syncPrompt) syncDesignPromptScaffold();
 }
 
+function generationDesignSpaceSelection() {
+  if (!designSpacePointSelected) return null;
+  return {
+    ...selectedDesignSpace,
+    customAxes: (selectedDesignSpace.customAxes || []).filter((axis) => axis.mapRole === 'x' || axis.mapRole === 'y'),
+  };
+}
+
 function syncCustomAxesToDesignSpace({ syncPrompt = true } = {}) {
   const xAxis = mappedAxis('x');
   const yAxis = mappedAxis('y');
   selectedDesignSpace.x = clamp01(xAxis?.value ?? selectedDesignSpace.x);
   selectedDesignSpace.y = clamp01(yAxis?.value ?? selectedDesignSpace.y);
-  selectedDesignSpace.customAxes = customDesignAxes.map((axis) => ({
+  selectedDesignSpace.customAxes = mappedDesignAxes().map((axis) => ({
     id: axis.id,
     name: axis.name || axisName(axis),
     leftLabel: axis.leftLabel,
     rightLabel: axis.rightLabel,
+    leftImage: sanitizeAxisEndpointImage(axis.leftImage),
+    rightImage: sanitizeAxisEndpointImage(axis.rightImage),
+    endpointMode: axis.endpointMode || 'concept',
     value: clamp01(axis.value ?? 0.5),
     scores: axis.scores || [],
     terms: axis.terms || [],
     mapRole: axis.mapRole || '',
   }));
-  selectedDesignSpace.xAxis = xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: xAxis.leftLabel, rightLabel: xAxis.rightLabel, terms: xAxis.terms || [] } : null;
-  selectedDesignSpace.yAxis = yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: yAxis.leftLabel, rightLabel: yAxis.rightLabel, terms: yAxis.terms || [] } : null;
+  selectedDesignSpace.xAxis = xAxis ? { id: xAxis.id, name: xAxis.name || axisName(xAxis), leftLabel: axisEndpointLabel(xAxis, 'left'), rightLabel: axisEndpointLabel(xAxis, 'right'), terms: xAxis.terms || [] } : null;
+  selectedDesignSpace.yAxis = yAxis ? { id: yAxis.id, name: yAxis.name || axisName(yAxis), leftLabel: axisEndpointLabel(yAxis, 'left'), rightLabel: axisEndpointLabel(yAxis, 'right'), terms: yAxis.terms || [] } : null;
   document.querySelectorAll('.design-space-selection').forEach((selection) => {
     selection.style.left = `${selectedDesignSpace.x * 100}%`;
     selection.style.top = `${(1 - selectedDesignSpace.y) * 100}%`;
@@ -1225,8 +1938,12 @@ function colorForLayout(layoutOrKey) {
 
 function openLayoutFromDesignSpace(layout) {
   if (!layout) return;
-  if (layout.designSpace) setDesignSpaceSelection(layout.designSpace);
-  selectVersion(layout.id);
+  customDesignAxes.forEach((axis) => {
+    const score = ensureAxisScore(axis, layout);
+    score.name = layout.name;
+  });
+  saveDesignAxes();
+  selectVersion(layout.id, { renderMap: false });
 }
 
 function markAxisForMap(axis, role) {
@@ -1264,7 +1981,7 @@ function customAxisValueForGeneratedLayout(axis, layout) {
   return clamp01(axis.value ?? 0.5);
 }
 
-function placeGeneratedLayoutOnAxes(layout) {
+function placeGeneratedLayoutOnAxes(layout, { explicitPoint = true } = {}) {
   if (!layout?.key || !customDesignAxes.length) return;
   customDesignAxes.forEach((axis) => {
     if (!axis.scores) axis.scores = [];
@@ -1275,7 +1992,7 @@ function placeGeneratedLayoutOnAxes(layout) {
     }
     score.name = layout.name;
     score.value = customAxisValueForGeneratedLayout(axis, layout);
-    score.rationale = 'generated at selected axis position';
+    score.rationale = explicitPoint ? 'generated at selected axis position' : 'generated from inferred design ranking';
   });
   saveDesignAxes();
   syncCustomAxesToDesignSpace({ syncPrompt: false });
@@ -1309,30 +2026,61 @@ function renderCustomDesignAxes() {
 
   customDesignAxes.forEach((axis, axisIndex) => {
     const activeConcept = activeAxisConcept(axis);
+    const endpointMode = axis.endpointMode === 'image' || axis.leftImage || axis.rightImage ? 'image' : 'concept';
     const conceptLabel = Array.isArray(axis.terms) && axis.terms.length
       ? `<div class="axis-term-ladder" title="${PortfolioContent.escapeHtml(activeConcept.description || `${Math.round(activeConcept.value * 100)}% on this axis`)}">Closest concept: ${PortfolioContent.escapeHtml(activeConcept.label)}</div>`
       : '';
     const row = document.createElement('div');
     row.className = 'custom-axis';
     row.innerHTML = `
-      <div class="custom-axis-fields">
-        <label>Left concept
-          <input type="text" data-axis-field="leftLabel" value="${PortfolioContent.escapeHtml(axis.leftLabel || '')}">
-        </label>
-        <label>Right concept
-          <input type="text" data-axis-field="rightLabel" value="${PortfolioContent.escapeHtml(axis.rightLabel || '')}">
-        </label>
-        <div class="custom-axis-map-controls" aria-label="Map axis role">
-          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'x' ? 'active' : ''}" type="button" data-map-role="x" title="Use this axis as the horizontal map axis">X</button>
-          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'y' ? 'active' : ''}" type="button" data-map-role="y" title="Use this axis as the vertical map axis">Y</button>
+      <div class="custom-axis-toolbar">
+        <select class="custom-axis-mode" data-axis-mode aria-label="Endpoint type">
+          <option value="concept"${endpointMode === 'concept' ? ' selected' : ''}>Concepts</option>
+          <option value="image"${endpointMode === 'image' ? ' selected' : ''}>Images</option>
+        </select>
+        <div class="custom-axis-actions">
+          <div class="custom-axis-map-controls" aria-label="Map axis role">
+            <button class="ghost-btn custom-axis-map ${axis.mapRole === 'x' ? 'active' : ''}" type="button" data-map-role="x" title="Use as horizontal map axis">X</button>
+            <button class="ghost-btn custom-axis-map ${axis.mapRole === 'y' ? 'active' : ''}" type="button" data-map-role="y" title="Use as vertical map axis">Y</button>
+          </div>
+          <button class="ghost-btn custom-axis-rank" type="button" title="Rank websites on this axis">Rank</button>
+          <button class="ghost-btn custom-axis-remove" type="button" aria-label="Remove axis">x</button>
         </div>
-        <button class="ghost-btn custom-axis-rank" type="button" title="Rank websites on this axis">Rank</button>
-        <button class="ghost-btn custom-axis-remove" type="button" aria-label="Remove axis">x</button>
+      </div>
+      <div class="custom-axis-endpoints" aria-label="Axis endpoints">
+        <div class="custom-axis-endpoint" data-axis-endpoint="left">
+          <span class="custom-axis-endpoint-label">Left endpoint</span>
+          ${endpointMode === 'concept' ? `
+            <input class="custom-axis-endpoint-concept" type="text" data-axis-field="leftLabel" value="${PortfolioContent.escapeHtml(axis.leftLabel || '')}" placeholder="Concept">
+          ` : ''}
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          ${endpointMode === 'image' ? `
+            <button class="custom-axis-endpoint-pick" type="button" title="Choose left endpoint image">
+              ${axis.leftImage?.dataUrl ? `<img src="${axis.leftImage.dataUrl}" alt="">` : '<span>Add left image</span>'}
+            </button>
+            ${axis.leftImage?.keywords?.length ? `<div class="custom-axis-endpoint-keywords">${axis.leftImage.keywords.map((keyword) => PortfolioContent.escapeHtml(keyword)).join(', ')}</div>` : ''}
+            ${axis.leftImage?.dataUrl ? '<button class="custom-axis-endpoint-clear" type="button" aria-label="Remove left endpoint image">x</button>' : ''}
+          ` : ''}
+        </div>
+        <div class="custom-axis-endpoint" data-axis-endpoint="right">
+          <span class="custom-axis-endpoint-label">Right endpoint</span>
+          ${endpointMode === 'concept' ? `
+            <input class="custom-axis-endpoint-concept" type="text" data-axis-field="rightLabel" value="${PortfolioContent.escapeHtml(axis.rightLabel || '')}" placeholder="Concept">
+          ` : ''}
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          ${endpointMode === 'image' ? `
+            <button class="custom-axis-endpoint-pick" type="button" title="Choose right endpoint image">
+              ${axis.rightImage?.dataUrl ? `<img src="${axis.rightImage.dataUrl}" alt="">` : '<span>Add right image</span>'}
+            </button>
+            ${axis.rightImage?.keywords?.length ? `<div class="custom-axis-endpoint-keywords">${axis.rightImage.keywords.map((keyword) => PortfolioContent.escapeHtml(keyword)).join(', ')}</div>` : ''}
+            ${axis.rightImage?.dataUrl ? '<button class="custom-axis-endpoint-clear" type="button" aria-label="Remove right endpoint image">x</button>' : ''}
+          ` : ''}
+        </div>
       </div>
       <div class="custom-axis-rank-row">
-        <span>${PortfolioContent.escapeHtml(axis.leftLabel || 'left')}</span>
+        <span>${PortfolioContent.escapeHtml(axisEndpointLabel(axis, 'left'))}</span>
         <div class="custom-axis-notes" aria-label="Ranked website notes"></div>
-        <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
+        <span>${PortfolioContent.escapeHtml(axisEndpointLabel(axis, 'right'))}</span>
       </div>
       ${conceptLabel}
     `;
@@ -1340,7 +2088,10 @@ function renderCustomDesignAxes() {
     row.querySelectorAll('input[type="text"]').forEach((input) => {
       input.addEventListener('change', () => {
         const field = input.dataset.axisField;
+        axis.endpointMode = 'concept';
         axis[field] = input.value.trim();
+        axis.leftImage = null;
+        axis.rightImage = null;
         axis.name = axisName(axis);
         axis.scores = [];
         axis.terms = defaultTermsForAxis(axis);
@@ -1351,8 +2102,71 @@ function renderCustomDesignAxes() {
       });
     });
 
+    row.querySelector('[data-axis-mode]')?.addEventListener('change', (e) => {
+      axis.endpointMode = e.target.value === 'image' ? 'image' : 'concept';
+      if (axis.endpointMode === 'image') {
+        axis.leftLabel = '';
+        axis.rightLabel = '';
+      } else {
+        axis.leftImage = null;
+        axis.rightImage = null;
+      }
+      axis.name = axisName(axis);
+      axis.scores = [];
+      axis.terms = defaultTermsForAxis(axis);
+      saveDesignAxes();
+      syncCustomAxesToDesignSpace();
+      renderCustomDesignAxes();
+      renderSidebarDesignAxes();
+    });
+
     row.querySelectorAll('.custom-axis-map').forEach((button) => {
       button.addEventListener('click', () => markAxisForMap(axis, button.dataset.mapRole));
+    });
+
+    row.querySelectorAll('.custom-axis-endpoint').forEach((endpoint) => {
+      const side = endpoint.dataset.axisEndpoint === 'right' ? 'rightImage' : 'leftImage';
+      const input = endpoint.querySelector('input[type="file"]');
+      endpoint.querySelector('.custom-axis-endpoint-pick')?.addEventListener('click', () => input?.click());
+      input?.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const pickButton = endpoint.querySelector('.custom-axis-endpoint-pick');
+        const previousPickText = pickButton?.textContent || '';
+        if (pickButton) {
+          pickButton.disabled = true;
+          pickButton.textContent = 'Reading...';
+        }
+        try {
+          axis.endpointMode = 'image';
+          const endpointData = await axisEndpointImageToData(file);
+          axis[side] = await enrichAxisEndpointImage(file, endpointData);
+          axis.leftLabel = '';
+          axis.rightLabel = '';
+          axis.name = axisName(axis);
+          axis.scores = [];
+          axis.terms = defaultTermsForAxis(axis);
+          saveDesignAxes();
+          syncCustomAxesToDesignSpace();
+          renderCustomDesignAxes();
+        } catch (err) {
+          alert(`Could not add endpoint image:\n\n${err.message}`);
+        } finally {
+          if (pickButton) {
+            pickButton.disabled = false;
+            pickButton.textContent = previousPickText;
+          }
+        }
+      });
+      endpoint.querySelector('.custom-axis-endpoint-clear')?.addEventListener('click', () => {
+        axis[side] = null;
+        axis.endpointMode = 'image';
+        axis.name = axisName(axis);
+        axis.terms = defaultTermsForAxis(axis);
+        saveDesignAxes();
+        syncCustomAxesToDesignSpace();
+        renderCustomDesignAxes();
+      });
     });
 
     row.querySelector('.custom-axis-rank').addEventListener('click', async (e) => {
@@ -1421,8 +2235,8 @@ function renderSidebarDesignAxes() {
     row.className = 'sidebar-axis';
     row.innerHTML = `
       <div class="sidebar-axis-labels">
-        <span>${PortfolioContent.escapeHtml(axis.leftLabel || 'left')}</span>
-        <span>${PortfolioContent.escapeHtml(axis.rightLabel || 'right')}</span>
+        <span>${PortfolioContent.escapeHtml(axisEndpointLabel(axis, 'left'))}</span>
+        <span>${PortfolioContent.escapeHtml(axisEndpointLabel(axis, 'right'))}</span>
       </div>
       <div class="sidebar-axis-notes" aria-label="${PortfolioContent.escapeHtml(axis.name || axisName(axis))} ranked websites"></div>
       ${conceptLabel}
@@ -1450,15 +2264,23 @@ function renderSidebarDesignAxes() {
 }
 
 async function scoreCustomDesignAxis(axis) {
-  if (!axis.leftLabel || !axis.rightLabel) {
-    alert('Name both ends of the axis first.');
+  if (!axisHasBothEndpoints(axis)) {
+    alert('Add a concept or an image for both ends of the axis first.');
     return;
   }
   const manualScores = new Map((axis.scores || []).filter((score) => score.manual).map((score) => [score.key, score]));
   const data = await fetchJson('/api/design-axis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ axis }),
+    body: JSON.stringify({
+      axis: {
+        ...axis,
+        leftLabel: axisEndpointLabel(axis, 'left'),
+        rightLabel: axisEndpointLabel(axis, 'right'),
+        leftImage: axisEndpointPrompt(axis.leftImage, axisEndpointLabel(axis, 'left')),
+        rightImage: axisEndpointPrompt(axis.rightImage, axisEndpointLabel(axis, 'right')),
+      },
+    }),
   });
   axis.scores = (data.scores || []).map((score) => ({
     ...score,
@@ -1507,6 +2329,8 @@ function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy' } =
     node.classList.add(`design-space-node--${String(layout.key).replace(/[^a-zA-Z0-9_-]/g, '_')}`);
   }
   if (layout.id === currentVersion) node.classList.add('active');
+  node.dataset.layoutId = String(layout.id);
+  node.dataset.layoutKey = layout.key || '';
   node.dataset.label = layout.generated ? `${layout.name} *` : layout.name;
   node.style.setProperty('--node-x', `${point.x * 100}%`);
   node.style.setProperty('--node-y', `${(1 - point.y) * 100}%`);
@@ -1514,10 +2338,14 @@ function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy' } =
   node.title = layout.name;
 
   if (preview) {
+    const referenceMarkup = layout.referenceImage
+      ? `<span class="design-space-node-reference"><img src="${PortfolioContent.escapeHtml(layout.referenceImage)}" alt=""></span>`
+      : '';
     node.innerHTML = `
       <span class="design-space-node-preview">
         <iframe src="${PortfolioContent.escapeHtml(layoutPreviewSrc(layout))}" tabindex="-1" loading="lazy"></iframe>
       </span>
+      ${referenceMarkup}
       <span class="design-space-node-label">${PortfolioContent.escapeHtml(layout.name)}</span>
     `;
   }
@@ -1547,6 +2375,8 @@ function renderDesignSpacePlane(plane, legend, { preview = false, mode = 'xy' } 
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'design-space-legend-item';
+    item.dataset.layoutId = String(layout.id);
+    item.dataset.layoutKey = layout.key || '';
     if (layout.id === currentVersion) item.classList.add('active');
     item.innerHTML = `<span class="design-space-legend-dot" style="--node-color: ${color}"></span>${layout.name}`;
     item.addEventListener('click', () => openLayoutFromDesignSpace(layout));
@@ -1559,13 +2389,13 @@ function syncDesignSpaceAxisLabels() {
   const yAxis = mappedAxis('y') || { leftLabel: 'Abstract', rightLabel: 'Skeuomorphic' };
   const mode = getDesignSpaceMode();
   const horizontalAxis = mode === 'y' ? yAxis : xAxis;
-  document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = xAxis.leftLabel || 'Left'; });
-  document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = xAxis.rightLabel || 'Right'; });
-  document.querySelectorAll('.axis-label--bottom').forEach((label) => { label.textContent = yAxis.leftLabel || 'Bottom'; });
-  document.querySelectorAll('.axis-label--top').forEach((label) => { label.textContent = yAxis.rightLabel || 'Top'; });
+  document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = axisEndpointLabel(xAxis, 'left') || 'Left'; });
+  document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = axisEndpointLabel(xAxis, 'right') || 'Right'; });
+  document.querySelectorAll('.axis-label--bottom').forEach((label) => { label.textContent = axisEndpointLabel(yAxis, 'left') || 'Bottom'; });
+  document.querySelectorAll('.axis-label--top').forEach((label) => { label.textContent = axisEndpointLabel(yAxis, 'right') || 'Top'; });
   if (mode !== 'xy') {
-    document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = horizontalAxis.leftLabel || 'Left'; });
-    document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = horizontalAxis.rightLabel || 'Right'; });
+    document.querySelectorAll('.axis-label--left').forEach((label) => { label.textContent = axisEndpointLabel(horizontalAxis, 'left') || 'Left'; });
+    document.querySelectorAll('.axis-label--right').forEach((label) => { label.textContent = axisEndpointLabel(horizontalAxis, 'right') || 'Right'; });
   }
 }
 
@@ -1603,13 +2433,13 @@ function setupDesignSpaceInstrument() {
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1 - ((e.clientY - rect.top) / rect.height);
       const mode = getDesignSpaceMode();
-      setDesignSpaceSelection(mode === 'xy' ? { x, y } : { x, y: 0.5 });
+      setDesignSpaceSelection(mode === 'xy' ? { x, y } : { x, y: 0.5 }, { userSelected: true });
     });
 
     plane.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault();
-      setDesignSpaceSelection(selectedDesignSpace);
+      setDesignSpaceSelection(selectedDesignSpace, { userSelected: true });
     });
   });
 
@@ -1712,6 +2542,238 @@ function setupCreatePanel() {
   syncCustomAxesToDesignSpace({ syncPrompt: false });
 }
 
+function setupAssetAssistant() {
+  const openBtn = document.getElementById('asset-assistant-btn');
+  const modal = document.getElementById('asset-assistant-modal');
+  const form = document.getElementById('asset-assistant-form');
+  const promptEl = document.getElementById('asset-assistant-prompt');
+  const statusEl = document.getElementById('asset-assistant-status');
+  const submitBtn = document.getElementById('asset-assistant-submit');
+  const undoBtn = document.getElementById('asset-assistant-undo');
+  const closeBtn = document.getElementById('asset-assistant-close');
+  const cancelBtn = document.getElementById('asset-assistant-cancel');
+  const reviewToast = document.getElementById('asset-review-toast');
+  const reviewMessage = document.getElementById('asset-review-message');
+  const reviewUndoBtn = document.getElementById('asset-review-undo');
+  const reviewApplyBtn = document.getElementById('asset-review-apply');
+  if (!modal || !form || !promptEl || !statusEl || !submitBtn) return;
+  let undoSnapshot = null;
+
+  const cloneEditState = () => ({
+    theme: JSON.parse(JSON.stringify(editedTheme)),
+    content: JSON.parse(JSON.stringify(editedContent)),
+  });
+
+  const syncUndoButton = () => {
+    if (!undoBtn) return;
+    undoBtn.hidden = !undoSnapshot;
+    undoBtn.disabled = !undoSnapshot || form.classList.contains('is-busy');
+  };
+
+  const setStatus = (message, type = '') => {
+    statusEl.hidden = !message;
+    statusEl.textContent = message || '';
+    statusEl.className = `generate-status${type ? ` generate-status--${type}` : ''}`;
+  };
+
+  const showReviewToast = (message) => {
+    if (!reviewToast) return;
+    if (reviewMessage) reviewMessage.textContent = message || 'Previewing page edit.';
+    reviewToast.hidden = false;
+  };
+
+  const hideReviewToast = () => {
+    if (!reviewToast) return;
+    reviewToast.hidden = true;
+  };
+
+  const close = () => {
+    modal.hidden = true;
+    submitBtn.disabled = false;
+    form.classList.remove('is-busy');
+    form.style.position = '';
+    form.style.left = '';
+    form.style.top = '';
+    submitBtn.textContent = 'Apply change';
+    setStatus('');
+  };
+
+  const open = (anchor) => {
+    modal.hidden = false;
+    form.classList.remove('is-busy');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Apply change';
+    form.style.position = '';
+    form.style.left = '';
+    form.style.top = '';
+    syncUndoButton();
+    if (anchor && (anchor.viewport || previewIframe)) {
+      const frameRect = anchor.viewport ? { left: 0, top: 0 } : previewIframe.getBoundingClientRect();
+      const cardWidth = Math.min(300, window.innerWidth - 32);
+      const anchorLeft = anchor.viewport ? Number(anchor.left || 0) : frameRect.left + Number(anchor.left || 0);
+      const anchorRight = anchor.viewport ? Number(anchor.right || anchorLeft) : frameRect.left + Number(anchor.right || anchor.left || 0);
+      const anchorBottom = anchor.viewport ? Number(anchor.bottom || 0) : frameRect.top + Number(anchor.bottom || 0);
+      const left = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, anchorRight - cardWidth));
+      const top = Math.max(12, Math.min(window.innerHeight - 180, anchorBottom + 8));
+      form.style.position = 'fixed';
+      form.style.left = `${Math.round(left)}px`;
+      form.style.top = `${Math.round(top)}px`;
+    }
+    promptEl.focus();
+    setStatus('');
+  };
+  openAssetAssistant = open;
+
+  openBtn?.addEventListener('click', () => {
+    const rect = openBtn.getBoundingClientRect();
+    open({
+      viewport: true,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    });
+  });
+  closeBtn?.addEventListener('click', close);
+  cancelBtn?.addEventListener('click', close);
+  const undoPortfolioPreview = () => {
+    if (!undoSnapshot) return;
+    editedTheme = undoSnapshot.theme;
+    editedContent = undoSnapshot.content;
+    undoSnapshot = null;
+    syncPaletteVisibility();
+    syncPaletteSwatches();
+    syncSpacingControlsForCurrentVersion();
+    updatePreview();
+    refreshInspectModel();
+    hideReviewToast();
+    setStatus('Restored the previous portfolio version.', 'ok');
+    syncUndoButton();
+  };
+
+  const applyPortfolioPreview = () => {
+    undoSnapshot = null;
+    hideReviewToast();
+    syncUndoButton();
+  };
+
+  undoBtn?.addEventListener('click', undoPortfolioPreview);
+  reviewUndoBtn?.addEventListener('click', undoPortfolioPreview);
+  reviewApplyBtn?.addEventListener('click', applyPortfolioPreview);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const layout = getLayout(currentVersion);
+    const prompt = promptEl.value.trim();
+    if (!prompt) {
+      setStatus('Tell the sparkle what to change.', 'err');
+      return;
+    }
+    if (!layout) {
+      setStatus('Choose a portfolio version first.', 'err');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Thinking...';
+    form.classList.add('is-busy');
+    syncUndoButton();
+    setStatus('Thinking through the whole page...', 'busy');
+    try {
+      const beforeChange = cloneEditState();
+      const versionKey = layout.key;
+      const currentTheme = {
+        colors: getVersionColorsForKey(versionKey),
+        typography: getVersionTypographyForKey(versionKey),
+      };
+      const result = await fetchJson('/api/portfolio-operation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          layoutKey: layout.key,
+          presentationId: getCurrentPresentationId(),
+          prompt,
+          theme: currentTheme,
+          spacing: getVersionSpacingForKey(versionKey),
+        }),
+      });
+
+      const operations = validatePortfolioOperations(result.operations || result.operation, {
+        versionKey,
+        presentationId: getCurrentPresentationId(),
+        prompt,
+      });
+
+      let appliedCount = 0;
+      operations.forEach((operation) => {
+        if (operation.type !== 'decorativeAssets' && applyPortfolioOperation(operation)) appliedCount += 1;
+      });
+
+      const assetOperations = operations.filter((operation) => operation.type === 'decorativeAssets');
+      let generatedAssetCount = 0;
+      for (const operation of assetOperations) {
+        setStatus('Drawing page decorations...', 'busy');
+        const data = await fetchJson('/api/assets/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            layoutKey: layout.key,
+            prompt: operation.prompt,
+          }),
+        });
+        if (Array.isArray(data?.assets) && data.assets.length) {
+          const decorations = ensureDecorations(layout.key);
+          data.assets.forEach((asset) => {
+            if (!asset.src) return;
+            decorations.push({
+              src: asset.src,
+              alt: asset.alt || '',
+              x: asset.x,
+              y: asset.y,
+              size: asset.size,
+              rotate: asset.rotate,
+              opacity: asset.opacity,
+            });
+          });
+          generatedAssetCount += data.assets.length;
+        }
+      }
+
+      if (appliedCount || generatedAssetCount) {
+        undoSnapshot = beforeChange;
+        updatePreview();
+        refreshInspectModel();
+      }
+      const parts = [
+        appliedCount ? `${appliedCount} page edit${appliedCount === 1 ? '' : 's'}` : '',
+        generatedAssetCount ? `${generatedAssetCount} asset${generatedAssetCount === 1 ? '' : 's'}` : '',
+      ].filter(Boolean);
+      const message = parts.length
+        ? (result.message || `Applied ${parts.join(' + ')}.`)
+        : 'No supported page-level change was found.';
+      setStatus(message, parts.length ? 'ok' : 'err');
+      if (parts.length) {
+        close();
+        showReviewToast(message);
+      } else {
+        hideReviewToast();
+      }
+      promptEl.value = '';
+      syncUndoButton();
+    } catch (error) {
+      setStatus(error.message, 'err');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Apply change';
+      form.classList.remove('is-busy');
+      syncUndoButton();
+    }
+  });
+}
+
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
@@ -1743,6 +2805,8 @@ function setupAI() {
   const imagePreview = document.getElementById('image-vibe-preview');
   const imageTokensEl = document.getElementById('image-vibe-tokens');
   let selectedImageFile = null;
+  let analyzedReferenceImage = null;
+  let pendingImageTokenPrompt = '';
 
   const setGenerateMode = (mode = 'compose') => {
     if (generatePanel) generatePanel.dataset.generateMode = mode;
@@ -1804,6 +2868,8 @@ function setupAI() {
 
   const updateImagePreview = (file) => {
     selectedImageFile = file || null;
+    analyzedReferenceImage = null;
+    pendingImageTokenPrompt = '';
     if (imageAnalyzeBtn) imageAnalyzeBtn.disabled = !selectedImageFile;
     if (!imagePreview) return;
     if (!selectedImageFile) {
@@ -1846,6 +2912,19 @@ function setupAI() {
     return text ? `${label}: ${text}` : '';
   };
 
+  const promptWithoutHiddenImageContract = (value) => {
+    const text = String(value || '').trim();
+    const markers = [
+      'Image-derived design tokens:',
+      'Image-derived design contract:',
+      'REFERENCE_FIDELITY: high',
+    ]
+      .map((marker) => text.indexOf(marker))
+      .filter((index) => index >= 0);
+    const index = markers.length ? Math.min(...markers) : -1;
+    return (index >= 0 ? text.slice(0, index) : text).trim();
+  };
+
   const formatImageTokenPrompt = (tokens) => {
     const palette = Array.isArray(tokens.palette)
       ? tokens.palette.map((color) => `${color.name || color.hex} ${color.hex}${color.role ? ` (${color.role})` : ''}`).join(', ')
@@ -1853,20 +2932,50 @@ function setupAI() {
     return [
       'REFERENCE_FIDELITY: high',
       'Use the uploaded image as a style reference, not a literal scene copy.',
-      'Preserve the visual language, palette, texture, interface metaphor, and interaction mood. Generalize specific objects/text into reusable portfolio components.',
+      'Preserve the visual language, palette, texture, material system, composition density, motif vocabulary, and interaction mood. Generalize specific objects/text into reusable portfolio components.',
+      'Do not collapse the image into a generic existing metaphor. The generated interface should visibly inherit the reference image in the first viewport.',
       tokenLine('Summary', tokens.summary),
+      tokenLine('Keywords', tokens.keywords),
       tokenLine('Visual style', tokens.visualStyle),
+      tokenLine('Material system', tokens.materialSystem),
+      tokenLine('Layout contract background', tokens.layoutContract?.background),
+      tokenLine('Layout contract density', tokens.layoutContract?.density),
+      tokenLine('Layout contract composition', tokens.layoutContract?.composition),
+      tokenLine('Required motifs', tokens.requiredMotifs),
+      tokenLine('Required materials', tokens.requiredMaterials),
+      tokenLine('Forbidden simplifications', tokens.forbiddenSimplifications),
       tokenLine('Mood', tokens.mood),
       tokenLine('Palette', palette),
       tokenLine('Typography personality', tokens.typography?.personality),
       tokenLine('Layout composition', tokens.layout?.composition),
       tokenLine('Layout texture', tokens.layout?.texture),
+      tokenLine('Must preserve', tokens.layout?.mustPreserve),
+      tokenLine('Motif vocabulary', tokens.motifVocabulary),
       tokenLine('Components', tokens.components),
+      tokenLine('Interface components', tokens.interfaceTranslation?.components),
       tokenLine('Interface metaphor', tokens.interfaceTranslation?.metaphor),
       tokenLine('Navigation', tokens.interfaceTranslation?.navigation),
+      tokenLine('Motion', tokens.interaction?.motion),
       tokenLine('Interaction pace', tokens.interaction?.pace),
       tokens.generationPrompt ? `Generator brief: ${tokens.generationPrompt}` : '',
     ].filter(Boolean).join('\n');
+  };
+
+  const promptWithHiddenImageContract = (visiblePrompt) => {
+    const base = String(visiblePrompt || '').trim();
+    return [base, pendingImageTokenPrompt ? `Image-derived design contract:\n${pendingImageTokenPrompt}` : '']
+      .filter(Boolean)
+      .join('\n\n');
+  };
+
+  const visibleGeneratePrompt = () => promptWithoutHiddenImageContract(promptWithoutDesignScaffold(promptEl.value));
+
+  const composedGeneratePrompt = () => {
+    const visible = visibleGeneratePrompt();
+    return [
+      visible || (activeDesignDirectionPrompt ? 'Generate a portfolio interface.' : ''),
+      activeDesignDirectionPrompt,
+    ].filter(Boolean).join('\n\n').trim();
   };
 
   const analyzeSelectedImage = async () => {
@@ -1892,13 +3001,16 @@ function setupAI() {
           fileName: selectedImageFile.name,
         }),
       });
-      const prompt = formatImageTokenPrompt(data.tokens || {});
-      const existing = promptEl.value.trim();
-      promptEl.value = existing
-        ? `${existing}\n\nImage-derived design tokens:\n${prompt}`
-        : prompt;
+      analyzedReferenceImage = {
+        image,
+        mimeType: image.startsWith('data:image/jpeg') ? 'image/jpeg' : (selectedImageFile.type || 'image/png'),
+        fileName: selectedImageFile.name || 'reference-image',
+      };
+      pendingImageTokenPrompt = formatImageTokenPrompt(data.tokens || {});
+      const existing = visibleGeneratePrompt();
+      promptEl.value = existing || 'Generate from the uploaded reference image.';
       resetQuestions();
-      pendingGeneratePrompt = promptEl.value.trim();
+      pendingGeneratePrompt = composedGeneratePrompt();
       pendingGenerateReady = true;
       renderImageTokens(data.tokens || {}, data.model);
       if (generateStatus) {
@@ -2024,12 +3136,13 @@ function setupAI() {
   };
 
   const askNextQuestion = async (prompt) => {
+    const designSpace = generationDesignSpaceSelection();
     const data = await fetchJson('/api/generate-questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt,
-        designSpace: selectedDesignSpace,
+        prompt: promptWithHiddenImageContract(prompt),
+        designSpace,
         answers: pendingGenerateAnswers,
       }),
     });
@@ -2048,7 +3161,9 @@ function setupAI() {
   };
 
   generateBtn.addEventListener('click', async () => {
-    const prompt = promptEl.value.trim();
+    const visiblePrompt = visibleGeneratePrompt();
+    if (visiblePrompt !== promptEl.value.trim()) promptEl.value = visiblePrompt;
+    const prompt = composedGeneratePrompt();
     if (!prompt) {
       alert('Describe the layout you want first.');
       return;
@@ -2117,7 +3232,7 @@ function setupAI() {
       generateStatus.textContent = 'Answers ready. Generating now...';
     }
 
-    const clarifiedPrompt = promptWithAnswers(prompt, pendingGenerateAnswers);
+    const clarifiedPrompt = promptWithAnswers(promptWithHiddenImageContract(prompt), pendingGenerateAnswers);
     if (questionsEl) questionsEl.hidden = true;
     setGenerateMode('compose');
 
@@ -2128,15 +3243,17 @@ function setupAI() {
     generateStatus.className = 'generate-status generate-status--busy';
 
     try {
+      const designSpace = generationDesignSpaceSelection();
+      const referenceImage = /REFERENCE_FIDELITY:\s*high/i.test(clarifiedPrompt) ? analyzedReferenceImage : null;
       const data = await fetchJson('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: clarifiedPrompt, designSpace: selectedDesignSpace }),
+        body: JSON.stringify({ prompt: clarifiedPrompt, designSpace, referenceImage }),
       });
 
       if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
       const layout = data.layout;
-      placeGeneratedLayoutOnAxes(layout);
+      placeGeneratedLayoutOnAxes(layout, { explicitPoint: Boolean(designSpace) });
       if (data.versionColors && layout?.key) {
         ensureVersionColorsObject(layout.key);
         editedTheme.versions[layout.key].colors = { ...data.versionColors };
@@ -2538,19 +3655,49 @@ async function saveChanges() {
 
 function updatePreview() {
   const container = document.getElementById('preview-frame');
+  if (previewResizeObserver) {
+    previewResizeObserver.disconnect();
+    previewResizeObserver = null;
+  }
   container.innerHTML = '';
   syncDeviceFrameLayoutClass();
+  const previewWidth = getPreviewWidth();
+  const desktopPreview = !document.getElementById('device-frame')?.classList.contains('mobile');
+  const viewport = document.createElement('div');
+  viewport.className = desktopPreview ? 'preview-viewport preview-viewport--scaled' : 'preview-viewport';
   const iframe = document.createElement('iframe');
-  iframe.style.width = '100%';
+  iframe.style.width = desktopPreview ? `${previewWidth}px` : '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
+  if (desktopPreview) {
+    iframe.style.transformOrigin = 'top left';
+  }
   iframe.scrolling = getLayout(currentVersion)?.key === 'directory' ? 'no' : 'auto';
   iframe.sandbox.add('allow-same-origin', 'allow-scripts');
-  container.appendChild(iframe);
+  viewport.appendChild(iframe);
+  container.appendChild(viewport);
   previewIframe = iframe;
 
+  const syncViewportScale = () => {
+    if (!desktopPreview) return;
+    const style = getComputedStyle(container);
+    const contentWidth = container.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
+    const contentHeight = container.clientHeight - parseFloat(style.paddingTop || '0') - parseFloat(style.paddingBottom || '0');
+    const scale = Math.min(1, Math.max(0.1, contentWidth / previewWidth));
+    viewport.style.width = `${Math.round(previewWidth * scale)}px`;
+    viewport.style.height = `${Math.max(1, Math.floor(contentHeight))}px`;
+    iframe.style.height = `${Math.max(1, Math.floor(contentHeight / scale))}px`;
+    iframe.style.transform = `scale(${scale})`;
+  };
+
+  syncViewportScale();
+  if (desktopPreview && 'ResizeObserver' in window) {
+    previewResizeObserver = new ResizeObserver(syncViewportScale);
+    previewResizeObserver.observe(container);
+  }
+
   window.appData.then(({ manifest }) => {
-    const html = buildPreviewHTML(manifest, currentVersion, getPreviewWidth());
+    const html = buildPreviewHTML(manifest, currentVersion, previewWidth);
     const iframeDoc = iframe.contentDocument;
     iframeDoc.write(html);
     iframeDoc.close();
@@ -2578,20 +3725,7 @@ function buildTextHeading(tag, className, id, role, fallback, theme, content, ve
 }
 
 function buildPreviewNav(activeLayout) {
-  const links = [
-    ...PORTFOLIO_LAYOUTS.map((layout) => ({ label: layout.name, file: layout.file, key: layout.key })),
-    { label: 'Edit', file: 'edit.html' },
-  ];
-
-  const items = links.map((link) => {
-    if (link.key && link.key === activeLayout.key) {
-      return `<span class="active-view">${PortfolioContent.escapeHtml(link.label)}</span>`;
-    }
-    const keyAttr = link.key ? ` data-preview-layout-key="${PortfolioContent.escapeHtml(link.key)}"` : '';
-    return `<a href="./${link.file}" data-preview-nav${keyAttr}>${PortfolioContent.escapeHtml(link.label)}</a>`;
-  }).join('');
-
-  return `<p>${items}</p>`;
+  return '';
 }
 
 function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) {
@@ -2632,6 +3766,14 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     [data-text-id] { cursor: text; }
     [data-text-id]:hover { outline: 2px dashed var(--color-accent); outline-offset: 3px; }
     [data-text-id]:empty::after { content: 'Click to add text'; opacity: 0.4; font-weight: 400; pointer-events: none; }
+    .portfolio-title-row {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+    }
+    .portfolio-title-row h1 {
+      margin: 0;
+    }
     .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
     .text-edit-toolbar {
       --text-edit-ink: #111111;
@@ -2705,10 +3847,10 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       overflow: hidden !important;
     }
     body[data-edit-mode="1"].view-directory header {
-      padding: 4rem 2rem 2.25rem;
+      padding: 4rem 2rem 0.8rem;
     }
     body[data-edit-mode="1"].view-directory h1 {
-      margin-bottom: 1.5rem;
+      margin-bottom: 0;
       font-size: clamp(1.85rem, 4.5vw, var(--font-heading1, 2.75rem));
     }
     .view-directory #preview-content,
@@ -2768,10 +3910,12 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
 
   const generatedScripts = layout.generated
     ? `<script src="./scripts/generated-runtime.js"><\/script>
+  <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
   <script src="./scripts/model-loader.js"><\/script>
   ${deskScripts}
+  <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/render.js"><\/script>`;
 
   const mountScript = layout.generated
@@ -2815,6 +3959,48 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       PortfolioRender.layoutDirectoryViewport();
     }
   })();`;
+
+  const remountScript = layout.generated
+    ? `window.__PORTFOLIO_REMOUNT_PREVIEW__ = async function() {
+    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
+    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
+      theme: window.__EDIT_STATE__.theme,
+      contentOverrides: window.__EDIT_STATE__.content,
+      contentModel,
+    });
+    const previewRoot = document.getElementById('preview-content');
+    await GeneratedRuntime.mount({
+      root: previewRoot,
+      layoutKey: window.__PREVIEW_PRESENTATION_ID__,
+      models,
+      previewState: {
+        theme: window.__EDIT_STATE__.theme,
+        content: window.__EDIT_STATE__.content,
+        versionKey: window.__EDIT_STATE__.versionKey,
+      },
+    });
+  };`
+    : `window.__PORTFOLIO_REMOUNT_PREVIEW__ = async function() {
+    const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
+    const models = await PortfolioModels.load(window.__PREVIEW_PRESENTATION_ID__, {
+      theme: window.__EDIT_STATE__.theme,
+      contentOverrides: window.__EDIT_STATE__.content,
+      contentModel,
+    });
+    const previewRoot = document.getElementById('preview-content');
+    PortfolioRender.renderCollections(
+      previewRoot,
+      models.manifest.collections.map((col, index) => ({
+        id: PortfolioContent.collectionId(index),
+        originalIndex: index,
+        ...col,
+      })),
+      models
+    );
+    if (window.__PREVIEW_PRESENTATION_ID__ === 'directory') {
+      PortfolioRender.layoutDirectoryViewport();
+    }
+  };`;
 
   return `<!DOCTYPE html>
 <html class="${previewViewClass.trim()}">
@@ -2881,7 +4067,9 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
 </head>
 <body${editMode ? ' data-edit-mode="1"' : ''} class="${previewViewClass.trim()}">
   <header>
-    ${titleHeading}
+    <div class="portfolio-title-row">
+      ${titleHeading}
+    </div>
     ${buildPreviewNav(layout)}
   </header>
   <main class="container" data-model-kind="presentation" data-model-path="presentations.${presentationId}" data-presentation-id="${presentationId}" data-model-label="${PortfolioContent.escapeHtml(layout.name)} presentation">
@@ -2894,9 +4082,25 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   ${generatedScripts}
   <script>
   ${mountScript}
+  ${remountScript}
 
   window.addEventListener('message', (e) => {
     if (!e.data || e.data.source !== 'portfolio-editor') return;
+    if (e.data.type === 'patch') {
+      if (e.data.theme) window.__EDIT_STATE__.theme = e.data.theme;
+      if (e.data.content) window.__EDIT_STATE__.content = e.data.content;
+      if (e.data.versionKey) window.__EDIT_STATE__.versionKey = e.data.versionKey;
+      if (e.data.remount) {
+        window.__PORTFOLIO_REMOUNT_PREVIEW__?.();
+      } else if (window.PortfolioContent) {
+        PortfolioContent.applyPageText(
+          window.__PREVIEW_MANIFEST__,
+          window.__EDIT_STATE__.theme,
+          window.__EDIT_STATE__.content,
+          window.__EDIT_STATE__.versionKey
+        );
+      }
+    }
     if (e.data.type === 'colors' && e.data.colors) {
       Object.entries(e.data.colors).forEach(([k, v]) => {
         document.documentElement.style.setProperty('--color-' + k, v);

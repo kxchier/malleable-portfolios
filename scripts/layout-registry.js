@@ -51,6 +51,19 @@ function enrichGeneratedLayout(layout) {
   let enriched = layout;
   let presentation = null;
   try {
+    const assetsDir = path.join(ROOT, 'generated', layout.key, 'assets');
+    const files = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir) : [];
+    const referenceFile = files.find((file) => /^reference(?:[-_0]*)(?:image|collage)\.(png|jpe?g|webp)$/i.test(file));
+    if (referenceFile && !enriched.referenceImage) {
+      enriched = {
+        ...enriched,
+        referenceImage: `generated/${layout.key}/assets/${referenceFile}`,
+      };
+    }
+  } catch {
+    // reference images are optional
+  }
+  try {
     presentation = JSON.parse(fs.readFileSync(path.join(ROOT, 'presentations', `${layout.key}.json`), 'utf8'));
   } catch {
     // no presentation to infer from

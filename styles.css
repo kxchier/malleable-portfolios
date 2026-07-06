@@ -39,8 +39,7 @@ body {
 header {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 4rem 2rem 2.25rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 8%, transparent);
+  padding: 4rem 2rem 0.8rem;
 }
 
 h1 {
@@ -52,6 +51,10 @@ h1 {
   max-width: none;
   margin-bottom: 1.5rem;
   white-space: nowrap;
+}
+
+header h1:last-child {
+  margin-bottom: 0;
 }
 
 h1[data-text-id],
@@ -198,6 +201,98 @@ h2 {
 .grid-item {
   width: 100%;
   height: auto;
+}
+
+/* ---- Assistant layout overrides ---- */
+.layout-override-works {
+  gap: var(--space-gridGap);
+}
+
+.layout-override-work {
+  position: relative;
+  aspect-ratio: 1;
+  width: var(--space-artSize);
+  min-width: var(--space-artSize);
+  background: var(--color-paper);
+  padding: var(--space-imagePadding);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-shadow) 4%, transparent),
+    0 8px 28px color-mix(in srgb, var(--color-shadow) 7%, transparent);
+}
+
+.layout-override-work img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.layout-override-works--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--space-artSize)), 1fr));
+}
+
+.layout-override-works--horizontal {
+  display: flex;
+  overflow-x: auto;
+  padding: 0.5rem 0 1.25rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.layout-override-works--vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.layout-override-grid :is(.images-scroll, [class*="work-row"], [class*="work-grid"], [class*="list"], [class*="board"]) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--space-artSize)), 1fr)) !important;
+  gap: var(--space-gridGap) !important;
+  overflow: visible !important;
+}
+
+.layout-override-horizontal :is([class*="work-grid"], [class*="list"], [class*="board"]) {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: var(--space-gridGap) !important;
+  overflow-x: auto !important;
+}
+
+.layout-override-vertical :is(.images-scroll, [class*="work-row"], [class*="work-grid"], [class*="list"], [class*="board"]) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: var(--space-gridGap) !important;
+  overflow: visible !important;
+}
+
+/* ---- Assistant material overrides ---- */
+.layout-material-textured,
+.layout-material-wood,
+.layout-material-paper,
+.layout-material-fabric,
+.layout-material-metal,
+.layout-material-glass {
+  isolation: isolate;
+}
+
+.layout-material-textured :is(.grid-item, .scroll-item, .generated-work-tile, [class*="tile"], [class*="card"]),
+.layout-material-paper :is(.grid-item, .scroll-item, .generated-work-tile, [class*="tile"], [class*="card"]) {
+  background-image:
+    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--color-primary) 7%, transparent) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 72% 64%, color-mix(in srgb, var(--color-accent) 10%, transparent) 0 1px, transparent 1.6px);
+  background-size: 18px 18px, 26px 26px;
+}
+
+.layout-material-fabric :is(.grid-item, .scroll-item, .generated-work-tile, [class*="tile"], [class*="card"]) {
+  background-image:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-primary) 5%, transparent) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, white 22%, transparent) 0 1px, transparent 1px 8px);
 }
 
 /* ---- Clothesline View ---- */
@@ -408,6 +503,47 @@ h2 {
   opacity: 0.5;
 }
 
+.layout-material-textured .desk-surface,
+.layout-material-wood .desk-surface {
+  background:
+    repeating-linear-gradient(
+      88deg,
+      color-mix(in srgb, var(--color-accent) 20%, var(--color-secondary)) 0 14px,
+      color-mix(in srgb, var(--color-primary) 7%, var(--color-secondary)) 14px 16px,
+      color-mix(in srgb, var(--color-accent) 10%, var(--color-secondary)) 16px 34px
+    ),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--color-accent) 22%, var(--color-secondary)) 0%,
+      color-mix(in srgb, var(--color-primary) 5%, var(--color-secondary)) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
+    inset 0 0 36px color-mix(in srgb, var(--color-shadow) 8%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-primary) 16%, var(--color-accent)),
+    0 10px 28px color-mix(in srgb, var(--color-shadow) 12%, transparent);
+}
+
+.layout-material-textured .desk-surface::before,
+.layout-material-wood .desk-surface::before {
+  background:
+    repeating-linear-gradient(
+      92deg,
+      transparent,
+      transparent 34px,
+      color-mix(in srgb, var(--color-shadow) 7%, transparent) 34px,
+      color-mix(in srgb, var(--color-shadow) 7%, transparent) 35px
+    ),
+    radial-gradient(ellipse at 18% 22%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 24%),
+    radial-gradient(ellipse at 78% 65%, color-mix(in srgb, white 16%, transparent), transparent 28%);
+  opacity: 0.85;
+}
+
+.layout-material-fabric .desk-surface {
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-primary) 5%, transparent) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, white 20%, transparent) 0 1px, transparent 1px 9px),
+    color-mix(in srgb, var(--color-accent) 12%, var(--color-secondary));
+}
+
 .desk-item {
   position: absolute;
   aspect-ratio: 1;
@@ -478,16 +614,16 @@ body.view-directory header {
   width: 100%;
   max-width: 1180px;
   margin-inline: auto;
-  padding: 4rem 2rem 2.25rem;
+  padding: 4rem 2rem 0.8rem;
 }
 
 body[data-edit-mode="1"].view-directory header {
-  padding: 1.1rem 2rem 0.75rem;
+  padding: 4rem 2rem 0.8rem;
 }
 
 body[data-edit-mode="1"].view-directory h1 {
-  margin-bottom: 0.65rem;
-  font-size: clamp(1.35rem, 3.5vw, 2rem);
+  margin-bottom: 0;
+  font-size: clamp(1.85rem, 4.5vw, var(--font-heading1, 2.75rem));
 }
 
 .view-directory .container {
@@ -496,7 +632,7 @@ body[data-edit-mode="1"].view-directory h1 {
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
-  padding: 2.5rem 2rem 1.5rem;
+  padding: 0.75rem 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -749,11 +885,11 @@ body[data-edit-mode="1"].view-directory h1 {
   }
 
   body.view-directory header {
-    padding: 2rem 1.25rem 1.25rem;
+    padding: 2rem 1.25rem 0.55rem;
   }
 
   .view-directory .container {
-    padding: 1rem 1.25rem 1.25rem;
+    padding: 0.65rem 1.25rem 1.25rem;
   }
 
   .directory-tree {

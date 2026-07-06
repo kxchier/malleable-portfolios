@@ -18,6 +18,9 @@
         "zine_rack": {
           "fontFamily": "Georgia",
           "fontSize": "45px"
+        },
+        "signal_tower": {
+          "textAlign": "center"
         }
       }
     },

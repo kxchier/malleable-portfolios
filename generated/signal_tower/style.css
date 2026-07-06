@@ -1,0 +1,281 @@
+/* ── Signal Tower ── */
+body.view-signal_tower {
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--color-secondary) 16%, transparent) 0 10rem, transparent 24rem),
+    radial-gradient(circle at 84% 4%, color-mix(in srgb, var(--color-accent) 18%, transparent) 0 8rem, transparent 22rem),
+    linear-gradient(180deg, #03101c 0%, var(--color-background) 46%, #020811 100%);
+  color: var(--color-primary);
+  font-family: var(--font-body-family);
+}
+
+.st-root {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0.7rem 1.2rem 3rem;
+  min-height: 100vh;
+}
+
+/* ── Console Header ── */
+.st-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--color-panel);
+  border-bottom: 2px solid var(--color-accent);
+  margin-bottom: 1.4rem;
+  position: relative;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-secondary) 18%, transparent),
+    0 16px 40px rgba(0, 0, 0, 0.35);
+}
+.st-callsign {
+  font-family: var(--font-heading1-family);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--color-secondary) 70%, transparent);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.st-title {
+  font-family: var(--font-heading1-family);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+  letter-spacing: 0.08em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+.st-signal-bars span {
+  display: block;
+  width: 5px;
+  background: var(--color-accent);
+  border-radius: 1px;
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+.st-signal-bars span:nth-child(1) { height: 5px; }
+.st-signal-bars span:nth-child(2) { height: 9px; }
+.st-signal-bars span:nth-child(3) { height: 13px; }
+.st-signal-bars span:nth-child(4) { height: 18px; }
+.st-signal-bars span:nth-child(5) { height: 22px; }
+.st-signal-bars.active span { opacity: 1; background: var(--color-secondary); }
+.st-scanline {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 3px,
+    color-mix(in srgb, var(--color-secondary) 18%, transparent) 3px,
+    color-mix(in srgb, var(--color-secondary) 18%, transparent) 6px
+  );
+}
+
+/* ── Console Row (frequency) ── */
+.st-console-row {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-paper) 48%, transparent), transparent),
+    var(--color-panel);
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 24%, black);
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+  transition: border-color 0.25s;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.28);
+}
+.st-console-row:hover {
+  border-color: var(--color-accent);
+}
+.st-console-row.resolved {
+  border-color: var(--color-secondary);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-secondary) 8%, transparent), transparent),
+    var(--color-panel);
+}
+
+.st-freq-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.st-freq-bar:focus-visible {
+  outline: 2px solid var(--color-secondary);
+}
+
+.st-dial-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  position: relative;
+}
+.st-dial-svg {
+  width: 36px;
+  height: 36px;
+  transition: transform 0.4s cubic-bezier(.4,1.6,.6,1);
+}
+.st-console-row.resolved .st-dial-svg {
+  transform: rotate(135deg);
+}
+
+.st-freq-label {
+  font-family: var(--font-heading2-family);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  flex: 1;
+  transition: color 0.3s;
+}
+.st-console-row.resolved .st-freq-label {
+  color: var(--color-secondary);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-secondary) 64%, transparent);
+}
+
+.st-freq-num {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--color-accent) 70%, white);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.st-waveform {
+  flex-shrink: 0;
+  width: 64px;
+  height: 24px;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.st-console-row.resolved .st-waveform {
+  opacity: 1;
+}
+
+.st-intercept-btn {
+  flex-shrink: 0;
+  padding: 0.22rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.st-intercept-btn:hover,
+.st-console-row.resolved .st-intercept-btn {
+  background: var(--color-accent);
+  color: var(--color-panel);
+}
+.st-console-row.resolved .st-intercept-btn {
+  border-color: var(--color-secondary);
+  background: var(--color-secondary);
+  color: var(--color-panel);
+}
+
+/* ── Static Field ── */
+.st-static-field {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.4s ease;
+  position: relative;
+}
+.st-static-inner {
+  padding: 0.8rem 1rem;
+  position: relative;
+}
+.st-static-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.6s;
+  border-radius: 0;
+}
+.st-console-row.resolved .st-static-canvas {
+  opacity: 0;
+}
+
+/* ── Resolved Band ── */
+.st-resolved-band {
+  opacity: 0;
+  transition: opacity 0.7s 0.3s;
+  pointer-events: none;
+}
+.st-console-row.resolved .st-resolved-band {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.st-collection-label {
+  font-family: var(--font-heading2-family);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-accent) 70%, white);
+  padding: 0 0 0.5rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-accent) 40%, black);
+  margin-bottom: var(--space-gridGap);
+}
+
+.st-work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--space-artSize)), 1fr));
+  gap: var(--space-gridGap);
+  padding-bottom: 1rem;
+}
+
+.st-work {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent),
+    var(--color-paper);
+  padding: var(--space-imagePadding);
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 22%, var(--color-paper));
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+  transition: box-shadow 0.2s;
+}
+.st-work:hover {
+  box-shadow: 0 2px 24px color-mix(in srgb, var(--color-secondary) 28%, transparent);
+}
+.st-work img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+/* ── Footer morse ── */
+.st-footer {
+  margin-top: 2.5rem;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--color-accent) 50%, var(--color-background));
+  text-transform: uppercase;
+}

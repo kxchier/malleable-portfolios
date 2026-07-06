@@ -1,0 +1,293 @@
+body.view-quilt_patch {
+  background-color: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-body-family);
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Fabric weave texture via repeating SVG pattern */
+.qp-root {
+  min-height: 100vh;
+  padding: 0.5rem clamp(1.25rem, 4vw, 4rem) 3rem;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.qp-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("assets/reference-image.jpg");
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.qp-root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(139,115,85,0.04) 3px,
+    rgba(139,115,85,0.04) 4px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 3px,
+    rgba(139,115,85,0.04) 3px,
+    rgba(139,115,85,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.qp-nameplate {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 0.5rem 0 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.qp-nameplate h1 {
+  font-family: var(--font-heading1-family);
+  font-size: var(--font-heading1);
+  font-weight: var(--font-heading1-weight);
+  color: var(--color-primary);
+  margin: 0;
+  letter-spacing: 0.08em;
+}
+
+.qp-nameplate-stitch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.qp-nameplate-stitch-line {
+  flex: 1;
+  max-width: 180px;
+  height: 0;
+  border-top: 2px dashed color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+/* Patch block — collection container */
+.qp-patch {
+  position: relative;
+  z-index: 2;
+  margin: 0 clamp(0.75rem, 3.5vw, 3rem) var(--space-gridGap);
+  background: color-mix(in srgb, var(--color-paper) 80%, var(--color-accent) 20%);
+  border: 2px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-background) 60%);
+  border-radius: 3px;
+  padding: 0.7rem 1rem 1rem;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--color-background) 70%, var(--color-accent) 30%),
+              2px 3px 8px rgba(26,24,22,0.08);
+}
+
+/* Alternating patch tints */
+.qp-patch:nth-child(even) {
+  background: color-mix(in srgb, var(--color-paper) 70%, var(--color-secondary) 30%);
+}
+
+.qp-patch:nth-child(3n) {
+  background: color-mix(in srgb, var(--color-paper) 75%, #8a9a5b 25%);
+}
+
+/* Stitched seam border using outline dashes */
+.qp-patch-seam {
+  position: absolute;
+  inset: 5px;
+  border: 2px dashed color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Corner floral motif */
+.qp-corner-motif {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 3;
+}
+.qp-corner-motif.top-left  { top: 2px;    left: 2px;  }
+.qp-corner-motif.top-right { top: 2px;    right: 2px; transform: scaleX(-1); }
+.qp-corner-motif.btm-left  { bottom: 2px; left: 2px;  transform: scaleY(-1); }
+
+/* Embroidered label */
+.qp-patch-label {
+  position: relative;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.qp-patch-label h2 {
+  font-family: var(--font-heading2-family);
+  font-size: var(--font-heading2);
+  font-weight: var(--font-heading2-weight);
+  color: var(--color-primary);
+  margin: 0;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--color-background) 60%, transparent);
+  border-radius: 2px;
+}
+
+.qp-patch-label-rose {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* Responsive quilt grid */
+.qp-work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--space-artSize)), 1fr));
+  gap: var(--space-gridGap);
+  position: relative;
+  z-index: 2;
+  align-items: stretch;
+}
+
+/* Work tile — the individual quilted patch cell */
+.qp-work-tile {
+  min-width: 0;
+  background: var(--color-paper);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-background));
+  box-shadow: inset 0 0 0 var(--space-imagePadding) color-mix(in srgb, var(--color-background) 55%, var(--color-accent) 45%),
+              1px 2px 5px rgba(26,24,22,0.1);
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.qp-work-tile::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--space-imagePadding) - 3px);
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 35%, transparent);
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 1px;
+}
+
+.qp-work-tile:hover {
+  transform: translateY(-3px) scale(1.025);
+  box-shadow: inset 0 0 0 var(--space-imagePadding) color-mix(in srgb, var(--color-secondary) 40%, var(--color-background) 60%),
+              3px 6px 14px rgba(26,24,22,0.15);
+  z-index: 10;
+}
+
+.qp-work-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  object-position: center;
+  position: relative;
+  z-index: 1;
+  padding: var(--space-imagePadding);
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* Stitch dots along tile edges on hover */
+.qp-work-tile::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-accent) 25%, transparent) 0px, color-mix(in srgb, var(--color-accent) 25%, transparent) 3px,
+    transparent 3px, transparent 8px
+  );
+  background-size: 11px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 0, 0 100%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.qp-work-tile:hover::after {
+  opacity: 1;
+}
+
+/* Seam divider between patches */
+.qp-seam-divider {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0.2rem 0 0.4rem;
+  opacity: 0.6;
+}
+.qp-seam-divider span {
+  display: inline-block;
+  height: 0;
+  flex: 1;
+  border-top: 2px dashed color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.qp-seam-divider svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-secondary);
+  opacity: 0.8;
+}
+
+/* Floral border row decorating top of each patch */
+.qp-floral-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-secondary) 30%, transparent) 0px,
+    color-mix(in srgb, var(--color-secondary) 30%, transparent) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+  border-radius: 3px 3px 0 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Fabric weave texture on patches via SVG background */
+.qp-patch {
+  background-image: url("assets/weave.svg");
+  background-repeat: repeat;
+  background-size: 12px 12px;
+}
+
+@media (max-width: 600px) {
+  .qp-root {
+    padding: 0.4rem 0.6rem 2rem;
+  }
+  .qp-patch {
+    margin-inline: 0.35rem;
+    padding: 0.5rem 0.5rem 0.8rem;
+  }
+}

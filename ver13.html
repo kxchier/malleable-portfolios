@@ -3,24 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Art Portfolio — Night Sky</title>
+  <title>Art Portfolio — Signal Tower</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./generated/celestial_scroll/style.css">
+  <link rel="stylesheet" href="./generated/signal_tower/style.css">
   <style>
-    body.view-celestial_scroll .generated-layout-container {
+    body.view-signal_tower .generated-layout-container {
       max-width: none;
       width: 100%;
       min-height: 100vh;
       padding: 0;
     }
-    body.view-celestial_scroll > header {
+    body.view-signal_tower > header {
       position: relative;
       z-index: 1000;
       isolation: isolate;
-      padding-top: 1.5rem;
-      padding-bottom: 1rem;
     }
-    body.view-celestial_scroll #content {
+    body.view-signal_tower #content {
       min-height: 100vh;
       position: relative;
       z-index: 1;
@@ -30,12 +28,13 @@
   <script src="./scripts/loader.js"></script>
   <script src="./scripts/model-loader.js"></script>
   <script src="./scripts/generated-runtime.js"></script>
-  <script src="./generated/celestial_scroll/render.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/signal_tower/render.js"></script>
 </head>
-<body class="view-celestial_scroll">
+<body class="view-signal_tower">
   <header>
     <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
-    <p><a href="./ver1.html">Grid</a><a href="./ver2.html">Clothesline</a><a href="./ver3.html">Desk</a><a href="./ver4.html">Directory</a><a href="./ver5.html">Zine Rack</a><a href="./ver7.html">Aqua City</a><span class="active-view">Night Sky</span><a href="./ver9.html">Card Catalog</a><a href="./edit.html">Edit</a></p>
+    
   </header>
 
   <main class="container generated-layout-container">
@@ -44,22 +43,22 @@
 
   <script>
     window.appData.then(async (data) => {
-      const models = await PortfolioModels.load('celestial_scroll', {
+      const models = await PortfolioModels.load('signal_tower', {
         theme: data.theme,
         contentOverrides: data.content,
         contentModel: data.contentModel,
       });
       if (window.PortfolioContent) {
-        PortfolioContent.applyColorVars(data.theme, 'celestial_scroll');
-        PortfolioContent.applyTypographyVars(data.theme, 'celestial_scroll');
+        PortfolioContent.applyColorVars(data.theme, 'signal_tower');
+        PortfolioContent.applyTypographyVars(data.theme, 'signal_tower');
       }
-      const versionSpacing = data.theme?.versions?.['celestial_scroll']?.spacing || {};
+      const versionSpacing = data.theme?.versions?.['signal_tower']?.spacing || {};
       Object.entries(versionSpacing).forEach(([spacingKey, value]) => {
         document.documentElement.style.setProperty(`--space-${spacingKey}`, value);
       });
       await GeneratedRuntime.mount({
         root: document.getElementById('content'),
-        layoutKey: 'celestial_scroll',
+        layoutKey: 'signal_tower',
         models,
       });
     });

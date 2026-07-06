@@ -1,0 +1,65 @@
+{
+  "id": "quilt_patch",
+  "layout_family": "patchwork_grid",
+  "metaphor": "embroidered_quilt",
+  "visual_language": "vintage textile, stitched seam lines, embroidered floral motifs, fabric weave texture, pastel patchwork blocks",
+  "encounter": "The viewer arrives at a softly lit quilt spread across the page — each collection is a distinct fabric patch bordered by hand-stitched seams. Works appear as embroidered tiles within each patch block.",
+  "intent": "Evoke the warmth and handcraft of a cherished heirloom quilt; every artwork is a thread in the larger textile.",
+  "components": [
+    {
+      "id": "quilt-surface",
+      "role": "background",
+      "description": "Full-page fabric weave texture with stitched grid overlay"
+    },
+    {
+      "id": "patch-block",
+      "role": "collection_container",
+      "description": "A fabric patch bordered by dashed embroidery-stitch seam lines, with a corner floral motif"
+    },
+    {
+      "id": "work-tile",
+      "role": "work_display",
+      "description": "A small quilted tile with fabric mat and stitched border containing the artwork image"
+    },
+    {
+      "id": "seam-divider",
+      "role": "section_separator",
+      "description": "Dashed stitching lines dividing collection patches in the vertical quilt"
+    },
+    {
+      "id": "embroidered-label",
+      "role": "collection_title",
+      "description": "Collection title styled as an embroidered fabric label with floral decorations"
+    }
+  ],
+  "ui_spec": {
+    "editable": [
+      {
+        "entity": "PORTFOLIO",
+        "field": "title",
+        "selector": "[data-text-role='portfolio-title']"
+      },
+      {
+        "entity": "COLLECTION",
+        "field": "title",
+        "selector": "[data-text-role='collection-title']"
+      },
+      {
+        "entity": "COLLECTION",
+        "field": "works",
+        "selector": ".qp-work-tile"
+      },
+      {
+        "entity": "WORK",
+        "field": "images",
+        "selector": ".qp-work-tile img"
+      }
+    ]
+  },
+  "layout_engine": {
+    "type": "vertical_patchwork",
+    "collection_layout": "responsive_patchwork_grid",
+    "work_display": "stitched_tile",
+    "scroll": "vertical page scroll; each collection is a responsive quilt grid"
+  }
+}

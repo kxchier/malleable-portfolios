@@ -9,10 +9,43 @@ window.PaletteColors = (() => {
     { key: 'secondary', label: 'Desk', hint: 'Desk surface color', layout: 'desk' },
   ];
 
+  const GENERIC_SWATCHES = {
+    background: { label: 'Background', hint: 'Page or scene background' },
+    primary: { label: 'Primary', hint: 'Main text and structural lines' },
+    accent: { label: 'Accent', hint: 'Interactive highlights and emphasis' },
+    paper: { label: 'Surface', hint: 'Artwork mats, cards, glass, or object surfaces' },
+    panel: { label: 'Panel', hint: 'Large interface panels, scenery, or containers' },
+    secondary: { label: 'Secondary', hint: 'Secondary material, glow, texture, or detail color' },
+  };
+
+  const LAYOUT_SWATCH_OVERRIDES = {
+    signal_tower: {
+      accent: { label: 'Warning', hint: 'Warning lights and active controls' },
+      paper: { label: 'Glass', hint: 'CRT glass / resolved transmission panels' },
+      panel: { label: 'Console', hint: 'Broadcast console and dark hardware panels' },
+      secondary: { label: 'Signal', hint: 'Phosphor signal glow and tuned indicators' },
+    },
+  };
+
+  const BUILTIN_LAYOUTS = new Set(['grid', 'clothesline', 'desk', 'directory']);
+
+  function swatchForGenerated(key, layoutKey) {
+    const base = SWATCHES.find((swatch) => swatch.key === key) || { key, label: key, hint: '' };
+    return {
+      ...base,
+      ...(GENERIC_SWATCHES[key] || {}),
+      ...(LAYOUT_SWATCH_OVERRIDES[layoutKey]?.[key] || {}),
+      layout: undefined,
+    };
+  }
+
   function forLayout(layoutKey, options = {}) {
     const keys = options.colorKeys;
     if (keys?.length) {
       const allowed = new Set(keys);
+      if (!BUILTIN_LAYOUTS.has(layoutKey)) {
+        return keys.map((key) => swatchForGenerated(key, layoutKey));
+      }
       return SWATCHES.filter((swatch) => allowed.has(swatch.key));
     }
     return SWATCHES.filter((swatch) => !swatch.layout || swatch.layout === layoutKey);

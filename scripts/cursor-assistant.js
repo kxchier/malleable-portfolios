@@ -38,6 +38,9 @@
       };
     }
     if (!modelEl) return null;
+    const parentCollection = modelEl.dataset.modelKind === 'work'
+      ? modelEl.parentElement?.closest('[data-model-kind="collection"]')
+      : null;
     return {
       kind: modelEl.dataset.modelKind,
       path: modelEl.dataset.modelPath,
@@ -47,6 +50,14 @@
       collectionId: modelEl.dataset.collectionId,
       workId: modelEl.dataset.workId,
       presentationId: modelEl.dataset.presentationId || window.__PREVIEW_PRESENTATION_ID__,
+      parentCollection: parentCollection ? {
+        kind: 'collection',
+        path: parentCollection.dataset.modelPath,
+        label: parentCollection.dataset.modelLabel || parentCollection.getAttribute('aria-label') || parentCollection.textContent.trim().slice(0, 48),
+        collectionIndex: parentCollection.dataset.collectionIndex,
+        collectionId: parentCollection.dataset.collectionId,
+        presentationId: parentCollection.dataset.presentationId || window.__PREVIEW_PRESENTATION_ID__,
+      } : undefined,
     };
   }
 
@@ -74,6 +85,12 @@
       return [
         { value: 'this', label: 'this image only' },
         { value: 'all-images', label: 'all images' },
+      ];
+    }
+    if (target?.kind === 'collection') {
+      return [
+        { value: 'this', label: 'this section only' },
+        { value: 'all-sections', label: 'all sections' },
       ];
     }
     return [{ value: 'this', label: 'this only' }];

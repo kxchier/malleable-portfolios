@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — Grand Hotel</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./generated/grand_hotel/style.css">
+  <style>
+    body.view-grand_hotel .generated-layout-container {
+      max-width: none;
+      width: 100%;
+      min-height: 100vh;
+      padding: 0;
+    }
+    body.view-grand_hotel > header {
+      position: relative;
+      z-index: 1000;
+      isolation: isolate;
+    }
+    body.view-grand_hotel #content {
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+  <script src="./scripts/content.js"></script>
+  <script src="./scripts/loader.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/grand_hotel/render.js"></script>
+</head>
+<body class="view-grand_hotel">
+  <header>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+    
+  </header>
+
+  <main class="container generated-layout-container">
+    <div id="content"></div>
+  </main>
+
+  <script>
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('grand_hotel', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
+      });
+      if (window.PortfolioContent) {
+        PortfolioContent.applyColorVars(data.theme, 'grand_hotel');
+        PortfolioContent.applyTypographyVars(data.theme, 'grand_hotel');
+      }
+      const versionSpacing = data.theme?.versions?.['grand_hotel']?.spacing || {};
+      Object.entries(versionSpacing).forEach(([spacingKey, value]) => {
+        document.documentElement.style.setProperty(`--space-${spacingKey}`, value);
+      });
+      await GeneratedRuntime.mount({
+        root: document.getElementById('content'),
+        layoutKey: 'grand_hotel',
+        models,
+      });
+    });
+  </script>
+</body>
+</html>

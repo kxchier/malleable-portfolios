@@ -57,7 +57,13 @@ window.PortfolioContent = (() => {
     'boxShadow',
     'clipPath',
     'filter',
+    'gap',
     'height',
+    'margin',
+    'marginBottom',
+    'marginLeft',
+    'marginRight',
+    'marginTop',
     'maxHeight',
     'maxWidth',
     'objectFit',
@@ -66,6 +72,12 @@ window.PortfolioContent = (() => {
     'outline',
     'overflow',
     'padding',
+    'paddingBottom',
+    'paddingLeft',
+    'paddingRight',
+    'paddingTop',
+    'rowGap',
+    'columnGap',
     'transform',
     'transformOrigin',
     'width',
@@ -210,6 +222,45 @@ window.PortfolioContent = (() => {
     });
   }
 
+  function applyTextAlignmentLayout(el, align) {
+    const normalized = ['left', 'center', 'right'].includes(align) ? align : '';
+    const titleRow = el.closest('.portfolio-title-row');
+
+    el.style.marginLeft = '';
+    el.style.marginRight = '';
+    el.style.alignSelf = '';
+
+    if (titleRow) {
+      titleRow.style.width = '';
+      titleRow.style.justifyContent = '';
+    }
+
+    if (!normalized) return;
+
+    if (normalized === 'center') {
+      el.style.marginLeft = 'auto';
+      el.style.marginRight = 'auto';
+      el.style.alignSelf = 'center';
+    } else if (normalized === 'right') {
+      el.style.marginLeft = 'auto';
+      el.style.marginRight = '0';
+      el.style.alignSelf = 'flex-end';
+    } else {
+      el.style.marginLeft = '0';
+      el.style.marginRight = 'auto';
+      el.style.alignSelf = 'flex-start';
+    }
+
+    if (titleRow) {
+      titleRow.style.width = '100%';
+      titleRow.style.justifyContent = normalized === 'center'
+        ? 'center'
+        : normalized === 'right'
+          ? 'flex-end'
+          : 'flex-start';
+    }
+  }
+
   function applyToElement(el, theme, content, versionKey) {
     const id = el.dataset.textId;
     const role = el.dataset.textRole;
@@ -222,6 +273,7 @@ window.PortfolioContent = (() => {
     TEXT_STYLE_PROPS.forEach((prop) => {
       el.style[prop] = style[prop] || '';
     });
+    applyTextAlignmentLayout(el, style.textAlign);
   }
 
   function styleIdForElement(el) {
@@ -235,6 +287,48 @@ window.PortfolioContent = (() => {
     ELEMENT_STYLE_PROPS.forEach((prop) => {
       if (patch[prop] != null) el.style[prop] = patch[prop];
     });
+  }
+
+  function parseSpacingParts(value) {
+    if (typeof value !== 'string') return null;
+    const parts = value.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length || parts.length > 4) return null;
+    if (parts.length === 1) return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+    if (parts.length === 2) return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+    if (parts.length === 3) return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[1] };
+    return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+  }
+
+  function normalizeCollectionSpacingPatch(patch = {}) {
+    const normalized = { ...patch };
+    const paddingParts = parseSpacingParts(normalized.padding);
+    if (paddingParts) {
+      if (normalized.paddingTop == null && paddingParts.top !== '0') normalized.paddingTop = paddingParts.top;
+      if (normalized.paddingRight == null) normalized.paddingRight = paddingParts.right;
+      if (normalized.paddingBottom == null && paddingParts.bottom !== '0') normalized.paddingBottom = paddingParts.bottom;
+      if (normalized.paddingLeft == null) normalized.paddingLeft = paddingParts.left;
+      delete normalized.padding;
+    }
+
+    const marginParts = parseSpacingParts(normalized.margin);
+    if (marginParts) {
+      if (normalized.marginTop == null && marginParts.top !== '0') normalized.marginTop = marginParts.top;
+      if (normalized.marginBottom == null && marginParts.bottom !== '0') normalized.marginBottom = marginParts.bottom;
+      if (normalized.marginLeft == null) normalized.marginLeft = marginParts.left;
+      if (normalized.marginRight == null) normalized.marginRight = marginParts.right;
+      delete normalized.margin;
+    }
+
+    return normalized;
+  }
+
+  function applySectionSpacingPatch(el, patch = {}) {
+    if (!el || !patch || el.dataset.modelKind !== 'collection') return;
+
+    const hasSectionPadding = ['padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft']
+      .some((prop) => patch[prop] != null);
+    if (hasSectionPadding) el.style.boxSizing = 'border-box';
+
   }
 
   function mergedElementStyle(content, versionKey, id) {
@@ -259,11 +353,28 @@ window.PortfolioContent = (() => {
       });
     }
 
+    const allCollectionStyle = versionStyles.__all_collection__;
+    if (allCollectionStyle) {
+      root.querySelectorAll('[data-model-kind="collection"]').forEach((el) => {
+        const patch = normalizeCollectionSpacingPatch(allCollectionStyle.patch || {});
+        applyStylePatchToElement(el, patch);
+        applySectionSpacingPatch(el, patch);
+        if (Object.keys(allCollectionStyle.imagePatch || {}).length) {
+          const imageTargets = el.matches('img') ? [el] : Array.from(el.querySelectorAll('img'));
+          imageTargets.forEach((img) => applyStylePatchToElement(img, allCollectionStyle.imagePatch));
+        }
+      });
+    }
+
     root.querySelectorAll('[data-model-path], [data-text-id]').forEach((el) => {
       const id = styleIdForElement(el);
       if (!id) return;
       const style = mergedElementStyle(content, versionKey, id);
-      applyStylePatchToElement(el, style.patch);
+      const patch = el.dataset.modelKind === 'collection'
+        ? normalizeCollectionSpacingPatch(style.patch)
+        : style.patch;
+      applyStylePatchToElement(el, patch);
+      applySectionSpacingPatch(el, patch);
       if (Object.keys(style.imagePatch).length) {
         const imageTargets = el.matches('img') ? [el] : Array.from(el.querySelectorAll('img'));
         imageTargets.forEach((img) => applyStylePatchToElement(img, style.imagePatch));

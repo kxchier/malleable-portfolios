@@ -2,16 +2,57 @@
 window.GeneratedRuntime = (() => {
   async function fetchSvgAssets(layoutKey) {
     const assets = {};
+    const known = [
+      'frame.svg',
+      'wall-pattern.svg',
+      'clip.svg',
+      'hook.svg',
+      'moulding.svg',
+      'brass-pull.svg',
+      'cabinet-nameplate.svg',
+      'folder-tab-texture.svg',
+      'index-card-lines.svg',
+      'wood-grain.svg',
+      'butterfly.svg',
+      'flower.svg',
+      'sparkle.svg',
+      'star.svg',
+      'cloud.svg',
+      'cloud-band.svg',
+      'swirl-divider.svg',
+      'creature.svg',
+      'creature2.svg',
+      'fish.svg',
+      'coral.svg',
+      'cityscape.svg',
+      'turbine.svg',
+      'washi-tape.svg',
+      'sketch-frame.svg',
+      'corner-doodle.svg',
+      'leaf.svg',
+      'small-flower.svg',
+      'rack-edge.svg',
+      'spine-texture.svg',
+      'close-icon.svg',
+    ];
+    const files = new Set(known);
     try {
-      const indexRes = await fetch(`./generated/${layoutKey}/assets/`);
-      if (!indexRes.ok) return assets;
+      const indexRes = await fetch(`./generated/${layoutKey}/assets/index.json`);
+      if (indexRes.ok) {
+        const index = await indexRes.json();
+        const listed = Array.isArray(index) ? index : index.files;
+        if (Array.isArray(listed)) {
+          listed.forEach((file) => {
+            if (typeof file === 'string' && file.endsWith('.svg')) files.add(file);
+          });
+        }
+      }
     } catch {
-      return assets;
+      /* optional asset index */
     }
 
-    const known = ['frame.svg', 'wall-pattern.svg', 'clip.svg', 'hook.svg', 'moulding.svg'];
     await Promise.all(
-      known.map(async (file) => {
+      [...files].map(async (file) => {
         try {
           const res = await fetch(`./generated/${layoutKey}/assets/${file}`);
           if (res.ok) assets[file] = await res.text();
@@ -21,6 +62,76 @@ window.GeneratedRuntime = (() => {
       })
     );
     return assets;
+  }
+
+  async function fetchDecorations(layoutKey) {
+    try {
+      const res = await fetch(`./generated/${layoutKey}/assets/decorations.json?ts=${Date.now()}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function mountDecorations(root, assets, decorations) {
+    if (!root || !Array.isArray(decorations) || !decorations.length) return;
+
+    if (!document.getElementById('generated-asset-decoration-styles')) {
+      const style = document.createElement('style');
+      style.id = 'generated-asset-decoration-styles';
+      style.textContent = `
+        .generated-asset-decorations {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 8;
+          overflow: hidden;
+        }
+        .generated-asset-decoration {
+          position: absolute;
+          display: block;
+          width: var(--asset-size, 76px);
+          height: var(--asset-size, 76px);
+          left: var(--asset-x, 12%);
+          top: var(--asset-y, 12%);
+          opacity: var(--asset-opacity, 0.72);
+          color: var(--color-accent);
+          transform: translate(-50%, -50%) rotate(var(--asset-rotate, 0deg));
+          filter: drop-shadow(0 4px 14px color-mix(in srgb, var(--color-primary) 15%, transparent));
+        }
+        .generated-asset-decoration svg {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const host = document.createElement('div');
+    host.className = 'generated-asset-decorations';
+    host.setAttribute('aria-hidden', 'true');
+
+    decorations.forEach((decoration) => {
+      const svg = assets?.[decoration.file];
+      if (!svg) return;
+      const item = document.createElement('span');
+      item.className = 'generated-asset-decoration';
+      item.style.setProperty('--asset-x', `${Number(decoration.x) || 12}%`);
+      item.style.setProperty('--asset-y', `${Number(decoration.y) || 12}%`);
+      item.style.setProperty('--asset-size', `${Math.max(24, Math.min(220, Number(decoration.size) || 76))}px`);
+      item.style.setProperty('--asset-rotate', `${Math.max(-45, Math.min(45, Number(decoration.rotate) || 0))}deg`);
+      item.style.setProperty('--asset-opacity', String(Math.max(0.12, Math.min(1, Number(decoration.opacity) || 0.72))));
+      item.innerHTML = svg;
+      host.appendChild(item);
+    });
+
+    if (host.children.length) {
+      if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
+      root.appendChild(host);
+    }
   }
 
   function buildHelpers(models, versionKey) {
@@ -59,6 +170,34 @@ window.GeneratedRuntime = (() => {
 
       section.appendChild(h2);
       return section;
+    }
+
+    function collectionFrame(collection, collectionIndex, opts = {}) {
+      const frame = document.createElement(opts.tagName || 'section');
+      frame.className = ['generated-collection', opts.className || ''].filter(Boolean).join(' ');
+      frame.dataset.collectionIndex = String(collectionIndex);
+      frame.dataset.modelKind = 'collection';
+      frame.dataset.modelPath = `collections.${collection.originalIndex ?? collectionIndex}`;
+      frame.dataset.collectionId = `collection_${collection.originalIndex ?? collectionIndex}`;
+      frame.dataset.modelLabel = collection.name;
+
+      const h2 = document.createElement('h2');
+      if (collection.originalIndex != null && PC) {
+        const cid = PC.collectionId(collection.originalIndex);
+        h2.dataset.textId = cid;
+        h2.dataset.textRole = 'collection.title';
+        h2.dataset.textFallback = collection.name;
+        h2.textContent = PC.getText(models.contentOverrides, cid, collection.name);
+        const style = PC.styleToCss(
+          PC.getElementStyle(models.theme, models.contentOverrides, cid, 'collection.title', versionKey)
+        );
+        if (style) h2.setAttribute('style', style);
+      } else {
+        h2.textContent = collection.name;
+      }
+
+      frame.appendChild(h2);
+      return frame;
     }
 
     function workTile(imgPath, opts = {}) {
@@ -101,7 +240,7 @@ window.GeneratedRuntime = (() => {
       return assets[name] || '';
     }
 
-    return { collectionSection, workTile, inlineAsset, portfolioTitle };
+    return { collectionSection, collectionFrame, workTile, inlineAsset, portfolioTitle };
   }
 
   function bindCollectionHeading(el, collection, models, versionKey) {
@@ -196,6 +335,25 @@ window.GeneratedRuntime = (() => {
     });
   }
 
+  function promoteCollectionTargetsToVisibleWrappers(root) {
+    root.querySelectorAll('[data-model-kind="collection"]').forEach((section) => {
+      const parent = section.parentElement;
+      if (!parent || parent === root || parent.dataset.modelKind || parent.dataset.textId) return;
+      const directCollectionChildren = Array.from(parent.children)
+        .filter((child) => child.dataset?.modelKind === 'collection');
+      if (directCollectionChildren.length !== 1 || directCollectionChildren[0] !== section) return;
+      const hasVisibleWrapperStyling = parent.classList.length > 0 || parent.dataset.canvasDraggable === 'true';
+      if (!hasVisibleWrapperStyling) return;
+
+      ['collectionIndex', 'modelKind', 'modelPath', 'collectionId', 'modelLabel'].forEach((key) => {
+        if (section.dataset[key] != null) parent.dataset[key] = section.dataset[key];
+        delete section.dataset[key];
+      });
+      parent.classList.add('generated-collection');
+      section.classList.remove('generated-collection');
+    });
+  }
+
   function bindCanvasDrag(root) {
     root.querySelectorAll('[data-canvas-draggable="true"]').forEach((item) => {
       if (item.dataset.canvasBound === '1') return;
@@ -263,7 +421,10 @@ window.GeneratedRuntime = (() => {
     document.querySelectorAll('[class^="view-"]').forEach(() => {});
     document.body.classList.add(`view-${layoutKey}`);
 
-    const assets = await fetchSvgAssets(layoutKey);
+    const [assets, decorations] = await Promise.all([
+      fetchSvgAssets(layoutKey),
+      fetchDecorations(layoutKey),
+    ]);
     const collections = allCollections(resolvedModels.manifest).filter((collection) => {
       const id = window.PortfolioContent?.collectionId(collection.originalIndex) ?? `collection.${collection.originalIndex}`;
       const hiddenIn = resolvedModels.contentOverrides?.visibility?.collections?.[id]?.hiddenIn || [];
@@ -276,6 +437,17 @@ window.GeneratedRuntime = (() => {
     root.dataset.modelPath = `presentations.${layoutKey}`;
     root.dataset.presentationId = layoutKey;
     root.dataset.modelLabel = `${layoutKey} presentation`;
+    const layoutOverrides = resolvedModels.contentOverrides?.layoutOverrides?.[layoutKey] || {};
+    const displayOverride = layoutOverrides.collectionDisplay || '';
+    const materialOverride = layoutOverrides.materialTexture || '';
+    root.dataset.layoutOverride = displayOverride;
+    root.dataset.materialTexture = materialOverride;
+    root.classList.toggle('layout-override-grid', displayOverride === 'grid');
+    root.classList.toggle('layout-override-horizontal', displayOverride === 'horizontal');
+    root.classList.toggle('layout-override-vertical', displayOverride === 'vertical');
+    ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'].forEach((texture) => {
+      root.classList.toggle(`layout-material-${texture}`, materialOverride === texture);
+    });
     layout.mount(root, {
       collections,
       theme: resolvedModels.theme,
@@ -286,11 +458,13 @@ window.GeneratedRuntime = (() => {
       layoutKey,
       versionKey,
     });
+    mountDecorations(root, assets, decorations);
 
     bindGeneratedModelTargets(root);
+    promoteCollectionTargetsToVisibleWrappers(root);
     bindGeneratedText(root, collections, resolvedModels, versionKey);
 
-    root.querySelectorAll('.generated-collection').forEach((section) => {
+    root.querySelectorAll('.generated-collection[data-model-kind="collection"]').forEach((section) => {
       const ci = Number(section.dataset.collectionIndex || section.dataset.modelPath?.split('.')[1] || 0);
       section.querySelectorAll('[data-canvas-draggable="true"]').forEach((tile, wi) => {
         if (tile.dataset.modelKind) return;
@@ -313,6 +487,9 @@ window.GeneratedRuntime = (() => {
         resolvedModels.contentOverrides,
         versionKey
       );
+    }
+    if (window.PortfolioDecorations) {
+      PortfolioDecorations.mount(root, resolvedModels.contentOverrides, layoutKey);
     }
 
     if (document.body.dataset.editMode) {

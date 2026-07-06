@@ -1,0 +1,58 @@
+{
+  "id": "dream_pages",
+  "layout_family": "collage_scroll",
+  "metaphor": "vellum_collage",
+  "visual_language": "Dreamy pastel collage with translucent vellum layering, watercolor wash backgrounds, hand-drawn sketch marks, floating butterfly and star motifs, and handwritten typography",
+  "encounter": "The visitor arrives at a softly glowing page layered like a personal diary — vellum sheets overlap, doodles float, butterflies shimmer, and each collection appears as a hand-framed poster pinned to the dreamy surface.",
+  "intent": "A calming, nostalgic, ethereal browsing experience that feels like leafing through a whimsical illustrated journal.",
+  "components": [
+    {
+      "id": "background_collage",
+      "role": "Layered watercolor wash background with doodle marks and texture",
+      "editable": false
+    },
+    {
+      "id": "floating_motifs",
+      "role": "Animated butterflies, sparkle stars, flowers, and clouds as floating decorations",
+      "editable": false
+    },
+    {
+      "id": "collection_poster",
+      "role": "Hand-drawn framed section poster for each collection",
+      "editable": true
+    },
+    {
+      "id": "work_vellum_card",
+      "role": "Artwork tile with translucent vellum overlay and soft mat",
+      "editable": true
+    },
+    {
+      "id": "sketch_label",
+      "role": "Handwritten collection title label",
+      "editable": true
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO.title": {
+      "editable": true,
+      "role": "display",
+      "element": "h1.dp-portfolio-title"
+    },
+    "COLLECTION.title": {
+      "editable": true,
+      "role": "section_heading"
+    },
+    "COLLECTION.works": {
+      "editable": true
+    },
+    "WORK.images": {
+      "editable": true
+    }
+  },
+  "layout_engine": {
+    "type": "vertical_scroll_collage",
+    "collections": "stacked vertical sections, each with horizontal scroll strip of vellum-matted tiles",
+    "motifs": "floating SVG butterflies, sparkles, clouds, flowers injected at decorative positions",
+    "layering": "CSS z-index stacking of background wash, texture overlay, motif layer, content layer"
+  }
+}

@@ -130,6 +130,92 @@ function validateBundle(bundle) {
   return bundle;
 }
 
+function isHighFidelityReferencePrompt(prompt) {
+  return /REFERENCE_FIDELITY:\s*high/i.test(String(prompt || ''));
+}
+
+function normalizeReferenceImage(referenceImage) {
+  if (!referenceImage || typeof referenceImage !== 'object') return null;
+  const image = String(referenceImage.image || referenceImage.dataUrl || '').trim();
+  const match = image.match(/^data:image\/(png|jpe?g|webp);base64,([a-zA-Z0-9+/=]+)$/);
+  if (!match) return null;
+  const ext = match[1].toLowerCase().replace('jpeg', 'jpg');
+  const bytes = Buffer.from(match[2], 'base64');
+  if (!bytes.length || bytes.length > 4_500_000) return null;
+  return {
+    filename: `reference-image.${ext}`,
+    bytes,
+  };
+}
+
+function extractPromptList(prompt, labels, limit = 12) {
+  const text = String(prompt || '');
+  const items = [];
+  labels.forEach((label) => {
+    const re = new RegExp(`^${label}:\\s*(.+)$`, 'gim');
+    let match;
+    while ((match = re.exec(text))) {
+      match[1]
+        .split(/[,;]+|\s+\|\s+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .forEach((item) => items.push(item));
+    }
+  });
+  return [...new Set(items)].slice(0, limit);
+}
+
+function motifNeedles(motif) {
+  const stop = new Set(['large', 'small', 'soft', 'rough', 'left', 'right', 'upper', 'lower', 'center', 'visible', 'translucent', 'floating', 'hand', 'drawn', 'style', 'motif', 'motifs']);
+  return String(motif || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length >= 4 && !stop.has(word))
+    .flatMap((word) => {
+      const forms = new Set([word]);
+      if (word.endsWith('ies')) forms.add(`${word.slice(0, -3)}y`);
+      if (word.endsWith('s')) forms.add(word.slice(0, -1));
+      return [...forms];
+    });
+}
+
+function validateReferenceFidelityBundle(bundle, prompt, context = {}) {
+  if (!isHighFidelityReferencePrompt(prompt)) return;
+  const errors = [];
+  const reference = context.referenceImageAssetName;
+  const searchable = [
+    bundle.css,
+    bundle.renderScript,
+    JSON.stringify(bundle.presentation || {}),
+    Object.keys(bundle.assets || {}).join(' '),
+    Object.values(bundle.assets || {}).join(' '),
+  ].join('\n').toLowerCase();
+
+  if (reference && !searchable.includes(reference.toLowerCase()) && !searchable.includes('reference-image')) {
+    errors.push(`must use uploaded reference asset via assets/${reference} as a visible underlay or texture`);
+  }
+
+  const motifs = extractPromptList(prompt, ['Required motifs', 'Motif vocabulary'], 14);
+  if (motifs.length) {
+    const matched = motifs.filter((motif) => motifNeedles(motif).some((needle) => searchable.includes(needle)));
+    if (matched.length < Math.min(3, motifs.length)) {
+      errors.push(`must visibly implement at least 3 required motifs (${motifs.slice(0, 6).join(', ')})`);
+    }
+  }
+
+  const materials = extractPromptList(prompt, ['Required materials', 'Material system', 'Must preserve'], 14);
+  if (materials.length) {
+    const materialMatches = materials.filter((material) => motifNeedles(material).some((needle) => searchable.includes(needle)));
+    if (materialMatches.length < Math.min(2, materials.length)) {
+      errors.push(`must implement required material techniques (${materials.slice(0, 5).join(', ')})`);
+    }
+  }
+
+  if (errors.length) throw new Error(`invalid high-fidelity image generation: ${errors.join('; ')}`);
+}
+
 function pickThemeColors(themeColors, colorKeys) {
   return pickThemeColorsForKeys(themeColors, colorKeys);
 }
@@ -192,14 +278,33 @@ function normalizeDesignSpace(point, presentation) {
     y: clamp01(point?.y, clamp01(visual.abstract_to_skeuomorphic ?? 0.35)),
   };
   if (Array.isArray(point?.customAxes)) {
+    const endpointLabel = (axis, side) => {
+      const label = String(side === 'right' ? axis?.rightLabel || '' : axis?.leftLabel || '').trim();
+      if (label) return label;
+      const image = side === 'right' ? axis?.rightImage : axis?.leftImage;
+      if (image && typeof image === 'object') return String(image.fileName || `${side} image reference`).slice(0, 48);
+      return '';
+    };
     normalized.customAxes = point.customAxes
-      .filter((axis) => axis && axis.leftLabel && axis.rightLabel)
+      .filter((axis) => axis && endpointLabel(axis, 'left') && endpointLabel(axis, 'right'))
       .map((axis) => ({
         id: String(axis.id || `${axis.leftLabel}-${axis.rightLabel}`).slice(0, 80),
-        name: String(axis.name || `${axis.leftLabel} to ${axis.rightLabel}`).slice(0, 80),
-        leftLabel: String(axis.leftLabel).slice(0, 48),
-        rightLabel: String(axis.rightLabel).slice(0, 48),
+        name: String(axis.name || `${endpointLabel(axis, 'left')} to ${endpointLabel(axis, 'right')}`).slice(0, 80),
+        leftLabel: endpointLabel(axis, 'left'),
+        rightLabel: endpointLabel(axis, 'right'),
         value: clamp01(axis.value, 0.5),
+        leftImage: axis.leftImage && typeof axis.leftImage === 'object' ? {
+          fileName: String(axis.leftImage.fileName || '').slice(0, 80),
+          summary: String(axis.leftImage.summary || '').slice(0, 240),
+          keywords: Array.isArray(axis.leftImage.keywords) ? axis.leftImage.keywords.map((keyword) => String(keyword).slice(0, 32)).slice(0, 3) : [],
+          palette: Array.isArray(axis.leftImage.palette) ? axis.leftImage.palette.map((color) => String(color).slice(0, 24)).slice(0, 6) : [],
+        } : null,
+        rightImage: axis.rightImage && typeof axis.rightImage === 'object' ? {
+          fileName: String(axis.rightImage.fileName || '').slice(0, 80),
+          summary: String(axis.rightImage.summary || '').slice(0, 240),
+          keywords: Array.isArray(axis.rightImage.keywords) ? axis.rightImage.keywords.map((keyword) => String(keyword).slice(0, 32)).slice(0, 3) : [],
+          palette: Array.isArray(axis.rightImage.palette) ? axis.rightImage.palette.map((color) => String(color).slice(0, 24)).slice(0, 6) : [],
+        } : null,
       }));
   }
   return normalized;
@@ -269,17 +374,7 @@ function escapeHtml(text) {
 }
 
 function buildVersionNav(activeKey, layouts = []) {
-  const links = [
-    ...layouts.map((layout) => ({ label: layout.name, file: layout.file, key: layout.key })),
-    { label: 'Edit', file: 'edit.html' },
-  ];
-  const items = links.map((link) => {
-    if (link.key && link.key === activeKey) {
-      return `<span class="active-view">${escapeHtml(link.label)}</span>`;
-    }
-    return `<a href="./${escapeHtml(link.file)}">${escapeHtml(link.label)}</a>`;
-  }).join('');
-  return `<p>${items}</p>`;
+  return '';
 }
 
 function refreshStaticVersionNavs(layouts = []) {
@@ -329,6 +424,7 @@ function buildShellHtml(key, name, layouts = []) {
   <script src="./scripts/loader.js"></script>
   <script src="./scripts/model-loader.js"></script>
   <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
   <script src="./generated/${key}/render.js"></script>
 </head>
 <body class="view-${key}">
@@ -370,6 +466,7 @@ function buildShellHtml(key, name, layouts = []) {
 
 function writeGeneratedTemplate(bundle, userPrompt, context = {}) {
   const validated = validateBundle(bundle);
+  validateReferenceFidelityBundle(validated, userPrompt, context);
   const baseKey = slugifyKey(validated.key || validated.name);
   const key = uniqueKey(baseKey);
   validated.presentation.id = key;
@@ -390,11 +487,18 @@ function writeGeneratedTemplate(bundle, userPrompt, context = {}) {
   fs.writeFileSync(path.join(dir, 'render.js'), validated.renderScript);
 
   const assets = validated.assets || {};
+  const assetFiles = [];
   Object.entries(assets).forEach(([filename, content]) => {
     const safe = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
     if (!safe.endsWith('.svg')) return;
     fs.writeFileSync(path.join(assetsDir, safe), content);
+    assetFiles.push(safe);
   });
+  if (context.referenceImage?.bytes && context.referenceImageAssetName) {
+    fs.writeFileSync(path.join(assetsDir, context.referenceImageAssetName), context.referenceImage.bytes);
+    assetFiles.push(context.referenceImageAssetName);
+  }
+  fs.writeFileSync(path.join(assetsDir, 'index.json'), JSON.stringify([...new Set(assetFiles)].sort(), null, 2));
 
   const layoutEntry = {
     id,
@@ -408,6 +512,7 @@ function writeGeneratedTemplate(bundle, userPrompt, context = {}) {
     examplePrompt: userPrompt,
     colorKeys,
     designSpace: normalizeDesignSpace(context.designSpace, validated.presentation),
+    referenceImage: context.referenceImageAssetName ? `generated/${key}/assets/${context.referenceImageAssetName}` : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -435,7 +540,13 @@ async function generateTemplate({ apiKey, provider, prompt, context = {} }) {
   const normalizedProvider = normalizeProvider(provider);
   if (!prompt?.trim()) throw new Error('missing prompt');
 
-  const generationContext = { ...context, provider: normalizedProvider };
+  const referenceImage = normalizeReferenceImage(context.referenceImage);
+  const generationContext = {
+    ...context,
+    referenceImage,
+    referenceImageAssetName: referenceImage?.filename || '',
+    provider: normalizedProvider,
+  };
   const raw = await callProvider(apiKey, prompt.trim(), generationContext);
   const { layoutEntry, versionTheme } = writeGeneratedTemplate(raw, prompt.trim(), generationContext);
   console.log(`[generate] created ${layoutEntry.file} (${layoutEntry.key}) — ${layoutEntry.name}`);

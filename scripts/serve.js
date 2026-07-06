@@ -18,8 +18,10 @@
  *   GET  /api/layouts   -> built-in + AI-generated layout registry
  *   POST /api/layouts/delete -> remove a generated layout and its files
  *   POST /api/operation -> selected AI provider: parse cursor request into a local operation
+ *   POST /api/portfolio-operation -> Anthropic: parse page-level sparkle request into safe edits
  *   POST /api/design-axis -> selected AI provider: score layouts on a custom design axis
  *   POST /api/image-design-tokens -> OpenAI vision: extract structured design tokens from an image
+ *   POST /api/assets/generate -> selected AI provider: add decorative SVG assets to a layout
  *   POST /api/generate-questions -> selected AI provider: ask design questions before generation
  *   POST /api/generate  -> selected AI provider: create new layout (presentation + CSS + JS + SVG assets)
  *   GET  /api/status    -> { ok: true } so the frontend can detect the local app
@@ -36,8 +38,10 @@ const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js'
 const { generateTemplate } = require('./generate-template.js');
 const { generateQuestions } = require('./generate-questions.js');
 const { parseCursorOperation } = require('./operation-parser.js');
+const { parsePortfolioOperation } = require('./portfolio-operation-parser.js');
 const { scoreDesignAxis } = require('./design-axis-parser.js');
 const { analyzeImageDesignTokens } = require('./image-design-tokens.js');
+const { generateDecorativeAssets } = require('./asset-generator.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -186,6 +190,49 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (pathname === '/api/portfolio-operation' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const collections = buildCollections();
+      let theme = {};
+      try {
+        theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
+      } catch {
+        // defaults
+      }
+      const layouts = listAllLayouts();
+      const layout = layouts.find((item) => item.key === body.layoutKey || item.presentationId === body.presentationId);
+      let presentation = {};
+      if (layout?.key) {
+        const presentationPath = layout.generated
+          ? path.join(ROOT, 'generated', layout.key, 'presentation.json')
+          : path.join(ROOT, 'presentations', `${layout.key}.json`);
+        try {
+          presentation = JSON.parse(fs.readFileSync(presentationPath, 'utf8'));
+        } catch {
+          presentation = {};
+        }
+      }
+      const result = await parsePortfolioOperation({
+        provider: 'anthropic',
+        prompt: body.prompt,
+        layout,
+        presentation,
+        context: {
+          contentSummary: {
+            collections: collections.map((col) => ({ name: col.name, count: col.images.length })),
+          },
+          theme: body.theme || theme,
+          spacing: body.spacing || theme.spacing || {},
+        },
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[portfolio-operation]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
   if (pathname === '/api/design-axis' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
@@ -212,6 +259,20 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[image-design-tokens]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/assets/generate' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const result = await generateDecorativeAssets({
+        layoutKey: body.layoutKey,
+        prompt: body.prompt,
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[assets/generate]', e.message);
       return sendJSON(res, 400, { error: e.message });
     }
   }
@@ -261,6 +322,7 @@ const server = http.createServer(async (req, res) => {
           accent: theme.colors?.accent,
           background: theme.colors?.background,
           designSpace: body.designSpace,
+          referenceImage: body.referenceImage,
         },
       });
 
