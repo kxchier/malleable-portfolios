@@ -131,6 +131,13 @@ window.PortfolioContent = (() => {
     return fallback;
   }
 
+  function getArrangementTitleForText(content, id, versionKey) {
+    if (!versionKey || !String(id || '').startsWith('collection.')) return null;
+    const match = getArrangement(content, versionKey).collections
+      .find((collection) => collection.id === id);
+    return match?.title || null;
+  }
+
   function getVersionTextStyle(content, id, versionKey) {
     const override = getTextOverride(content, id);
     const versionStyle = override.versions?.[versionKey] || {};
@@ -266,7 +273,7 @@ window.PortfolioContent = (() => {
     const role = el.dataset.textRole;
     if (!id || !role) return;
     const fallback = el.dataset.textFallback || el.textContent;
-    const text = getText(content, id, fallback);
+    const text = getArrangementTitleForText(content, id, versionKey) || getText(content, id, fallback);
     el.textContent = text;
     el.hidden = false;
     const style = getElementStyle(theme, content, id, role, versionKey);
@@ -410,6 +417,123 @@ window.PortfolioContent = (() => {
     return `collection.${index}`;
   }
 
+  function workId(collectionIndex, workIndex) {
+    return `work_${collectionIndex}_${workIndex}`;
+  }
+
+  function sourceCollectionIndex(collectionIdValue) {
+    const match = String(collectionIdValue || '').match(/^collection\.(\d+)$/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function imageBasename(imgPath) {
+    const name = String(imgPath || '').split('/').pop() || 'untitled';
+    return name.replace(/\.[^.]+$/, '');
+  }
+
+  function manifestWorkIndex(manifest) {
+    const works = new Map();
+    (manifest?.collections || []).forEach((collection, collectionIndex) => {
+      (collection.images || []).forEach((image, workIndex) => {
+        const sourceWork = collection.workItems?.[workIndex] || {};
+        const id = sourceWork.id || workId(collectionIndex, workIndex);
+        works.set(id, {
+          ...sourceWork,
+          id,
+          title: sourceWork.title || imageBasename(image),
+          image,
+          images: sourceWork.images || [image],
+          sourceCollectionId: sourceWork.sourceCollectionId || collection.id || collectionId(collectionIndex),
+          sourceCollectionIndex: sourceWork.sourceCollectionIndex ?? collection.originalIndex ?? collectionIndex,
+          sourceWorkIndex: sourceWork.sourceWorkIndex ?? workIndex,
+        });
+      });
+    });
+    return works;
+  }
+
+  function defaultArrangement(manifest) {
+    return {
+      collections: (manifest?.collections || []).map((collection, collectionIndex) => ({
+        id: collectionId(collectionIndex),
+        title: collection.name,
+        works: (collection.images || []).map((_, workIndex) => workId(collectionIndex, workIndex)),
+      })),
+    };
+  }
+
+  function getArrangement(content, versionKey, manifest = null) {
+    const arrangement = content?.arrangements?.[versionKey];
+    if (arrangement?.collections && Array.isArray(arrangement.collections)) return arrangement;
+    return manifest ? defaultArrangement(manifest) : { collections: [] };
+  }
+
+  function normalizeArrangement(content, versionKey, manifest) {
+    const works = manifestWorkIndex(manifest);
+    const arrangement = getArrangement(content, versionKey, manifest);
+    const usedWorks = new Set();
+    const collections = [];
+
+    (arrangement.collections || []).forEach((collection, index) => {
+      const id = String(collection.id || `custom.${versionKey}.${index}`).slice(0, 80);
+      const originalIndex = sourceCollectionIndex(id);
+      const fallbackTitle = originalIndex != null
+        ? manifest?.collections?.[originalIndex]?.name
+        : 'Untitled collection';
+      const workIds = (Array.isArray(collection.works) ? collection.works : [])
+        .map((wid) => String(wid || ''))
+        .filter((wid) => works.has(wid) && !usedWorks.has(wid));
+      workIds.forEach((wid) => usedWorks.add(wid));
+      collections.push({
+        id,
+        title: String(collection.title || fallbackTitle || 'Untitled collection').slice(0, 120),
+        works: workIds,
+      });
+    });
+
+    (manifest?.collections || []).forEach((sourceCollection, collectionIndex) => {
+      const missingWorks = (sourceCollection.images || [])
+        .map((_, workIndex) => workId(collectionIndex, workIndex))
+        .filter((wid) => !usedWorks.has(wid));
+      if (!missingWorks.length) return;
+      const id = collectionId(collectionIndex);
+      const existing = collections.find((collection) => collection.id === id);
+      if (existing) {
+        existing.works.push(...missingWorks);
+      } else {
+        collections.push({
+          id,
+          title: sourceCollection.name,
+          works: missingWorks,
+        });
+      }
+      missingWorks.forEach((wid) => usedWorks.add(wid));
+    });
+
+    return { collections };
+  }
+
+  function applyArrangementToManifest(manifest, content, versionKey) {
+    const works = manifestWorkIndex(manifest);
+    const arrangement = normalizeArrangement(content, versionKey, manifest);
+    return {
+      collections: arrangement.collections.map((collection) => {
+        const originalIndex = sourceCollectionIndex(collection.id);
+        const workItems = collection.works
+          .map((wid) => works.get(wid))
+          .filter(Boolean);
+        return {
+          id: collection.id,
+          name: collection.title,
+          images: workItems.map((work) => work.image),
+          workItems,
+          originalIndex,
+          arrangementCollectionId: collection.id,
+        };
+      }).filter((collection) => collection.images.length || !collection.id.startsWith('collection.')),
+    };
+  }
+
   function defaultContent(manifest) {
     return {
       text: {
@@ -450,6 +574,12 @@ window.PortfolioContent = (() => {
     applyPageText,
     escapeHtml,
     collectionId,
+    workId,
+    manifestWorkIndex,
+    defaultArrangement,
+    getArrangement,
+    normalizeArrangement,
+    applyArrangementToManifest,
     defaultContent,
     mergeContent,
   };

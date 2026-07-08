@@ -20,6 +20,76 @@ function titleFromFilename(filePath) {
   return base.replace(/[_-]+/g, ' ').trim() || base;
 }
 
+function textMetadataPath(imagePath) {
+  const parsed = path.parse(path.join(ROOT, imagePath));
+  return path.join(parsed.dir, `${parsed.name}.txt`);
+}
+
+function normalizeMetadataKey(key) {
+  const normalized = String(key || '').trim().toLowerCase();
+  if (['name', 'title'].includes(normalized)) return 'title';
+  if (['blurb', 'caption', 'description', 'desc', 'context'].includes(normalized)) return 'description';
+  if (['url', 'href', 'link'].includes(normalized)) return 'link';
+  if (['medium', 'media'].includes(normalized)) return 'medium';
+  if (['year', 'date'].includes(normalized)) return 'year';
+  if (['tags', 'tag'].includes(normalized)) return 'tags';
+  return normalized;
+}
+
+function parseWorkMetadata(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return {};
+
+  const metadata = {};
+  const descriptionLines = [];
+  text.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (descriptionLines.length) descriptionLines.push('');
+      return;
+    }
+
+    const match = trimmed.match(/^([A-Za-z][A-Za-z0-9 _-]{0,32})\s*:\s*(.+)$/);
+    if (!match) {
+      descriptionLines.push(line);
+      return;
+    }
+
+    const key = normalizeMetadataKey(match[1]);
+    const value = match[2].trim();
+    if (!value) return;
+    if (key === 'tags') {
+      metadata.tags = value.split(',').map((tag) => tag.trim()).filter(Boolean);
+    } else if (key === 'description') {
+      descriptionLines.push(value);
+    } else if (key === 'link') {
+      if (/^(https?:\/\/|mailto:)/i.test(value)) metadata.link = value;
+    } else if (['title', 'medium', 'year'].includes(key)) {
+      metadata[key] = value;
+    } else {
+      descriptionLines.push(line);
+    }
+  });
+
+  const description = descriptionLines.join('\n').trim();
+  if (description) metadata.description = description;
+  if (!metadata.link) {
+    const linkMatch = text.match(/https?:\/\/\S+/);
+    if (linkMatch) metadata.link = linkMatch[0].replace(/[),.;]+$/, '');
+  }
+  return metadata;
+}
+
+function readWorkMetadata(imagePath) {
+  const filePath = textMetadataPath(imagePath);
+  try {
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return {};
+    return parseWorkMetadata(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
 function readTextOverrides() {
   try {
     const raw = JSON.parse(fs.readFileSync(LEGACY_CONTENT_FILE, 'utf8'));
@@ -37,10 +107,12 @@ function buildContentModel(collections, textOverrides = {}) {
     const titleOverride = textOverrides[`collection.${colIndex}`]?.content;
     const workIds = col.images.map((imagePath, workIndex) => {
       const workId = `work_${colIndex}_${workIndex}`;
+      const metadata = readWorkMetadata(imagePath);
       works.push({
         id: workId,
-        title: titleFromFilename(imagePath),
+        title: metadata.title || titleFromFilename(imagePath),
         images: [imagePath],
+        ...metadata,
       });
       return workId;
     });

@@ -46,8 +46,10 @@ function toManifestFromContent(content) {
   const worksById = Object.fromEntries((content.works || []).map((w) => [w.id, w]));
   return {
     collections: (content.collections || []).map((col) => ({
+      id: col.id,
       name: col.title,
       images: (col.works || []).flatMap((wid) => worksById[wid]?.images || []),
+      workItems: (col.works || []).map((wid) => worksById[wid]).filter(Boolean),
     })),
   };
 }

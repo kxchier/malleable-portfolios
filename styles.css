@@ -175,6 +175,114 @@ h2 {
   z-index: 1;
 }
 
+.has-work-metadata {
+  cursor: default;
+}
+
+.work-metadata {
+  color: var(--color-primary);
+  font-family: var(--font-body-family, system-ui, sans-serif);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  z-index: 2;
+}
+
+.work-metadata-title,
+.work-metadata-description,
+.work-metadata-detail,
+.work-metadata-link {
+  display: block;
+}
+
+.work-metadata-title {
+  font-weight: 700;
+}
+
+.work-metadata-description {
+  margin-top: 0.25rem;
+}
+
+.work-metadata-detail {
+  margin-top: 0.35rem;
+  color: color-mix(in srgb, var(--color-primary) 68%, transparent);
+  font-size: 0.75rem;
+}
+
+.work-metadata-link {
+  margin-top: 0.4rem;
+  color: var(--color-accent);
+}
+
+.grid-item.metadata-below,
+.scroll-item.metadata-below,
+.desk-item.metadata-below,
+.layout-override-work.metadata-below,
+.generated-work-tile.metadata-below {
+  aspect-ratio: auto;
+  height: auto;
+  overflow: visible;
+}
+
+.grid-item.metadata-below img,
+.scroll-item.metadata-below img,
+.desk-item.metadata-below img,
+.layout-override-work.metadata-below img,
+.generated-work-tile.metadata-below img {
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.metadata-below .work-metadata {
+  padding-top: 0.65rem;
+}
+
+.grid-item.metadata-side,
+.scroll-item.metadata-side,
+.desk-item.metadata-side,
+.layout-override-work.metadata-side,
+.generated-work-tile.metadata-side {
+  aspect-ratio: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: min(calc(var(--space-artSize) * 1.75), 92vw);
+  min-width: min(calc(var(--space-artSize) * 1.75), 92vw);
+  height: auto;
+  overflow: visible;
+}
+
+.grid-item.metadata-side img,
+.scroll-item.metadata-side img,
+.desk-item.metadata-side img,
+.layout-override-work.metadata-side img,
+.generated-work-tile.metadata-side img {
+  width: var(--space-artSize);
+  min-width: var(--space-artSize);
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.metadata-side .work-metadata {
+  align-self: center;
+  min-width: 8rem;
+}
+
+[data-metadata-display="side"] .grid-view,
+[data-metadata-display="side"] .layout-override-works--grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--space-artSize) * 1.75)), max-content));
+}
+
+.metadata-overlay .work-metadata {
+  position: absolute;
+  inset: auto var(--space-imagePadding) var(--space-imagePadding);
+  padding: 0.7rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-paper) 84%, transparent);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-shadow) 14%, transparent);
+  backdrop-filter: blur(10px);
+}
+
 /* ---- Grid View ---- */
 .gallery-section {
   position: relative;

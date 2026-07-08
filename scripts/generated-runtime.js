@@ -136,6 +136,80 @@ window.GeneratedRuntime = (() => {
 
   function buildHelpers(models, versionKey) {
     const PC = window.PortfolioContent;
+    const metadataDisplay = ['none', 'below', 'side', 'overlay'].includes(
+      models.contentOverrides?.layoutOverrides?.[versionKey]?.metadataDisplay
+    )
+      ? models.contentOverrides.layoutOverrides[versionKey].metadataDisplay
+      : 'none';
+    const workByKey = new Map();
+    const workByImage = new Map();
+    (models.manifest?.collections || []).forEach((collection, fallbackCollectionIndex) => {
+      const collectionIndex = collection.originalIndex ?? fallbackCollectionIndex;
+      (collection.workItems || []).forEach((work, fallbackWorkIndex) => {
+        const sourceCollectionIndex = work?.sourceCollectionIndex ?? collectionIndex;
+        const sourceWorkIndex = work?.sourceWorkIndex ?? fallbackWorkIndex;
+        workByKey.set(`${sourceCollectionIndex}:${sourceWorkIndex}`, work);
+        (work?.images || []).forEach((imagePath) => workByImage.set(imagePath, work));
+      });
+    });
+
+    function workMetadata(work, fallbackTitle) {
+      if (!work) return null;
+      const title = String(work.title || fallbackTitle || '').trim();
+      const description = String(work.description || '').trim();
+      const medium = String(work.medium || '').trim();
+      const year = String(work.year || '').trim();
+      const link = String(work.link || '').trim();
+      if (!title && !description && !medium && !year && !link) return null;
+      return { title, description, medium, year, link };
+    }
+
+    function safeMetadataHref(link) {
+      return /^(https?:\/\/|mailto:)/i.test(String(link || '')) ? link : '';
+    }
+
+    function appendWorkMetadata(tile, metadata) {
+      if (!metadata || metadataDisplay === 'none') return;
+      const caption = document.createElement('figcaption');
+      caption.className = `work-metadata work-metadata--${metadataDisplay}`;
+      const hasBodyText = Boolean(metadata.description || metadata.medium || metadata.year || metadata.link);
+
+      if (metadata.title && hasBodyText) {
+        const title = document.createElement('strong');
+        title.className = 'work-metadata-title';
+        title.textContent = metadata.title;
+        caption.appendChild(title);
+      }
+      if (metadata.description) {
+        const desc = document.createElement('span');
+        desc.className = 'work-metadata-description';
+        desc.textContent = metadata.description;
+        caption.appendChild(desc);
+      }
+      const details = [metadata.medium, metadata.year].filter(Boolean).join(' · ');
+      if (details) {
+        const detail = document.createElement('span');
+        detail.className = 'work-metadata-detail';
+        detail.textContent = details;
+        caption.appendChild(detail);
+      }
+      if (metadata.link) {
+        const href = safeMetadataHref(metadata.link);
+        if (href) {
+          const link = document.createElement('a');
+          link.className = 'work-metadata-link';
+          link.href = href;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'Link';
+          caption.appendChild(link);
+        }
+      }
+      if (caption.children.length) {
+        tile.classList.add('has-work-metadata', `metadata-${metadataDisplay}`);
+        tile.appendChild(caption);
+      }
+    }
 
     function portfolioTitle() {
       const placeholder = document.createElement('span');
@@ -233,6 +307,10 @@ window.GeneratedRuntime = (() => {
       image.classList.add('generated-artwork-image');
       image.onerror = () => image.remove();
       tile.appendChild(image);
+      const inferredWork = opts.work
+        || workByImage.get(imgPath)
+        || workByKey.get(`${opts.collectionIndex ?? 0}:${opts.workIndex ?? 0}`);
+      appendWorkMetadata(tile, workMetadata(inferredWork, opts.label || opts.alt));
       return tile;
     }
 
@@ -401,8 +479,8 @@ window.GeneratedRuntime = (() => {
 
   function allCollections(manifest) {
     return manifest.collections.map((col, index) => ({
-      id: window.PortfolioContent?.collectionId(index) ?? `collection_${index}`,
-      originalIndex: index,
+      id: col.id || (window.PortfolioContent?.collectionId(col.originalIndex ?? index) ?? `collection_${index}`),
+      originalIndex: col.originalIndex ?? index,
       ...col,
     }));
   }
@@ -442,6 +520,7 @@ window.GeneratedRuntime = (() => {
     const materialOverride = layoutOverrides.materialTexture || '';
     root.dataset.layoutOverride = displayOverride;
     root.dataset.materialTexture = materialOverride;
+    root.dataset.metadataDisplay = layoutOverrides.metadataDisplay || 'none';
     root.classList.toggle('layout-override-grid', displayOverride === 'grid');
     root.classList.toggle('layout-override-horizontal', displayOverride === 'horizontal');
     root.classList.toggle('layout-override-vertical', displayOverride === 'vertical');

@@ -69,171 +69,195 @@
   "works": [
     {
       "id": "work_0_0",
-      "title": "00",
+      "title": "Fall Chilly 00",
       "images": [
         "Art/Comics/Fall Chilly/00.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_1",
-      "title": "01",
+      "title": "Fall Chilly 01",
       "images": [
         "Art/Comics/Fall Chilly/01.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_2",
-      "title": "02",
+      "title": "Fall Chilly 02",
       "images": [
         "Art/Comics/Fall Chilly/02.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_3",
-      "title": "03",
+      "title": "Fall Chilly 03",
       "images": [
         "Art/Comics/Fall Chilly/03.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_4",
-      "title": "04",
+      "title": "Fall Chilly 04",
       "images": [
         "Art/Comics/Fall Chilly/04.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_5",
-      "title": "05",
+      "title": "Fall Chilly 05",
       "images": [
         "Art/Comics/Fall Chilly/05.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_6",
-      "title": "06",
+      "title": "Fall Chilly 06",
       "images": [
         "Art/Comics/Fall Chilly/06.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_7",
-      "title": "07",
+      "title": "Fall Chilly 07",
       "images": [
         "Art/Comics/Fall Chilly/07.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_8",
-      "title": "08",
+      "title": "Fall Chilly 08",
       "images": [
         "Art/Comics/Fall Chilly/08.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_0_9",
-      "title": "09",
+      "title": "Fall Chilly 09",
       "images": [
         "Art/Comics/Fall Chilly/09.jpg"
-      ]
+      ],
+      "description": "A page from the Fall Chilly comic."
     },
     {
       "id": "work_1_0",
-      "title": "OBJECT PERMANENCE01",
+      "title": "Object Permanence 01",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE01.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_1",
-      "title": "OBJECT PERMANENCE02",
+      "title": "Object Permanence 02",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE02.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_2",
-      "title": "OBJECT PERMANENCE03",
+      "title": "Object Permanence 03",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE03.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_3",
-      "title": "OBJECT PERMANENCE04",
+      "title": "Object Permanence 04",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE04.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_4",
-      "title": "OBJECT PERMANENCE05",
+      "title": "Object Permanence 05",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE05.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_5",
-      "title": "OBJECT PERMANENCE06",
+      "title": "Object Permanence 06",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE06.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_6",
-      "title": "OBJECT PERMANENCE07",
+      "title": "Object Permanence 07",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE07.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_1_7",
-      "title": "OBJECT PERMANENCE08",
+      "title": "Object Permanence 08",
       "images": [
         "Art/Comics/vanishing/OBJECT_PERMANENCE08.jpg"
-      ]
+      ],
+      "description": "A page from the Object Permanence comic."
     },
     {
       "id": "work_2_0",
       "title": "Doodlezone",
       "images": [
         "Art/VTubers/Doodlezone_.jpg"
-      ]
+      ],
+      "description": "A character artwork sample."
     },
     {
       "id": "work_2_1",
       "title": "Kyle",
       "images": [
         "Art/VTubers/Kyle.jpg"
-      ]
+      ],
+      "description": "A character artwork sample."
     },
     {
       "id": "work_2_2",
-      "title": "Mouseydog1",
+      "title": "Mouseydog 1",
       "images": [
         "Art/VTubers/Mouseydog1.png"
-      ]
+      ],
+      "description": "A character artwork sample."
     },
     {
       "id": "work_2_3",
       "title": "Quinn",
       "images": [
         "Art/VTubers/Quinn.jpg"
-      ]
+      ],
+      "description": "A character artwork sample."
     },
     {
       "id": "work_2_4",
       "title": "Yin",
       "images": [
         "Art/VTubers/Yin_.jpg"
-      ]
+      ],
+      "description": "A character artwork sample."
     },
     {
       "id": "work_3_0",
       "title": "IMG 8506",
       "images": [
         "Art/photography/IMG_8506.jpg"
-      ]
+      ],
+      "description": "A photography sample."
     }
   ]
 }

@@ -4,8 +4,10 @@ window.PortfolioModels = (() => {
     const worksById = Object.fromEntries((content.works || []).map((w) => [w.id, w]));
     return {
       collections: (content.collections || []).map((col) => ({
+        id: col.id,
         name: col.title,
         images: (col.works || []).flatMap((wid) => worksById[wid]?.images || []),
+        workItems: (col.works || []).map((wid) => worksById[wid]).filter(Boolean),
       })),
     };
   }
@@ -73,6 +75,10 @@ window.PortfolioModels = (() => {
       ? PortfolioContent.mergeContent(rawContentOverrides, manifest)
       : rawContentOverrides;
 
+    if (window.PortfolioContent && presentationId) {
+      manifest = PortfolioContent.applyArrangementToManifest(manifest, contentOverrides, presentationId);
+    }
+
     return {
       schema,
       content,
@@ -97,11 +103,17 @@ window.PortfolioModels = (() => {
     const works = [];
     const collections = (manifest.collections || []).map((col, colIndex) => {
       const workIds = (col.images || []).map((imagePath, workIndex) => {
-        const workId = `work_${colIndex}_${workIndex}`;
+        const sourceWork = col.workItems?.[workIndex] || {};
+        const workId = sourceWork.id || `work_${colIndex}_${workIndex}`;
         works.push({
           id: workId,
-          title: imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || workId,
+          title: sourceWork.title || imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || workId,
           images: [imagePath],
+          ...(sourceWork.description ? { description: sourceWork.description } : {}),
+          ...(sourceWork.medium ? { medium: sourceWork.medium } : {}),
+          ...(sourceWork.year ? { year: sourceWork.year } : {}),
+          ...(sourceWork.link ? { link: sourceWork.link } : {}),
+          ...(sourceWork.tags ? { tags: sourceWork.tags } : {}),
         });
         return workId;
       });

@@ -45,8 +45,8 @@ Allowed operation types:
    { "type": "spacing", "gridGap": "32px", "artSize": "220px", "imagePadding": "12px" }
 
 4. layoutOverride
-   Use for changing how works scroll or arrange inside the current presentation.
-   { "type": "layoutOverride", "collectionDisplay": "grid" | "horizontal" | "vertical", "materialTexture": "textured" | "wood" | "paper" | "fabric" | "metal" | "glass" }
+   Use for changing how works scroll or arrange inside the current presentation, or whether artwork metadata is visible.
+   { "type": "layoutOverride", "collectionDisplay": "grid" | "horizontal" | "vertical", "materialTexture": "textured" | "wood" | "paper" | "fabric" | "metal" | "glass", "metadataDisplay": "none" | "below" | "side" | "overlay" }
 
 5. elementStylePatch
    Use for broad safe CSS style changes to all artworks/work tiles or all collection sections.
@@ -66,6 +66,7 @@ Rules:
 - For requests that are only about colors, palette, mood, style, aesthetic, vibe, or art-direction words like "Wes Anderson" or "vintage colors", return colorPatch and optionally typographyPatch. Do NOT return decorativeAssets unless the user explicitly asks for visible objects, motifs, drawings, stickers, icons, ornaments, doodles, or background art.
 - Prefer decorativeAssets for background art/motifs. Do not invent SVG yourself here; summarize what the asset generator should draw.
 - Prefer layoutOverride for scrolling/layout requests. Horizontal means side-scrolling/carousel/row. Vertical means stacked/list. Grid means tile/masonry/quilt-like overview.
+- Prefer layoutOverride.metadataDisplay for requests to show/hide artwork captions, blurbs, image context, names, or links from metadata text files. Use below, side, overlay, or none.
 - Prefer spacing for "larger art", "smaller thumbnails", or explicitly changing the gap/space between images/items/works.
 - Do NOT use spacing.gridGap for collection/section side margins, outside spacing, or breathing room around collection containers; gridGap is the top interface gap slider between images/items.
 - For requests about collection/section side margins, outside spacing, or breathing room around each collection container, return elementStylePatch with scope "all-sections" and marginLeft/marginRight. This changes the visible section's outside spacing.

@@ -7,7 +7,7 @@ window.PortfolioInspect = (() => {
     { id: 'theme', label: 'Theme' },
   ];
 
-  function mergeContentForInspect(contentModel, contentOverrides) {
+  function mergeContentForInspect(contentModel, contentOverrides, versionKey = '') {
     if (!contentModel) return null;
     const copy = JSON.parse(JSON.stringify(contentModel));
     const text = contentOverrides?.text || {};
@@ -21,6 +21,23 @@ window.PortfolioInspect = (() => {
       const override = text[`collection.${i}`]?.content;
       if (override != null) col.title = override;
     });
+
+    if (window.PortfolioModels && window.PortfolioContent && versionKey) {
+      const manifest = PortfolioModels.toManifestView(copy);
+      const arranged = PortfolioContent.applyArrangementToManifest(manifest, contentOverrides, versionKey);
+      const worksByImage = new Map();
+      (copy.works || []).forEach((work) => {
+        (work.images || []).forEach((image) => worksByImage.set(image, work));
+      });
+      copy.collections = arranged.collections.map((collection) => ({
+        id: collection.id,
+        title: collection.name,
+        works: (collection.workItems || [])
+          .map((item) => worksByImage.get(item.image)?.id || item.id)
+          .filter(Boolean),
+      }));
+      copy.portfolio.collections = copy.collections.map((collection) => collection.id);
+    }
 
     return copy;
   }
@@ -177,7 +194,7 @@ window.PortfolioInspect = (() => {
     async function resolveTabData(tabId) {
       const state = getState();
       if (tabId === 'content') {
-        return mergeContentForInspect(state.contentModel, state.contentOverrides);
+        return mergeContentForInspect(state.contentModel, state.contentOverrides, state.presentationId);
       }
       if (tabId === 'presentation') {
         const id = state.presentationId || 'grid';

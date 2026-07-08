@@ -1,0 +1,2 @@
+title: Mouseydog 1
+blurb: A character artwork sample.

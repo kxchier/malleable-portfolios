@@ -3,6 +3,7 @@ let currentVersion = 1;
 let editedTheme = {};
 let editedContent = { text: {} };
 let contentModel = null;
+let sourceManifest = null;
 let inspectController = null;
 let previewIframe = null;
 let previewResizeObserver = null;
@@ -21,6 +22,7 @@ const DESIGN_SCAFFOLD_MARKER = 'Design-space scaffold:';
 const DESIGN_DIRECTION_MARKER = 'Design direction:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
 const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
+const METADATA_DISPLAY_VALUES = ['none', 'below', 'side', 'overlay'];
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
 let designSpacePointSelected = false;
 let customDesignAxes = [];
@@ -32,11 +34,13 @@ let pendingGenerateAnswers = [];
 let pendingGenerateReady = false;
 let openAssetAssistant = () => {};
 let cursorUndoSnapshot = null;
+let collectionWorkDrag = null;
 
 async function initEditMode() {
   if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
 
   const { manifest, theme, content, contentModel: loadedContent } = await window.appData;
+  sourceManifest = manifest;
   contentModel = loadedContent;
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
@@ -60,20 +64,22 @@ async function initEditMode() {
   document.documentElement.style.setProperty('--space-artSize', artSizePx + 'px');
   document.getElementById('art-size-display').textContent = artSizePx + 'px';
   syncSpacingControlsForCurrentVersion();
+  syncMetadataDisplayControl();
 
   applyLayoutMetadata();
   renderVersionButtons();
   setupGridGapListener();
   setupArtSizeListener();
+  setupMetadataDisplayListener();
   setupPaletteDrag();
   setupPreview();
+  setupCollectionArranger();
   setupTextEditBridge();
   setupCursorUndoToast();
   setupAssetAssistant();
   setupDesignDirectionCard();
   setupAI();
   setupDeleteLayout();
-  setupPublish();
   setupCreatePanel();
   setupDeviceToggle();
   setupInspectModel();
@@ -188,6 +194,16 @@ function syncSpacingControlsForCurrentVersion() {
   if (artSizeDisplay) artSizeDisplay.textContent = artSize + 'px';
 }
 
+function getCurrentMetadataDisplay() {
+  const value = editedContent.layoutOverrides?.[getCurrentVersionKey()]?.metadataDisplay;
+  return METADATA_DISPLAY_VALUES.includes(value) ? value : 'none';
+}
+
+function syncMetadataDisplayControl() {
+  const select = document.getElementById('metadata-display');
+  if (select) select.value = getCurrentMetadataDisplay();
+}
+
 function getCurrentVersionColors() {
   return getVersionColorsForKey(getCurrentVersionKey());
 }
@@ -237,7 +253,9 @@ function syncEditChromeAfterLocalEdit() {
   syncPaletteVisibility();
   syncPaletteSwatches();
   syncSpacingControlsForCurrentVersion();
+  syncMetadataDisplayControl();
   renderVersionButtons();
+  renderCollectionArranger();
   syncDeleteLayoutButton();
   syncPreviewReferenceChip();
   refreshInspectModel();
@@ -791,7 +809,8 @@ function validatePortfolioOperations(rawOperations, fallback) {
       const next = { type: 'layoutOverride', versionKey: fallback.versionKey };
       if (LAYOUT_DISPLAY_VALUES.includes(operation.collectionDisplay)) next.collectionDisplay = operation.collectionDisplay;
       if (MATERIAL_TEXTURE_VALUES.includes(operation.materialTexture)) next.materialTexture = operation.materialTexture;
-      if (next.collectionDisplay || next.materialTexture) operations.push(next);
+      if (METADATA_DISPLAY_VALUES.includes(operation.metadataDisplay)) next.metadataDisplay = operation.metadataDisplay;
+      if (next.collectionDisplay || next.materialTexture || next.metadataDisplay) operations.push(next);
       return;
     }
 
@@ -1025,6 +1044,7 @@ function applyPortfolioOperation(operation) {
     const overrides = ensureLayoutOverrides(versionKey);
     if (operation.collectionDisplay) overrides.collectionDisplay = operation.collectionDisplay;
     if (operation.materialTexture) overrides.materialTexture = operation.materialTexture;
+    if (operation.metadataDisplay) overrides.metadataDisplay = operation.metadataDisplay;
     return true;
   }
 
@@ -1136,6 +1156,7 @@ function selectVersion(versionId, { renderMap = true } = {}) {
     b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
   });
   syncSpacingControlsForCurrentVersion();
+  syncMetadataDisplayControl();
   if (renderMap) {
     renderDesignSpace();
   } else {
@@ -1149,6 +1170,7 @@ function selectVersion(versionId, { renderMap = true } = {}) {
   syncDeleteLayoutButton();
   syncPreviewReferenceChip();
   updatePreview();
+  renderCollectionArranger();
   refreshInspectModel();
 }
 
@@ -3290,23 +3312,6 @@ function setupAI() {
   });
 }
 
-function setupPublish() {
-  const modal = document.getElementById('publish-modal');
-  const result = document.getElementById('publish-result');
-  const open = () => { result.hidden = true; modal.hidden = false; };
-  const close = () => { modal.hidden = true; };
-
-  document.getElementById('publish-btn').addEventListener('click', open);
-  document.getElementById('publish-cancel').addEventListener('click', close);
-  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
-
-  document.getElementById('publish-confirm').addEventListener('click', () => {
-    const url = document.getElementById('publish-url-text').textContent;
-    result.hidden = false;
-    result.textContent = `[Mock] Pushed to main. Your site will be live at ${url} in ~1 min.`;
-  });
-}
-
 function syncPaletteVisibility() {
   renderPaletteForLayout?.();
 }
@@ -3566,10 +3571,420 @@ function setupArtSizeListener() {
   });
 }
 
+function setupMetadataDisplayListener() {
+  const select = document.getElementById('metadata-display');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const value = METADATA_DISPLAY_VALUES.includes(select.value) ? select.value : 'none';
+    const overrides = ensureLayoutOverrides(getCurrentVersionKey());
+    if (value === 'none') delete overrides.metadataDisplay;
+    else overrides.metadataDisplay = value;
+    patchPreview({ remount: true });
+    refreshInspectModel();
+  });
+}
+
 function getEditedGridGapPx() {
   const slider = document.getElementById('grid-gap');
   if (slider) return parseInt(slider.value, 10) || 24;
   return parseSpacingPx(editedTheme.spacing?.gridGap);
+}
+
+function ensureArrangements() {
+  if (!editedContent.arrangements) editedContent.arrangements = {};
+  return editedContent.arrangements;
+}
+
+function currentArrangement() {
+  return PortfolioContent.normalizeArrangement(editedContent, getCurrentVersionKey(), sourceManifest);
+}
+
+function setCurrentArrangement(arrangement) {
+  const arrangements = ensureArrangements();
+  arrangements[getCurrentVersionKey()] = PortfolioContent.normalizeArrangement(
+    { arrangements: { [getCurrentVersionKey()]: arrangement } },
+    getCurrentVersionKey(),
+    sourceManifest
+  );
+}
+
+function moveArrayItem(items, fromIndex, toIndex) {
+  if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= items.length) return items;
+  const next = items.slice();
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(Math.max(0, Math.min(next.length, toIndex)), 0, item);
+  return next;
+}
+
+function applyArrangementEdit(mutator) {
+  const arrangement = currentArrangement();
+  mutator(arrangement);
+  setCurrentArrangement(arrangement);
+  renderCollectionArranger();
+  patchPreview({ remount: true });
+  refreshInspectModel();
+}
+
+function collectionHiddenInCurrentVersion(collectionId) {
+  const hiddenIn = editedContent.visibility?.collections?.[collectionId]?.hiddenIn || [];
+  return hiddenIn.includes(getCurrentPresentationId());
+}
+
+function setCollectionHiddenInCurrentVersion(collectionId, hidden) {
+  ensureContentVisibility();
+  const presentationId = getCurrentPresentationId();
+  if (!editedContent.visibility.collections[collectionId]) {
+    editedContent.visibility.collections[collectionId] = { hiddenIn: [] };
+  }
+  const hiddenIn = editedContent.visibility.collections[collectionId].hiddenIn || [];
+  editedContent.visibility.collections[collectionId].hiddenIn = hidden
+    ? Array.from(new Set([...hiddenIn, presentationId]))
+    : hiddenIn.filter((id) => id !== presentationId);
+  renderCollectionArranger();
+  patchPreview({ remount: true });
+  refreshInspectModel();
+}
+
+function workPreviewLabel(work) {
+  return work?.title || String(work?.image || '').split('/').pop()?.replace(/\.[^.]+$/, '') || 'Untitled';
+}
+
+function collectionVisibilityIcon(hidden) {
+  if (hidden) {
+    return `
+      <svg class="collection-eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3l18 18" />
+        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+        <path d="M9.4 5.4A9.4 9.4 0 0 1 12 5c5 0 8.5 4.4 9.5 6.3a1.5 1.5 0 0 1 0 1.4 16.2 16.2 0 0 1-2.2 3" />
+        <path d="M6.5 6.9A16.1 16.1 0 0 0 2.5 11.3a1.5 1.5 0 0 0 0 1.4C3.5 14.6 7 19 12 19c1.1 0 2.1-.2 3-.6" />
+      </svg>
+    `;
+  }
+  return `
+    <svg class="collection-eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2.5 11.3a1.5 1.5 0 0 0 0 1.4C3.5 14.6 7 19 12 19s8.5-4.4 9.5-6.3a1.5 1.5 0 0 0 0-1.4C20.5 9.4 17 5 12 5s-8.5 4.4-9.5 6.3Z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </svg>
+  `;
+}
+
+function clearCollectionWorkDropState() {
+  document.querySelectorAll('.collection-work-list.is-drop-target').forEach((el) => {
+    el.classList.remove('is-drop-target');
+  });
+  document.querySelectorAll('.collection-work-chip.is-insert-target').forEach((el) => {
+    el.classList.remove('is-insert-target');
+  });
+}
+
+function collectionDropTargetFromPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const list = el?.closest?.('.collection-work-list');
+  if (!list) return null;
+  const collectionIndex = Number(list.dataset.collectionIndex);
+  if (!Number.isFinite(collectionIndex)) return null;
+  const chip = el.closest?.('.collection-work-chip');
+  const beforeId = chip?.dataset.workId || null;
+  return { list, collectionIndex, beforeId };
+}
+
+function autoScrollCollectionsList(y) {
+  const list = document.getElementById('collections-list');
+  if (!list) return;
+  const rect = list.getBoundingClientRect();
+  const edge = 58;
+  if (y < rect.top + edge) {
+    list.scrollTop -= Math.ceil((rect.top + edge - y) / 6);
+  } else if (y > rect.bottom - edge) {
+    list.scrollTop += Math.ceil((y - (rect.bottom - edge)) / 6);
+  }
+}
+
+function updateCollectionWorkDrag(x, y) {
+  if (!collectionWorkDrag) return;
+  const { ghost, offsetX, offsetY } = collectionWorkDrag;
+  ghost.style.transform = `translate(${Math.round(x - offsetX)}px, ${Math.round(y - offsetY)}px)`;
+  autoScrollCollectionsList(y);
+  clearCollectionWorkDropState();
+  const target = collectionDropTargetFromPoint(x, y);
+  collectionWorkDrag.target = target;
+  if (!target) return;
+  target.list.classList.add('is-drop-target');
+  if (target.beforeId && target.beforeId !== collectionWorkDrag.workId) {
+    target.list.querySelector(`[data-work-id="${CSS.escape(target.beforeId)}"]`)?.classList.add('is-insert-target');
+  }
+}
+
+function finishCollectionWorkDrag({ commit = true } = {}) {
+  if (!collectionWorkDrag) return;
+  const drag = collectionWorkDrag;
+  collectionWorkDrag = null;
+  drag.sourceChip.classList.remove('is-dragging');
+  try {
+    drag.sourceChip.releasePointerCapture?.(drag.pointerId);
+  } catch {
+    // Pointer capture may already be gone if the chip was re-rendered.
+  }
+  drag.ghost.remove();
+  document.body.classList.remove('collection-work-dragging');
+  clearCollectionWorkDropState();
+
+  const target = drag.target;
+  if (!commit || !target) return;
+  if (target.beforeId === drag.workId) return;
+  const beforeId = target.beforeId === drag.workId ? null : target.beforeId;
+  applyArrangementEdit((draft) => {
+    draft.collections.forEach((candidate) => {
+      candidate.works = (candidate.works || []).filter((wid) => wid !== drag.workId);
+    });
+    const destination = draft.collections[target.collectionIndex];
+    if (!destination) return;
+    const beforeIndex = beforeId ? destination.works.indexOf(beforeId) : -1;
+    if (beforeIndex >= 0) destination.works.splice(beforeIndex, 0, drag.workId);
+    else destination.works.push(drag.workId);
+  });
+}
+
+function startCollectionWorkDrag(event, chip) {
+  if (event.button != null && event.button !== 0) return;
+  event.preventDefault();
+  const rect = chip.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'collection-work-drag-ghost';
+  ghost.style.width = `${Math.round(rect.width)}px`;
+  ghost.innerHTML = chip.innerHTML;
+  document.body.appendChild(ghost);
+
+  collectionWorkDrag = {
+    workId: chip.dataset.workId,
+    sourceCollectionIndex: Number(chip.closest('.collection-work-list')?.dataset.collectionIndex),
+    sourceChip: chip,
+    pointerId: event.pointerId,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+    ghost,
+    target: null,
+  };
+  chip.classList.add('is-dragging');
+  chip.setPointerCapture?.(event.pointerId);
+  document.body.classList.add('collection-work-dragging');
+  updateCollectionWorkDrag(event.clientX, event.clientY);
+}
+
+function renderCollectionArranger() {
+  const panel = document.getElementById('collections-panel');
+  const list = document.getElementById('collections-list');
+  if (!panel || !list || panel.hidden || !sourceManifest || !window.PortfolioContent) return;
+
+  const layout = getLayout(currentVersion);
+  const subtitle = document.getElementById('collections-panel-subtitle');
+
+  const arrangement = currentArrangement();
+  const workLookup = PortfolioContent.manifestWorkIndex(sourceManifest);
+  const totalWorks = arrangement.collections.reduce((sum, collection) => sum + (collection.works?.length || 0), 0);
+  if (subtitle) subtitle.textContent = `${layout?.name || 'This'} site version · ${arrangement.collections.length} collections · ${totalWorks} works`;
+  list.innerHTML = '';
+
+  arrangement.collections.forEach((collection, collectionIndex) => {
+    const card = document.createElement('section');
+    card.className = 'collection-arrange-card';
+    card.draggable = true;
+    card.dataset.collectionIndex = String(collectionIndex);
+    const hidden = collectionHiddenInCurrentVersion(collection.id);
+    card.classList.toggle('is-hidden', hidden);
+
+    card.addEventListener('dragstart', (event) => {
+      if (event.target.closest('input,button,.collection-work-chip')) return;
+      event.dataTransfer.setData('application/x-collection-index', String(collectionIndex));
+      event.dataTransfer.effectAllowed = 'move';
+      card.classList.add('is-dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('is-dragging'));
+    card.addEventListener('dragover', (event) => {
+      if (!Array.from(event.dataTransfer.types || []).includes('application/x-collection-index')) return;
+      event.preventDefault();
+      card.classList.add('is-drop-target');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('is-drop-target'));
+    card.addEventListener('drop', (event) => {
+      const raw = event.dataTransfer.getData('application/x-collection-index');
+      if (raw === '') return;
+      event.preventDefault();
+      card.classList.remove('is-drop-target');
+      const fromIndex = Number(raw);
+      applyArrangementEdit((draft) => {
+        draft.collections = moveArrayItem(draft.collections, fromIndex, collectionIndex);
+      });
+    });
+
+    const head = document.createElement('div');
+    head.className = 'collection-arrange-head';
+
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'collection-arrange-handle';
+    dragHandle.textContent = '::';
+    dragHandle.setAttribute('aria-hidden', 'true');
+
+    const input = document.createElement('input');
+    input.className = 'collection-title-input';
+    input.value = collection.title;
+    input.setAttribute('aria-label', 'Collection title for this site');
+    const commitTitle = () => {
+      applyArrangementEdit((draft) => {
+        if (draft.collections[collectionIndex]) {
+          draft.collections[collectionIndex].title = input.value.trim() || 'Untitled collection';
+        }
+      });
+    };
+    input.addEventListener('change', commitTitle);
+    input.addEventListener('blur', commitTitle);
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      commitTitle();
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'collection-remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.title = collection.works.length
+      ? 'Move works out before removing this collection'
+      : 'Remove collection';
+    removeBtn.disabled = collection.works.length > 0;
+    removeBtn.addEventListener('click', () => {
+      applyArrangementEdit((draft) => {
+        draft.collections.splice(collectionIndex, 1);
+      });
+    });
+
+    const count = document.createElement('span');
+    count.className = 'collection-work-count';
+    count.textContent = `${collection.works.length}`;
+    count.title = `${collection.works.length} work${collection.works.length === 1 ? '' : 's'}`;
+
+    const visibilityBtn = document.createElement('button');
+    visibilityBtn.type = 'button';
+    visibilityBtn.className = 'collection-visibility-btn';
+    visibilityBtn.classList.toggle('is-hidden', hidden);
+    visibilityBtn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+    visibilityBtn.setAttribute('aria-label', hidden ? 'Show collection in this site' : 'Hide collection in this site');
+    visibilityBtn.title = hidden ? 'Show in this site' : 'Hide in this site';
+    visibilityBtn.innerHTML = collectionVisibilityIcon(hidden);
+    visibilityBtn.addEventListener('click', () => {
+      setCollectionHiddenInCurrentVersion(collection.id, !collectionHiddenInCurrentVersion(collection.id));
+    });
+
+    head.append(dragHandle, input, count, visibilityBtn, removeBtn);
+
+    const works = document.createElement('div');
+    works.className = 'collection-work-list';
+    works.dataset.collectionIndex = String(collectionIndex);
+    works.addEventListener('dragover', (event) => {
+      if (!Array.from(event.dataTransfer.types || []).includes('application/x-work-id')) return;
+      event.preventDefault();
+      works.classList.add('is-drop-target');
+    });
+    works.addEventListener('dragleave', () => works.classList.remove('is-drop-target'));
+    works.addEventListener('drop', (event) => {
+      const workId = event.dataTransfer.getData('application/x-work-id');
+      if (!workId) return;
+      event.preventDefault();
+      works.classList.remove('is-drop-target');
+      const beforeId = event.target.closest('.collection-work-chip')?.dataset.workId || null;
+      applyArrangementEdit((draft) => {
+        draft.collections.forEach((candidate) => {
+          candidate.works = (candidate.works || []).filter((wid) => wid !== workId);
+        });
+        const target = draft.collections[collectionIndex];
+        if (!target) return;
+        const beforeIndex = beforeId ? target.works.indexOf(beforeId) : -1;
+        if (beforeIndex >= 0) target.works.splice(beforeIndex, 0, workId);
+        else target.works.push(workId);
+      });
+    });
+
+    collection.works.forEach((workId) => {
+      const work = workLookup.get(workId);
+      if (!work) return;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'collection-work-chip';
+      chip.draggable = false;
+      chip.dataset.workId = workId;
+      chip.title = work.image;
+      chip.innerHTML = `
+        <img src="${PortfolioContent.escapeHtml(work.image)}" alt="">
+        <span>${PortfolioContent.escapeHtml(workPreviewLabel(work))}</span>
+      `;
+      chip.addEventListener('pointerdown', (event) => startCollectionWorkDrag(event, chip));
+      chip.addEventListener('pointermove', (event) => {
+        if (collectionWorkDrag?.sourceChip === chip) updateCollectionWorkDrag(event.clientX, event.clientY);
+      });
+      chip.addEventListener('pointerup', () => {
+        if (collectionWorkDrag?.sourceChip === chip) finishCollectionWorkDrag({ commit: true });
+      });
+      chip.addEventListener('pointercancel', () => {
+        if (collectionWorkDrag?.sourceChip === chip) finishCollectionWorkDrag({ commit: false });
+      });
+      works.appendChild(chip);
+    });
+
+    if (!collection.works.length) {
+      const empty = document.createElement('p');
+      empty.className = 'collection-empty';
+      empty.textContent = 'Drop artwork here.';
+      works.appendChild(empty);
+    }
+
+    card.append(head, works);
+    list.appendChild(card);
+  });
+}
+
+function setupCollectionArranger() {
+  const panel = document.getElementById('collections-panel');
+  const openBtn = document.getElementById('collections-btn');
+  const closeBtn = document.getElementById('collections-close');
+  const addBtn = document.getElementById('collections-add');
+  const resetBtn = document.getElementById('collections-reset');
+  if (!panel || !openBtn) return;
+
+  panel.addEventListener('wheel', (event) => event.stopPropagation(), { passive: true });
+  panel.addEventListener('touchmove', (event) => event.stopPropagation(), { passive: true });
+  window.addEventListener('pointermove', (event) => {
+    if (collectionWorkDrag) updateCollectionWorkDrag(event.clientX, event.clientY);
+  }, true);
+  window.addEventListener('pointerup', () => finishCollectionWorkDrag({ commit: true }), true);
+  window.addEventListener('pointercancel', () => finishCollectionWorkDrag({ commit: false }), true);
+  window.addEventListener('mouseup', () => finishCollectionWorkDrag({ commit: true }), true);
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    openBtn.classList.toggle('active', open);
+    openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) renderCollectionArranger();
+  };
+
+  openBtn.addEventListener('click', () => setOpen(panel.hidden));
+  closeBtn?.addEventListener('click', () => setOpen(false));
+  addBtn?.addEventListener('click', () => {
+    applyArrangementEdit((draft) => {
+      draft.collections.push({
+        id: `custom.${getCurrentVersionKey()}.${Date.now().toString(36)}`,
+        title: 'New collection',
+        works: [],
+      });
+    });
+  });
+  resetBtn?.addEventListener('click', () => {
+    const arrangements = ensureArrangements();
+    delete arrangements[getCurrentVersionKey()];
+    if (Object.keys(arrangements).length === 0) delete editedContent.arrangements;
+    renderCollectionArranger();
+    patchPreview({ remount: true });
+    refreshInspectModel();
+  });
 }
 
 function setupPreview() {
@@ -3669,6 +4084,7 @@ function updatePreview() {
   iframe.style.width = desktopPreview ? `${previewWidth}px` : '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';
+  iframe.style.background = getCurrentVersionColors().background || DEFAULT_THEME_COLORS.background;
   if (desktopPreview) {
     iframe.style.transformOrigin = 'top left';
   }
@@ -3740,6 +4156,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const layoutViewClass = `view-${layout.key}`;
   const directoryViewClass = layout.key === 'directory' ? ' view-directory' : '';
   const previewViewClass = `${layoutViewClass}${directoryViewClass}`;
+  const previewBackground = previewColors.background || DEFAULT_THEME_COLORS.background;
   const editMode = options.editMode !== false;
   const enableAssistant = editMode && options.enableAssistant !== false;
   const editScripts = editMode
@@ -3949,8 +4366,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     PortfolioRender.renderCollections(
       previewRoot,
       models.manifest.collections.map((col, index) => ({
-        id: PortfolioContent.collectionId(index),
-        originalIndex: index,
+        id: col.id || PortfolioContent.collectionId(col.originalIndex ?? index),
+        originalIndex: col.originalIndex ?? index,
         ...col,
       })),
       models
@@ -3991,8 +4408,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     PortfolioRender.renderCollections(
       previewRoot,
       models.manifest.collections.map((col, index) => ({
-        id: PortfolioContent.collectionId(index),
-        originalIndex: index,
+        id: col.id || PortfolioContent.collectionId(col.originalIndex ?? index),
+        originalIndex: col.originalIndex ?? index,
         ...col,
       })),
       models
@@ -4029,6 +4446,15 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       --space-gridGap: ${previewSpacing.gridGap};
       --space-artSize: ${previewSpacing.artSize || '190px'};
       --space-imagePadding: ${previewSpacing.imagePadding || '0.75rem'};
+    }
+    html {
+      min-height: 100%;
+      background: ${previewBackground};
+      overscroll-behavior: none;
+    }
+    body {
+      background: ${previewBackground};
+      overscroll-behavior: none;
     }
     ${directoryInlineStyles}
     ${generatedInlineStyles}

@@ -21,6 +21,12 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    Art/VTubers/Kyle.jpg
    Art/Comics/Fall Chilly/00.jpg     →  collection "Comics / Fall Chilly"
    ```
+   To add optional metadata for an image, place a same-name `.txt` file beside it:
+   ```
+   Art/VTubers/Kyle.jpg
+   Art/VTubers/Kyle.txt
+   ```
+   The text file can be plain blurb text, or key/value lines like `title: Kyle`, `blurb: Character portrait`, `link: https://...`, `medium: Digital`, `year: 2026`, and `tags: portrait, vtuber`. In the editor toolbar, use **Metadata** to display this text hidden, below the image, beside the image, or overlaid on it for each site version.
 
 3. Build the content model (optional if using the local server — Save rebuilds automatically):
    ```bash

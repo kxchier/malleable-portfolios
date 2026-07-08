@@ -7,7 +7,8 @@
         "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
         "title": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
         "artist": { "type": "PNTR", "target": "ARTIST" },
-        "collections": { "type": "ARRY", "itemType": "PNTR", "target": "COLLECTION" }
+        "collections": { "type": "ARRY", "itemType": "PNTR", "target": "COLLECTION" },
+        "arrangements": { "type": "ARRY", "itemType": "PNTR", "target": "SITE_ARRANGEMENT", "optional": true }
       }
     },
     "ARTIST": {
@@ -37,9 +38,26 @@
         "medium": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
         "year": { "type": "SVAL", "dataType": "number", "function": "display", "optional": true },
         "description": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
+        "link": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
         "tags": { "type": "ARRY", "itemType": "SVAL", "optional": true },
         "status": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true },
         "visibility": { "type": "SVAL", "dataType": "string", "function": "display", "optional": true }
+      }
+    },
+    "SITE_ARRANGEMENT": {
+      "description": "Per-site display curation: ordered display collections that point at existing works",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "presentation": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "collections": { "type": "ARRY", "itemType": "PNTR", "target": "DISPLAY_COLLECTION" }
+      }
+    },
+    "DISPLAY_COLLECTION": {
+      "description": "A site-specific collection label and ordered list of existing works",
+      "attributes": {
+        "id": { "type": "SVAL", "dataType": "string", "function": "privateIdentifier" },
+        "title": { "type": "SVAL", "dataType": "string", "function": "publicIdentifier" },
+        "works": { "type": "ARRY", "itemType": "PNTR", "target": "WORK" }
       }
     }
   },

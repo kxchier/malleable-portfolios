@@ -17,10 +17,10 @@
         <h1>Edit Mode</h1>
         <div class="edit-controls">
           <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
+          <button id="collections-btn" class="ghost-btn collections-toggle-btn" type="button">Collections</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
           <button id="save-btn">Save Changes</button>
           <button id="preview-btn">Preview</button>
-          <button id="publish-btn" class="publish-btn">Publish to GitHub ↑</button>
         </div>
       </div>
     </div>
@@ -125,6 +125,15 @@
         <input type="range" id="art-size" min="120" max="320" value="190">
         <span id="art-size-display">190px</span>
       </div>
+      <div class="preview-gap metadata-display-control" title="Show text metadata saved beside artwork">
+        <label for="metadata-display">Metadata</label>
+        <select id="metadata-display">
+          <option value="none">Hidden</option>
+          <option value="below">Below</option>
+          <option value="side">Side</option>
+          <option value="overlay">Overlay</option>
+        </select>
+      </div>
       <div class="device-toggle">
         <button id="device-desktop" class="device-btn active">Desktop</button>
         <button id="device-mobile" class="device-btn">Mobile</button>
@@ -152,31 +161,26 @@
         <button id="asset-review-undo" type="button">Undo</button>
         <button id="asset-review-apply" type="button">Apply</button>
       </div>
+      <aside id="collections-panel" class="collections-panel" hidden aria-label="Collections for this site">
+        <div class="collections-panel-head">
+          <div>
+            <h2>Site collections</h2>
+            <p id="collections-panel-subtitle">This site version</p>
+          </div>
+          <button id="collections-close" class="asset-assistant-icon" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="collections-panel-actions">
+          <button id="collections-add" class="ghost-btn" type="button">Add collection</button>
+          <button id="collections-reset" class="ghost-btn" type="button">Reset version</button>
+        </div>
+        <div id="collections-list" class="collections-list"></div>
+      </aside>
     </section>
     </div>
 
     <aside id="inspect-panel" class="inspect-panel" hidden aria-label="Model inspector">
     </aside>
   </main>
-
-  <!-- Publish flow (mocked) -->
-  <div id="publish-modal" class="modal-overlay" hidden>
-    <div class="modal">
-      <h2>Publish to GitHub <span class="mock-tag">mock</span></h2>
-      <p>This will freeze your work into static files and push them to your repo:</p>
-      <ul class="publish-steps">
-        <li>Write <code>ver1.html</code>, <code>ver2.html</code>, <code>ver3.html</code>, <code>manifest.json</code>, <code>theme.json</code>, <code>content.json</code></li>
-        <li><code>git add . &amp;&amp; git commit -m "Update portfolio"</code></li>
-        <li><code>git push origin main</code> → GitHub Actions deploys</li>
-      </ul>
-      <p class="publish-url">Your live site:<br><code id="publish-url-text">https://you.github.io/art-portfolio/</code></p>
-      <div class="modal-actions">
-        <button id="publish-cancel" class="ghost-btn">Cancel</button>
-        <button id="publish-confirm" class="publish-btn">Publish</button>
-      </div>
-      <p id="publish-result" class="publish-result" hidden></p>
-    </div>
-  </div>
 
   <div id="asset-assistant-modal" class="modal-overlay asset-assistant-modal" hidden>
     <form class="modal asset-assistant-card" id="asset-assistant-form">
