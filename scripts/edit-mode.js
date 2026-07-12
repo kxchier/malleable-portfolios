@@ -23,6 +23,7 @@ const DESIGN_DIRECTION_MARKER = 'Design direction:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
 const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
 const METADATA_DISPLAY_VALUES = ['none', 'below', 'side', 'overlay'];
+const SOCIAL_PROTOTYPE_VALUES = ['none', 'likes', 'comments', 'likes-comments', 'notes', 'all'];
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
 let designSpacePointSelected = false;
 let customDesignAxes = [];
@@ -65,12 +66,14 @@ async function initEditMode() {
   document.getElementById('art-size-display').textContent = artSizePx + 'px';
   syncSpacingControlsForCurrentVersion();
   syncMetadataDisplayControl();
+  syncSocialPrototypeControl();
 
   applyLayoutMetadata();
   renderVersionButtons();
   setupGridGapListener();
   setupArtSizeListener();
   setupMetadataDisplayListener();
+  setupSocialPrototypeListener();
   setupPaletteDrag();
   setupPreview();
   setupCollectionArranger();
@@ -204,6 +207,16 @@ function syncMetadataDisplayControl() {
   if (select) select.value = getCurrentMetadataDisplay();
 }
 
+function getCurrentSocialPrototypeMode() {
+  const value = editedContent.layoutOverrides?.[getCurrentVersionKey()]?.socialPrototype;
+  return SOCIAL_PROTOTYPE_VALUES.includes(value) ? value : 'none';
+}
+
+function syncSocialPrototypeControl() {
+  const select = document.getElementById('social-prototype');
+  if (select) select.value = getCurrentSocialPrototypeMode();
+}
+
 function getCurrentVersionColors() {
   return getVersionColorsForKey(getCurrentVersionKey());
 }
@@ -254,6 +267,7 @@ function syncEditChromeAfterLocalEdit() {
   syncPaletteSwatches();
   syncSpacingControlsForCurrentVersion();
   syncMetadataDisplayControl();
+  syncSocialPrototypeControl();
   renderVersionButtons();
   renderCollectionArranger();
   syncDeleteLayoutButton();
@@ -810,7 +824,8 @@ function validatePortfolioOperations(rawOperations, fallback) {
       if (LAYOUT_DISPLAY_VALUES.includes(operation.collectionDisplay)) next.collectionDisplay = operation.collectionDisplay;
       if (MATERIAL_TEXTURE_VALUES.includes(operation.materialTexture)) next.materialTexture = operation.materialTexture;
       if (METADATA_DISPLAY_VALUES.includes(operation.metadataDisplay)) next.metadataDisplay = operation.metadataDisplay;
-      if (next.collectionDisplay || next.materialTexture || next.metadataDisplay) operations.push(next);
+      if (SOCIAL_PROTOTYPE_VALUES.includes(operation.socialPrototype)) next.socialPrototype = operation.socialPrototype;
+      if (next.collectionDisplay || next.materialTexture || next.metadataDisplay || next.socialPrototype) operations.push(next);
       return;
     }
 
@@ -1045,6 +1060,7 @@ function applyPortfolioOperation(operation) {
     if (operation.collectionDisplay) overrides.collectionDisplay = operation.collectionDisplay;
     if (operation.materialTexture) overrides.materialTexture = operation.materialTexture;
     if (operation.metadataDisplay) overrides.metadataDisplay = operation.metadataDisplay;
+    if (operation.socialPrototype) overrides.socialPrototype = operation.socialPrototype;
     return true;
   }
 
@@ -1157,6 +1173,7 @@ function selectVersion(versionId, { renderMap = true } = {}) {
   });
   syncSpacingControlsForCurrentVersion();
   syncMetadataDisplayControl();
+  syncSocialPrototypeControl();
   if (renderMap) {
     renderDesignSpace();
   } else {
@@ -3579,6 +3596,19 @@ function setupMetadataDisplayListener() {
     const overrides = ensureLayoutOverrides(getCurrentVersionKey());
     if (value === 'none') delete overrides.metadataDisplay;
     else overrides.metadataDisplay = value;
+    patchPreview({ remount: true });
+    refreshInspectModel();
+  });
+}
+
+function setupSocialPrototypeListener() {
+  const select = document.getElementById('social-prototype');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const value = SOCIAL_PROTOTYPE_VALUES.includes(select.value) ? select.value : 'none';
+    const overrides = ensureLayoutOverrides(getCurrentVersionKey());
+    if (value === 'none') delete overrides.socialPrototype;
+    else overrides.socialPrototype = value;
     patchPreview({ remount: true });
     refreshInspectModel();
   });

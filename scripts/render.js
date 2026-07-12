@@ -684,6 +684,12 @@ window.PortfolioRender = (() => {
     if (window.PortfolioDecorations) {
       PortfolioDecorations.mount(root, contentOverrides, presentation.id);
     }
+    if (window.PortfolioSocialPrototype) {
+      PortfolioSocialPrototype.mount(root, {
+        presentationId: presentation.id,
+        mode: contentOverrides?.layoutOverrides?.[presentation.id]?.socialPrototype || 'none',
+      });
+    }
   }
 
   function allCollections(manifest) {

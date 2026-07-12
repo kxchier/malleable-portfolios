@@ -28,6 +28,8 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    ```
    The text file can be plain blurb text, or key/value lines like `title: Kyle`, `blurb: Character portrait`, `link: https://...`, `medium: Digital`, `year: 2026`, and `tags: portrait, vtuber`. In the editor toolbar, use **Metadata** to display this text hidden, below the image, beside the image, or overlaid on it for each site version.
 
+   The portfolio also includes a lightweight **social interaction prototype**: sample likes, comment notes, and page sticky notes can render in the browser to show artists what social feedback could feel like. It is **Off by default**; in the editor toolbar, use **Social** to choose All, Likes, Comments, Likes + comments, Page notes, or Off for each site version. These interactions are demo-only and are not stored or sent anywhere.
+
 3. Build the content model (optional if using the local server — Save rebuilds automatically):
    ```bash
    node scripts/build-content.js

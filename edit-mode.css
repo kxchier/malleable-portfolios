@@ -904,7 +904,8 @@
   accent-color: var(--ed-text);
 }
 
-.metadata-display-control select {
+.metadata-display-control select,
+.social-prototype-control select {
   max-width: 6.5rem;
   padding: 0.28rem 1.45rem 0.28rem 0.5rem;
   border: 1px solid var(--ed-line);
@@ -913,6 +914,10 @@
   color: var(--ed-text);
   font: inherit;
   font-size: 0.74rem;
+}
+
+.social-prototype-control select {
+  max-width: 8.4rem;
 }
 
 #grid-gap-display,

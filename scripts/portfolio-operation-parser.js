@@ -45,8 +45,8 @@ Allowed operation types:
    { "type": "spacing", "gridGap": "32px", "artSize": "220px", "imagePadding": "12px" }
 
 4. layoutOverride
-   Use for changing how works scroll or arrange inside the current presentation, or whether artwork metadata is visible.
-   { "type": "layoutOverride", "collectionDisplay": "grid" | "horizontal" | "vertical", "materialTexture": "textured" | "wood" | "paper" | "fabric" | "metal" | "glass", "metadataDisplay": "none" | "below" | "side" | "overlay" }
+   Use for changing how works scroll or arrange inside the current presentation, whether artwork metadata is visible, or which prototype social interactions are shown.
+   { "type": "layoutOverride", "collectionDisplay": "grid" | "horizontal" | "vertical", "materialTexture": "textured" | "wood" | "paper" | "fabric" | "metal" | "glass", "metadataDisplay": "none" | "below" | "side" | "overlay", "socialPrototype": "none" | "likes" | "comments" | "likes-comments" | "notes" | "all" }
 
 5. elementStylePatch
    Use for broad safe CSS style changes to all artworks/work tiles or all collection sections.
@@ -67,6 +67,7 @@ Rules:
 - Prefer decorativeAssets for background art/motifs. Do not invent SVG yourself here; summarize what the asset generator should draw.
 - Prefer layoutOverride for scrolling/layout requests. Horizontal means side-scrolling/carousel/row. Vertical means stacked/list. Grid means tile/masonry/quilt-like overview.
 - Prefer layoutOverride.metadataDisplay for requests to show/hide artwork captions, blurbs, image context, names, or links from metadata text files. Use below, side, overlay, or none.
+- Prefer layoutOverride.socialPrototype for requests to show/hide prototype social features. Use likes for only like buttons, comments for per-work comments, likes-comments for both, notes for page sticky notes only, all for everything, and none/off for no social prototype.
 - Prefer spacing for "larger art", "smaller thumbnails", or explicitly changing the gap/space between images/items/works.
 - Do NOT use spacing.gridGap for collection/section side margins, outside spacing, or breathing room around collection containers; gridGap is the top interface gap slider between images/items.
 - For requests about collection/section side margins, outside spacing, or breathing room around each collection container, return elementStylePatch with scope "all-sections" and marginLeft/marginRight. This changes the visible section's outside spacing.

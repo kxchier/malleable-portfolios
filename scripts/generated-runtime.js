@@ -570,6 +570,12 @@ window.GeneratedRuntime = (() => {
     if (window.PortfolioDecorations) {
       PortfolioDecorations.mount(root, resolvedModels.contentOverrides, layoutKey);
     }
+    if (window.PortfolioSocialPrototype) {
+      PortfolioSocialPrototype.mount(root, {
+        presentationId: layoutKey,
+        mode: layoutOverrides.socialPrototype || 'none',
+      });
+    }
 
     if (document.body.dataset.editMode) {
       bindCanvasDrag(root);

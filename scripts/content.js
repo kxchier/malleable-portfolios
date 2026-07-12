@@ -584,3 +584,188 @@ window.PortfolioContent = (() => {
     mergeContent,
   };
 })();
+
+window.PortfolioSocialPrototype = (() => {
+  const MODES = ['none', 'likes', 'comments', 'likes-comments', 'notes', 'all'];
+  const SAMPLE_COMMENTS = ['i love this!', 'so pretty :0', 'woah :3'];
+
+  const PAGE_NOTES = [
+    { x: 8, y: 16, text: 'Prototype: visitors could leave a note here.' },
+    { x: 72, y: 24, text: 'Artist-facing demo: likes and comments are not saved.' },
+    { x: 58, y: 76, text: 'Notes could become critique, guestbook, or commission interest.' },
+  ];
+
+  function hash(value) {
+    return String(value || '').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  }
+
+  function countFor(workId) {
+    return 3 + (hash(workId) % 28);
+  }
+
+  function commentsFor(label, workId) {
+    return [{
+      author: 'Visitor',
+      body: SAMPLE_COMMENTS[hash(workId || label) % SAMPLE_COMMENTS.length],
+    }];
+  }
+
+  function removeExisting(root) {
+    root.querySelectorAll('.social-prototype-actions, .social-prototype-panel, .social-prototype-notes').forEach((el) => el.remove());
+    root.querySelectorAll('.has-social-prototype').forEach((el) => el.classList.remove('has-social-prototype'));
+    delete root.dataset.socialPrototype;
+  }
+
+  function normalizeMode(mode) {
+    return MODES.includes(mode) ? mode : 'none';
+  }
+
+  function modeAllows(mode, feature) {
+    if (mode === 'all') return true;
+    if (feature === 'likes') return mode === 'likes' || mode === 'likes-comments';
+    if (feature === 'comments') return mode === 'comments' || mode === 'likes-comments';
+    if (feature === 'notes') return mode === 'notes';
+    return false;
+  }
+
+  function closePanels(root) {
+    root.querySelectorAll('.social-prototype-panel').forEach((panel) => panel.remove());
+  }
+
+  function openPanel(root, tile, workId, label) {
+    closePanels(root);
+    const panel = document.createElement('aside');
+    panel.className = 'social-prototype-panel';
+    panel.setAttribute('aria-label', 'Prototype comments');
+
+    const title = document.createElement('div');
+    title.className = 'social-prototype-panel-title';
+    title.textContent = label || 'Artwork feedback';
+
+    const badge = document.createElement('span');
+    badge.className = 'social-prototype-badge';
+    badge.textContent = 'Prototype only';
+
+    const list = document.createElement('div');
+    list.className = 'social-prototype-comments';
+    commentsFor(label, workId).forEach((comment) => {
+      const item = document.createElement('p');
+      item.className = 'social-prototype-comment';
+      item.innerHTML = `<strong>${PortfolioContent.escapeHtml(comment.author)}</strong> ${PortfolioContent.escapeHtml(comment.body)}`;
+      list.appendChild(item);
+    });
+
+    const form = document.createElement('form');
+    form.className = 'social-prototype-form';
+    form.innerHTML = `
+      <input type="text" placeholder="Leave a sample note" aria-label="Sample note">
+      <button type="submit">Add</button>
+    `;
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const input = form.querySelector('input');
+      const body = String(input?.value || '').trim();
+      if (!body) return;
+      const item = document.createElement('p');
+      item.className = 'social-prototype-comment';
+      item.innerHTML = `<strong>You</strong> ${PortfolioContent.escapeHtml(body)}`;
+      list.appendChild(item);
+      input.value = '';
+    });
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'social-prototype-close';
+    close.setAttribute('aria-label', 'Close prototype comments');
+    close.textContent = '×';
+    close.addEventListener('click', () => panel.remove());
+
+    panel.append(close, title, badge, list, form);
+    tile.appendChild(panel);
+  }
+
+  function mountWorkControls(root, mode) {
+    const tiles = Array.from(root.querySelectorAll('[data-model-kind="work"]'))
+      .filter((tile) => tile.querySelector('img') && !tile.closest('.directory-tree'));
+    const showLikes = modeAllows(mode, 'likes');
+    const showComments = modeAllows(mode, 'comments');
+    if (!showLikes && !showComments) return;
+
+    tiles.forEach((tile) => {
+      if (tile.querySelector('.social-prototype-actions')) return;
+      const workId = tile.dataset.workId || `${tile.dataset.collectionIndex || 0}_${tile.dataset.workIndex || 0}`;
+      const label = tile.dataset.modelLabel || 'Artwork';
+      tile.classList.add('has-social-prototype');
+
+      const actions = document.createElement('div');
+      actions.className = 'social-prototype-actions';
+
+      if (showLikes) {
+        const like = document.createElement('button');
+        like.type = 'button';
+        like.className = 'social-prototype-like';
+        like.setAttribute('aria-pressed', 'false');
+        like.innerHTML = `<span aria-hidden="true">♡</span><span>${countFor(workId)}</span>`;
+        like.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const pressed = like.getAttribute('aria-pressed') === 'true';
+          like.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+          like.firstElementChild.textContent = pressed ? '♡' : '♥';
+          like.lastElementChild.textContent = String(countFor(workId) + (pressed ? 0 : 1));
+        });
+        actions.appendChild(like);
+      }
+
+      if (showComments) {
+        const comments = document.createElement('button');
+        comments.type = 'button';
+        comments.className = 'social-prototype-comment-btn';
+        comments.textContent = 'Notes';
+        comments.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openPanel(root, tile, workId, label);
+        });
+        actions.appendChild(comments);
+      }
+
+      tile.appendChild(actions);
+    });
+  }
+
+  function mountPageNotes(root, presentationId) {
+    if (root.querySelector('.social-prototype-notes')) return;
+    if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
+    const notes = document.createElement('div');
+    notes.className = 'social-prototype-notes';
+    notes.setAttribute('aria-label', 'Prototype page notes');
+
+    PAGE_NOTES.forEach((note, index) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'social-prototype-note';
+      item.style.setProperty('--note-x', `${note.x}%`);
+      item.style.setProperty('--note-y', `${note.y}%`);
+      item.style.setProperty('--note-tilt', `${index % 2 === 0 ? -2 : 2}deg`);
+      item.textContent = note.text;
+      item.title = 'Prototype page note';
+      notes.appendChild(item);
+    });
+
+    root.appendChild(notes);
+    root.dataset.socialPrototype = presentationId || 'enabled';
+  }
+
+  function mount(root, options = {}) {
+    if (!root || options.enabled === false) return;
+    const mode = normalizeMode(options.mode);
+    removeExisting(root);
+    if (mode === 'none') return;
+    mountWorkControls(root, mode);
+    if (modeAllows(mode, 'notes')) mountPageNotes(root, options.presentationId);
+    root.dataset.socialPrototype = mode;
+  }
+
+  return { mount };
+})();
