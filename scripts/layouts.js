@@ -3,18 +3,44 @@ window.PORTFOLIO_LAYOUTS = [];
 
 window.getLayout = (id) => window.PORTFOLIO_LAYOUTS.find((l) => l.id === id);
 
+function canUseLocalPortfolioApi() {
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '';
+}
+
+async function loadStaticLayoutRegistry() {
+  const [builtins, generatedRegistry] = await Promise.all([
+    fetch('./models/builtin-layouts.json').then((r) => (r.ok ? r.json() : [])),
+    fetch('./generated/registry.json')
+      .then((r) => (r.ok ? r.json() : { layouts: [] }))
+      .catch(() => ({ layouts: [] })),
+  ]);
+  const layouts = [
+    ...(Array.isArray(builtins) ? builtins : []),
+    ...(Array.isArray(generatedRegistry?.layouts) ? generatedRegistry.layouts : []),
+  ];
+  const byId = new Map();
+  layouts.forEach((layout) => byId.set(layout.id, layout));
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
+
 window.loadPortfolioLayouts = async function loadPortfolioLayouts() {
-  try {
-    const res = await fetch('/api/layouts');
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.layouts) && data.layouts.length) {
-        window.PORTFOLIO_LAYOUTS = data.layouts;
-      }
-    }
-  } catch {
+  if (canUseLocalPortfolioApi()) {
     try {
-      window.PORTFOLIO_LAYOUTS = await fetch('./models/builtin-layouts.json').then((r) => r.json());
+      const res = await fetch('/api/layouts');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.layouts) && data.layouts.length) {
+          window.PORTFOLIO_LAYOUTS = data.layouts;
+        }
+      }
+    } catch {
+      // Static hosts do not provide /api/layouts.
+    }
+  }
+  if (!window.PORTFOLIO_LAYOUTS.length) {
+    try {
+      window.PORTFOLIO_LAYOUTS = await loadStaticLayoutRegistry();
     } catch {
       window.PORTFOLIO_LAYOUTS = [];
     }

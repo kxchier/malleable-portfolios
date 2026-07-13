@@ -80,6 +80,7 @@ async function initEditMode() {
   setupTextEditBridge();
   setupCursorUndoToast();
   setupAssetAssistant();
+  setupSupabaseControls();
   setupDesignDirectionCard();
   setupAI();
   setupDeleteLayout();
@@ -4017,6 +4018,82 @@ function setupCollectionArranger() {
   });
 }
 
+function supabaseUsernameValue() {
+  const input = document.getElementById('supabase-username');
+  const fromInput = window.PortfolioSupabase?.normalizeUsername?.(input?.value || '') || '';
+  return fromInput || window.PortfolioSupabase?.usernameFromLocation?.() || '';
+}
+
+function setSupabaseStatus(message, { error = false, persist = false } = {}) {
+  const status = document.getElementById('supabase-status');
+  if (!status) return;
+  status.hidden = !message;
+  status.textContent = message || '';
+  status.style.color = error ? '#8c3a32' : '';
+  if (message && !persist) {
+    window.clearTimeout(setSupabaseStatus._timer);
+    setSupabaseStatus._timer = window.setTimeout(() => {
+      status.hidden = true;
+      status.textContent = '';
+      status.style.color = '';
+    }, 5000);
+  }
+}
+
+async function refreshSupabaseSessionUI() {
+  const loginBtn = document.getElementById('supabase-login-btn');
+  const logoutBtn = document.getElementById('supabase-logout-btn');
+  if (!window.PortfolioSupabase?.isConfigured?.()) {
+    if (loginBtn) loginBtn.disabled = true;
+    if (logoutBtn) logoutBtn.hidden = true;
+    setSupabaseStatus('Supabase disabled: add URL/key in scripts/supabase-config.js to save by username.', { persist: true });
+    return;
+  }
+
+  const user = await window.PortfolioSupabase.user();
+  if (loginBtn) loginBtn.hidden = Boolean(user);
+  if (logoutBtn) logoutBtn.hidden = !user;
+  setSupabaseStatus('');
+}
+
+function setupSupabaseControls() {
+  const usernameInput = document.getElementById('supabase-username');
+  const loginBtn = document.getElementById('supabase-login-btn');
+  const logoutBtn = document.getElementById('supabase-logout-btn');
+  if (!usernameInput || !window.PortfolioSupabase) return;
+
+  usernameInput.value = window.PortfolioSupabase.usernameFromLocation() || '';
+  usernameInput.addEventListener('change', () => {
+    const username = window.PortfolioSupabase.setUsernameInUrl(usernameInput.value);
+    usernameInput.value = username;
+    setSupabaseStatus(username ? `Editing username "${username}". Save to publish this profile.` : 'No username selected.', { persist: true });
+  });
+
+  loginBtn?.addEventListener('click', async () => {
+    try {
+      const username = window.PortfolioSupabase.setUsernameInUrl(usernameInput.value);
+      usernameInput.value = username;
+      if (!username) throw new Error('Choose a username first.');
+      await window.PortfolioSupabase.signInAnonymously();
+      setSupabaseStatus(`Using username "${username}". Save to publish this profile.`, { persist: true });
+      await refreshSupabaseSessionUI();
+    } catch (err) {
+      setSupabaseStatus(err.message, { error: true, persist: true });
+    }
+  });
+
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      await window.PortfolioSupabase.signOut();
+      await refreshSupabaseSessionUI();
+    } catch (err) {
+      setSupabaseStatus(err.message, { error: true, persist: true });
+    }
+  });
+
+  refreshSupabaseSessionUI();
+}
+
 function setupPreview() {
   updatePreview();
   document.getElementById('save-btn').addEventListener('click', saveChanges);
@@ -4055,46 +4132,71 @@ async function saveChanges() {
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Saving…';
+  let localSaved = false;
+  let remoteSaved = false;
+  const errors = [];
   try {
     // Bundle text overrides into the theme POST so one endpoint persists everything
     // (older servers only had /api/theme; /api/content may still be unavailable)
     const themePayload = { ...editedTheme, content: editedContent };
-    const [themeRes, rebuildRes] = await Promise.all([
-      fetch('/api/theme', {
+    try {
+      const [themeRes, rebuildRes] = await Promise.all([
+        fetch('/api/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(themePayload),
+        }),
+        fetch('/api/rebuild', { method: 'POST' }),
+      ]);
+      if (!themeRes.ok || !rebuildRes.ok) throw new Error('local server error');
+      localSaved = true;
+      // Best-effort standalone content write for servers that support it
+      fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(themePayload),
-      }),
-      fetch('/api/rebuild', { method: 'POST' }),
-    ]);
-    if (!themeRes.ok || !rebuildRes.ok) throw new Error('server error');
-    // Best-effort standalone content write for servers that support it
-    fetch('/api/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editedContent),
-    }).catch(() => {});
-    const rebuildData = await rebuildRes.json();
-    const { content } = rebuildData;
-    if (content) contentModel = content;
-    try {
-      const data = await fetchJson('/api/layouts');
-      if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
-    } catch {
-      // Layouts are already in memory; refresh is just for the save label.
+        body: JSON.stringify(editedContent),
+      }).catch(() => {});
+      const rebuildData = await rebuildRes.json();
+      const { content } = rebuildData;
+      if (content) contentModel = content;
+      try {
+        const data = await fetchJson('/api/layouts');
+        if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
+      } catch {
+        // Layouts are already in memory; refresh is just for the save label.
+      }
+    } catch (err) {
+      errors.push(err.message || 'local save failed');
     }
+
+    if (window.PortfolioSupabase?.isConfigured?.()) {
+      try {
+        const username = supabaseUsernameValue();
+        await window.PortfolioSupabase.savePortfolio(username, editedTheme, editedContent);
+        const input = document.getElementById('supabase-username');
+        if (input) input.value = username;
+        remoteSaved = true;
+        setSupabaseStatus(`Saved Supabase profile "${username}". Public URL: ?user=${username}`, { persist: true });
+      } catch (err) {
+        errors.push(err.message || 'Supabase save failed');
+        setSupabaseStatus(err.message || 'Supabase save failed', { error: true, persist: true });
+      }
+    }
+
+    if (!localSaved && !remoteSaved) throw new Error(errors.join('\n') || 'save failed');
     refreshInspectModel();
     const layoutCount = (window.PORTFOLIO_LAYOUTS || []).length;
     const generatedCount = (window.PORTFOLIO_LAYOUTS || []).filter((layout) => layout.generated).length;
     const layoutLabel = generatedCount
       ? `${layoutCount} layouts, ${generatedCount} generated`
       : `${layoutCount} layouts`;
-    btn.textContent = `Saved ✓ (${layoutLabel})`;
+    const savedWhere = [localSaved ? 'local' : '', remoteSaved ? 'Supabase' : ''].filter(Boolean).join(' + ');
+    btn.textContent = `Saved ✓ ${savedWhere ? `(${savedWhere})` : `(${layoutLabel})`}`;
     setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
   } catch (e) {
     btn.textContent = original;
     btn.disabled = false;
-    alert('Could not save. Start the local editor first:\n\n    node scripts/serve.js\n\nthen open this page at http://localhost:8080/edit.html');
+    alert(`Could not save:\n\n${e.message}\n\nFor local file saves, start the local editor:\n\n    node scripts/serve.js\n\nFor public username saves, configure Supabase and choose a username.`);
   }
 }
 
@@ -4175,7 +4277,24 @@ function buildPreviewNav(activeLayout) {
 }
 
 function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) {
-  const layout = getLayout(version) || getLayout(1);
+  const layouts = window.PORTFOLIO_LAYOUTS || [];
+  const layout = getLayout(version) || getLayout(1) || layouts[0];
+  if (!layout) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base href="${options.baseHref || new URL('./', window.location.href).href}">
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 16px/1.5 system-ui, sans-serif; color: #1a1816; background: #f8f6f3; }
+    .preview-error { max-width: 34rem; padding: 2rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="preview-error">No portfolio layouts are available. Check that models/builtin-layouts.json is being served.</div>
+</body>
+</html>`;
+  }
   const presentationId = layout.presentationId || layout.key;
   const previewColors = getVersionColorsForKey(layout.key);
   const previewTypography = getVersionTypographyForKey(layout.key);

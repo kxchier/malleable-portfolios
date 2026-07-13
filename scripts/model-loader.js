@@ -1,5 +1,10 @@
 /** Load Walo schema, content model, presentation spec, and theme. */
 window.PortfolioModels = (() => {
+  function canUseLocalPortfolioApi() {
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '';
+  }
+
   function toManifestView(content) {
     const worksById = Object.fromEntries((content.works || []).map((w) => [w.id, w]));
     return {
@@ -13,11 +18,13 @@ window.PortfolioModels = (() => {
   }
 
   async function fetchContentModel() {
-    try {
-      const res = await fetch('/api/content-model');
-      if (res.ok) return await res.json();
-    } catch (e) {
-      // local server not running
+    if (canUseLocalPortfolioApi()) {
+      try {
+        const res = await fetch('/api/content-model');
+        if (res.ok) return await res.json();
+      } catch (e) {
+        // local server not running
+      }
     }
     try {
       return await fetch('./models/content.json').then((r) => r.json());
@@ -90,11 +97,13 @@ window.PortfolioModels = (() => {
   }
 
   async function fetchManifestLegacy() {
-    try {
-      const res = await fetch('/api/manifest');
-      if (res.ok) return await res.json();
-    } catch (e) {
-      // fall through
+    if (canUseLocalPortfolioApi()) {
+      try {
+        const res = await fetch('/api/manifest');
+        if (res.ok) return await res.json();
+      } catch (e) {
+        // fall through
+      }
     }
     return fetch('./manifest.json').then((r) => r.json());
   }

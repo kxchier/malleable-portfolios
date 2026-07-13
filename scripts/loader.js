@@ -4,12 +4,19 @@
 // from /api/content-model so the page always reflects the current Art/ folder. When
 // deployed to GitHub Pages (static, no server) that call 404s and we fall back to
 // models/content.json or manifest.json.
+function canUseLocalPortfolioApi() {
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '';
+}
+
 async function fetchManifest() {
-  try {
-    const res = await fetch('/api/manifest');
-    if (res.ok) return await res.json();
-  } catch (e) {
-    // local server not running — fall through to the static file
+  if (canUseLocalPortfolioApi()) {
+    try {
+      const res = await fetch('/api/manifest');
+      if (res.ok) return await res.json();
+    } catch (e) {
+      // local server not running — fall through to the static file
+    }
   }
   return fetch('./manifest.json').then((r) => r.json());
 }
@@ -29,11 +36,13 @@ async function fetchContentModel() {
   if (window.PortfolioModels) {
     return PortfolioModels.fetchContentModel();
   }
-  try {
-    const res = await fetch('/api/content-model');
-    if (res.ok) return await res.json();
-  } catch (e) {
-    // fall through
+  if (canUseLocalPortfolioApi()) {
+    try {
+      const res = await fetch('/api/content-model');
+      if (res.ok) return await res.json();
+    } catch (e) {
+      // fall through
+    }
   }
   try {
     return await fetch('./models/content.json').then((r) => r.json());
@@ -59,6 +68,7 @@ async function loadData() {
     fetch('./theme.json').then((r) => r.json()),
     fetchContentModel(),
   ]);
+  let themeSource = themeRaw;
 
   let manifest;
   let contentModelResolved = contentModel;
@@ -73,8 +83,16 @@ async function loadData() {
     }
   }
 
-  const rawContent = await fetchContent(themeRaw);
-  const theme = { ...themeRaw };
+  let rawContent = await fetchContent(themeRaw);
+  const supabaseUsername = window.PortfolioSupabase?.usernameFromLocation?.() || '';
+  if (supabaseUsername && window.PortfolioSupabase?.isConfigured?.()) {
+    const remote = await window.PortfolioSupabase.loadPortfolio(supabaseUsername);
+    if (remote?.theme_json) themeSource = remote.theme_json;
+    if (remote?.content_json) rawContent = remote.content_json;
+    if (remote) document.documentElement.dataset.portfolioUser = supabaseUsername;
+  }
+
+  const theme = { ...themeSource };
   delete theme.content;
 
   const content = window.PortfolioContent

@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="./edit-mode.css">
   <script src="./scripts/content.js"></script>
   <script src="./scripts/palette-colors.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./scripts/supabase-config.js"></script>
+  <script src="./scripts/supabase-client.js"></script>
   <script src="./scripts/loader.js"></script>
 </head>
 <body class="edit-mode">
@@ -16,12 +19,16 @@
       <div class="toolbar-row">
         <h1>Edit Mode</h1>
         <div class="edit-controls">
+          <input id="supabase-username" class="supabase-field" type="text" placeholder="username" aria-label="Portfolio username">
+          <button id="supabase-login-btn" class="ghost-btn" type="button">Use username</button>
+          <button id="supabase-logout-btn" class="ghost-btn" type="button" hidden>Logout</button>
           <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
           <button id="collections-btn" class="ghost-btn collections-toggle-btn" type="button">Collections</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
           <button id="save-btn">Save Changes</button>
           <button id="preview-btn">Preview</button>
         </div>
+        <p id="supabase-status" class="supabase-status" hidden></p>
       </div>
     </div>
   </header>

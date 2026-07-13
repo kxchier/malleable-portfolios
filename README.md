@@ -158,6 +158,19 @@ A skeuomorphic filing cabinet portfolio where each collection is a labeled drawe
 
 Visit `https://yourusername.github.io/repo-name/ver1.html` to see your portfolio.
 
+### Optional Supabase usernames
+
+Supabase lets people save edited portfolio settings to a public username URL such as `ver1.html?user=kate`.
+
+1. Create a Supabase project.
+2. Run `supabase/schema.sql` in the Supabase SQL editor.
+3. Enable anonymous sign-ins in Supabase Auth settings.
+4. Copy your Supabase project URL and anon public key into `scripts/supabase-config.js`.
+5. In the editor, enter a username and click **Use username**.
+6. Click **Save Changes**. The editor saves locally when the local server is running, and also saves the current `theme` + `content` JSON to Supabase for that username.
+
+Public pages load a saved profile with `?user=username`. If Supabase is not configured, or the username is missing, the site falls back to the default local files.
+
 ## Edit mode features
 
 The editor (`/edit.html`) uses a light, minimal UI so the portfolio preview stays the focus. In edit mode you can:
