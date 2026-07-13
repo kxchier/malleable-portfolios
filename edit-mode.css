@@ -1886,7 +1886,10 @@
   top: var(--node-y);
   width: 14px;
   height: 14px;
-  transform: translate(-50%, -50%);
+  transform: translate(
+    calc(-50% + var(--node-offset-x, 0px)),
+    calc(-50% + var(--node-offset-y, 0px))
+  );
   border: 2px solid #fbfaf8;
   border-radius: 50%;
   background: var(--node-color, #fff);

@@ -1684,6 +1684,27 @@ function pruneAxisScoresToCurrentLayouts({ persist = false } = {}) {
   return changed;
 }
 
+function fillAxisScoresForCurrentLayouts({ persist = false } = {}) {
+  const layouts = window.PORTFOLIO_LAYOUTS || [];
+  if (!layouts.length) return false;
+  let changed = false;
+  customDesignAxes.forEach((axis) => {
+    if (!Array.isArray(axis.scores)) axis.scores = [];
+    layouts.forEach((layout) => {
+      if (axis.scores.some((score) => score.key === layout.key)) return;
+      axis.scores.push({
+        key: layout.key,
+        name: layout.name,
+        value: customAxisValueForGeneratedLayout(axis, layout),
+        rationale: 'seeded from layout position',
+      });
+      changed = true;
+    });
+  });
+  if (changed && persist) saveDesignAxes();
+  return changed;
+}
+
 function loadDesignAxes() {
   const persisted = sanitizeStoredAxes(editedContent.designAxes || []);
   try {
@@ -2363,8 +2384,32 @@ function getLayoutMapPoint(layout, mode = getDesignSpaceMode()) {
   return point;
 }
 
-function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy' } = {}) {
+function designSpaceClusterOffsets(layouts, mode, preview = false) {
+  const groups = new Map();
+  layouts.forEach((layout) => {
+    const point = getLayoutMapPoint(layout, mode);
+    const key = `${Math.round(point.x * 1000)}:${Math.round(point.y * 1000)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(layout.key || String(layout.id));
+  });
+  const offsets = new Map();
+  groups.forEach((keys) => {
+    if (keys.length <= 1) return;
+    const radius = preview ? Math.min(96, 34 + keys.length * 8) : Math.min(22, 7 + keys.length * 2);
+    keys.forEach((key, index) => {
+      const angle = (-Math.PI / 2) + (index * Math.PI * 2 / keys.length);
+      offsets.set(key, {
+        x: Math.round(Math.cos(angle) * radius),
+        y: Math.round(Math.sin(angle) * radius),
+      });
+    });
+  });
+  return offsets;
+}
+
+function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy', offsets = new Map() } = {}) {
   const point = getLayoutMapPoint(layout, mode);
+  const offset = offsets.get(layout.key || String(layout.id)) || { x: 0, y: 0 };
   const color = colorForLayout(layout);
   const node = document.createElement(preview ? 'div' : 'button');
   if (!preview) node.type = 'button';
@@ -2382,6 +2427,8 @@ function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy' } =
   node.dataset.label = layout.generated ? `${layout.name} *` : layout.name;
   node.style.setProperty('--node-x', `${point.x * 100}%`);
   node.style.setProperty('--node-y', `${(1 - point.y) * 100}%`);
+  node.style.setProperty('--node-offset-x', `${offset.x}px`);
+  node.style.setProperty('--node-offset-y', `${offset.y}px`);
   node.style.setProperty('--node-color', color);
   node.title = layout.name;
 
@@ -2416,8 +2463,10 @@ function renderDesignSpacePlane(plane, legend, { preview = false, mode = 'xy' } 
   if (!plane || !legend) return;
   plane.querySelectorAll('.design-space-node').forEach((node) => node.remove());
   legend.innerHTML = '';
-  (window.PORTFOLIO_LAYOUTS || []).forEach((layout, index) => {
-    const { node, color } = createDesignSpaceNode(layout, index, { preview, mode });
+  const layouts = window.PORTFOLIO_LAYOUTS || [];
+  const offsets = designSpaceClusterOffsets(layouts, mode, preview);
+  layouts.forEach((layout, index) => {
+    const { node, color } = createDesignSpaceNode(layout, index, { preview, mode, offsets });
     plane.appendChild(node);
 
     const item = document.createElement('button');
@@ -2472,6 +2521,7 @@ function setupDesignSpaceInstrument() {
   if (!customDesignAxes.length) {
     customDesignAxes = loadDesignAxes();
     pruneAxisScoresToCurrentLayouts({ persist: true });
+    fillAxisScoresForCurrentLayouts({ persist: true });
     syncCustomAxesToDesignSpace({ syncPrompt: false });
   }
 
