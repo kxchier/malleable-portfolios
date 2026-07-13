@@ -35,16 +35,14 @@ window.GeneratedRuntime = (() => {
       'spine-texture.svg',
       'close-icon.svg',
     ];
-    const files = new Set(known);
+    let files = new Set(known);
     try {
       const indexRes = await fetch(`./generated/${layoutKey}/assets/index.json`);
       if (indexRes.ok) {
         const index = await indexRes.json();
         const listed = Array.isArray(index) ? index : index.files;
         if (Array.isArray(listed)) {
-          listed.forEach((file) => {
-            if (typeof file === 'string' && file.endsWith('.svg')) files.add(file);
-          });
+          files = new Set(listed.filter((file) => typeof file === 'string' && file.endsWith('.svg')));
         }
       }
     } catch {
