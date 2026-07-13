@@ -37,6 +37,11 @@ let openAssetAssistant = () => {};
 let cursorUndoSnapshot = null;
 let collectionWorkDrag = null;
 
+function isLocalPortfolioHost() {
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '';
+}
+
 async function initEditMode() {
   if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
 
@@ -1680,17 +1685,20 @@ function pruneAxisScoresToCurrentLayouts({ persist = false } = {}) {
 }
 
 function loadDesignAxes() {
+  const persisted = sanitizeStoredAxes(editedContent.designAxes || []);
   try {
     const stored = sanitizeStoredAxes(JSON.parse(localStorage.getItem(DESIGN_AXES_STORE) || '[]'));
-    return stored.length ? stored : createDefaultDesignAxes();
+    if (!isLocalPortfolioHost() && persisted.length) return persisted;
+    return stored.length ? stored : (persisted.length ? persisted : createDefaultDesignAxes());
   } catch {
-    return createDefaultDesignAxes();
+    return persisted.length ? persisted : createDefaultDesignAxes();
   }
 }
 
 function saveDesignAxes() {
+  editedContent.designAxes = sanitizeStoredAxes(customDesignAxes);
   try {
-    localStorage.setItem(DESIGN_AXES_STORE, JSON.stringify(sanitizeStoredAxes(customDesignAxes)));
+    localStorage.setItem(DESIGN_AXES_STORE, JSON.stringify(editedContent.designAxes));
   } catch {
     // Ignore storage failures; the in-memory prototype still works.
   }
@@ -4138,6 +4146,9 @@ async function saveChanges() {
   try {
     // Bundle text overrides into the theme POST so one endpoint persists everything
     // (older servers only had /api/theme; /api/content may still be unavailable)
+    if (customDesignAxes.length) {
+      editedContent.designAxes = sanitizeStoredAxes(customDesignAxes);
+    }
     const themePayload = { ...editedTheme, content: editedContent };
     try {
       const [themeRes, rebuildRes] = await Promise.all([
