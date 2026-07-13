@@ -951,31 +951,6 @@
   min-width: 2.25rem;
 }
 
-.device-btn {
-  padding: 0.24rem 0.46rem;
-  background: transparent;
-  color: var(--ed-muted);
-  border: 1px solid var(--ed-line);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.72rem;
-  font-weight: 500;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-}
-
-.device-btn.active {
-  background: var(--ed-text);
-  color: #fff;
-  border-color: var(--ed-text);
-}
-
-.device-toggle {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 0.25rem;
-  min-width: max-content;
-}
-
 .preview-reference-chip {
   display: inline-flex;
   align-items: center;
@@ -1512,10 +1487,6 @@
 .device-frame.desktop {
   width: 100%;
   max-width: 1080px;
-}
-
-.device-frame.mobile {
-  width: 390px;
 }
 
 .device-bar {

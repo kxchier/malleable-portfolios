@@ -90,7 +90,6 @@ async function initEditMode() {
   setupAI();
   setupDeleteLayout();
   setupCreatePanel();
-  setupDeviceToggle();
   setupInspectModel();
 }
 
@@ -1085,29 +1084,8 @@ function applyPortfolioOperation(operation) {
   return false;
 }
 
-function setupDeviceToggle() {
-  const frame = document.getElementById('device-frame');
-  const sizeLabel = document.getElementById('device-size');
-  const desktopBtn = document.getElementById('device-desktop');
-  const mobileBtn = document.getElementById('device-mobile');
-
-  const set = (mode) => {
-    const mobile = mode === 'mobile';
-    frame.classList.toggle('mobile', mobile);
-    frame.classList.toggle('desktop', !mobile);
-    mobileBtn.classList.toggle('active', mobile);
-    desktopBtn.classList.toggle('active', !mobile);
-    sizeLabel.textContent = mobile ? '390 px' : 'Desktop';
-    updatePreview();
-  };
-
-  desktopBtn.addEventListener('click', () => set('desktop'));
-  mobileBtn.addEventListener('click', () => set('mobile'));
-}
-
 function getPreviewWidth() {
-  const frame = document.getElementById('device-frame');
-  return frame.classList.contains('mobile') ? 390 : DESKTOP_PREVIEW_WIDTH;
+  return DESKTOP_PREVIEW_WIDTH;
 }
 
 function applyLayoutMetadata() {
@@ -4270,17 +4248,14 @@ function updatePreview() {
   container.innerHTML = '';
   syncDeviceFrameLayoutClass();
   const previewWidth = getPreviewWidth();
-  const desktopPreview = !document.getElementById('device-frame')?.classList.contains('mobile');
   const viewport = document.createElement('div');
-  viewport.className = desktopPreview ? 'preview-viewport preview-viewport--scaled' : 'preview-viewport';
+  viewport.className = 'preview-viewport preview-viewport--scaled';
   const iframe = document.createElement('iframe');
-  iframe.style.width = desktopPreview ? `${previewWidth}px` : '100%';
+  iframe.style.width = `${previewWidth}px`;
   iframe.style.height = '100%';
   iframe.style.border = 'none';
   iframe.style.background = getCurrentVersionColors().background || DEFAULT_THEME_COLORS.background;
-  if (desktopPreview) {
-    iframe.style.transformOrigin = 'top left';
-  }
+  iframe.style.transformOrigin = 'top left';
   iframe.scrolling = getLayout(currentVersion)?.key === 'directory' ? 'no' : 'auto';
   iframe.sandbox.add('allow-same-origin', 'allow-scripts');
   viewport.appendChild(iframe);
@@ -4288,7 +4263,6 @@ function updatePreview() {
   previewIframe = iframe;
 
   const syncViewportScale = () => {
-    if (!desktopPreview) return;
     const style = getComputedStyle(container);
     const contentWidth = container.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
     const contentHeight = container.clientHeight - parseFloat(style.paddingTop || '0') - parseFloat(style.paddingBottom || '0');
@@ -4300,7 +4274,7 @@ function updatePreview() {
   };
 
   syncViewportScale();
-  if (desktopPreview && 'ResizeObserver' in window) {
+  if ('ResizeObserver' in window) {
     previewResizeObserver = new ResizeObserver(syncViewportScale);
     previewResizeObserver.observe(container);
   }
