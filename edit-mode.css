@@ -23,7 +23,7 @@
   --ed-shadow: 0 1px 2px rgba(26, 24, 22, 0.04), 0 8px 32px rgba(26, 24, 22, 0.06);
   --ed-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --ed-pad-x: 1rem;
-  --ed-pad-y: 0.5rem;
+  --ed-pad-y: 0.34rem;
   --ed-gap: 0.5rem;
   --design-sidebar-w: 340px;
   background: var(--ed-bg);
@@ -92,7 +92,8 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--ed-gap);
+  column-gap: var(--ed-gap);
+  row-gap: 0.25rem;
 }
 
 .edit-toolbar h1 {
@@ -106,6 +107,7 @@
   white-space: nowrap;
   opacity: 1;
   line-height: 1.2;
+  text-align: left;
 }
 
 .supabase-field {
@@ -125,11 +127,13 @@
 }
 
 .supabase-status {
-  flex-basis: 100%;
+  flex: 0 0 100%;
+  order: 2;
   margin: 0.15rem 0 0;
   color: var(--ed-muted);
   font-size: 0.7rem;
-  line-height: 1.25;
+  line-height: 1.15;
+  text-align: right;
 }
 
 .sparkle-btn {
@@ -357,6 +361,9 @@
   gap: 0.3rem;
   margin-left: auto;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .edit-controls button {
@@ -585,7 +592,7 @@
   flex-basis: 0;
   min-width: 0;
   min-height: 0;
-  padding-top: 52px;
+  padding-top: 42px;
   box-sizing: border-box;
 }
 

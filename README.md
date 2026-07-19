@@ -171,6 +171,8 @@ Supabase lets people save edited portfolio settings to a public username URL suc
 
 Public pages load a saved profile with `?user=username`. If Supabase is not configured, or the username is missing, the site falls back to the default local files.
 
+The selected layout is saved with each Supabase username profile. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
+
 ## Edit mode features
 
 The editor (`/edit.html`) uses a light, minimal UI so the portfolio preview stays the focus. In edit mode you can:

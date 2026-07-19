@@ -51,6 +51,11 @@ async function initEditMode() {
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
 
+  const savedLayout = (window.PORTFOLIO_LAYOUTS || []).find(
+    (layout) => layout.key === editedContent.selectedLayoutKey
+  );
+  if (savedLayout) currentVersion = savedLayout.id;
+
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
   if (!editedTheme.colors.background) editedTheme.colors.background = DEFAULT_THEME_COLORS.background;
   if (!editedTheme.colors.paper) editedTheme.colors.paper = DEFAULT_THEME_COLORS.paper;
@@ -1152,6 +1157,8 @@ function syncDesignSpaceActiveState() {
 
 function selectVersion(versionId, { renderMap = true } = {}) {
   currentVersion = versionId;
+  const selectedLayout = getLayout(versionId);
+  if (selectedLayout?.key) editedContent.selectedLayoutKey = selectedLayout.key;
   document.querySelectorAll('.version-btn:not(.create-btn)').forEach((b) => {
     b.classList.toggle('active', parseInt(b.dataset.version, 10) === versionId);
   });
@@ -4177,6 +4184,8 @@ async function saveChanges() {
     if (customDesignAxes.length) {
       editedContent.designAxes = sanitizeStoredAxes(customDesignAxes);
     }
+    const selectedLayout = getLayout(currentVersion);
+    if (selectedLayout?.key) editedContent.selectedLayoutKey = selectedLayout.key;
     const themePayload = { ...editedTheme, content: editedContent };
     try {
       const [themeRes, rebuildRes] = await Promise.all([
@@ -4215,7 +4224,8 @@ async function saveChanges() {
         const input = document.getElementById('supabase-username');
         if (input) input.value = username;
         remoteSaved = true;
-        setSupabaseStatus(`Saved Supabase profile "${username}". Public URL: ?user=${username}`, { persist: true });
+        const publicFile = selectedLayout?.file || 'ver1.html';
+        setSupabaseStatus(`Saved Supabase profile "${username}". Public URL: ${publicFile}?user=${username}`, { persist: true });
       } catch (err) {
         errors.push(err.message || 'Supabase save failed');
         setSupabaseStatus(err.message || 'Supabase save failed', { error: true, persist: true });
