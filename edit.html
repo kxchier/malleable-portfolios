@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Art Portfolio — Editor</title>
   <link rel="stylesheet" href="./styles.css?v=builtin-bg-var-20260719">
-  <link rel="stylesheet" href="./edit-mode.css?v=generate-lil-guy-20260719">
+  <link rel="stylesheet" href="./edit-mode.css?v=participant-loading-20260719">
   <script src="./scripts/content.js?v=compact-header-20260713"></script>
   <script src="./scripts/palette-colors.js?v=compact-header-20260713"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,6 +14,13 @@
   <script src="./scripts/loader.js?v=compact-header-20260713"></script>
 </head>
 <body class="edit-mode">
+  <div id="editor-loading" class="editor-loading" role="status" aria-live="polite">
+    <div class="editor-loading-card">
+      <span class="editor-loading-mark" aria-hidden="true"></span>
+      <strong id="editor-loading-title">Loading portfolio editor…</strong>
+      <span id="editor-loading-detail">Preparing artwork and saved settings.</span>
+    </div>
+  </div>
   <header class="edit-header">
     <div class="edit-toolbar">
       <div class="toolbar-row">
@@ -30,9 +37,9 @@
           </svg>
         </h1>
         <div class="edit-controls">
-          <input id="supabase-username" class="supabase-field" type="text" placeholder="username" aria-label="Portfolio username">
-          <button id="supabase-login-btn" class="ghost-btn" type="button">Use username</button>
-          <button id="supabase-logout-btn" class="ghost-btn" type="button" hidden>Logout</button>
+          <input id="participant-id" class="supabase-field" type="text" placeholder="Participant ID" aria-label="Participant ID" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button id="supabase-login-btn" class="ghost-btn" type="button">Begin session</button>
+          <button id="supabase-logout-btn" class="ghost-btn" type="button" hidden>End session</button>
           <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
           <button id="collections-btn" class="ghost-btn collections-toggle-btn" type="button">Collections</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>
@@ -332,6 +339,6 @@
 
   <script src="./scripts/layouts.js?v=compact-header-20260713"></script>
   <script src="./scripts/inspect-model.js?v=compact-header-20260713"></script>
-  <script src="./scripts/edit-mode.js?v=glasses-no-eyes-20260719"></script>
+  <script src="./scripts/edit-mode.js?v=participant-loading-20260719"></script>
 </body>
 </html>

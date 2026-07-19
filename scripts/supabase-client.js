@@ -18,7 +18,7 @@ window.PortfolioSupabase = (() => {
     return cachedClient;
   }
 
-  function normalizeUsername(value) {
+  function normalizeParticipantId(value) {
     return String(value || '')
       .trim()
       .toLowerCase()
@@ -27,16 +27,16 @@ window.PortfolioSupabase = (() => {
       .slice(0, 40);
   }
 
-  function usernameFromLocation() {
+  function participantIdFromLocation() {
     const params = new URLSearchParams(window.location.search);
-    return normalizeUsername(params.get('user') || params.get('username') || '');
+    return normalizeParticipantId(params.get('participant') || '');
   }
 
-  function setUsernameInUrl(username) {
-    const normalized = normalizeUsername(username);
+  function setParticipantIdInUrl(participantId) {
+    const normalized = normalizeParticipantId(participantId);
     const url = new URL(window.location.href);
-    if (normalized) url.searchParams.set('user', normalized);
-    else url.searchParams.delete('user');
+    if (normalized) url.searchParams.set('participant', normalized);
+    else url.searchParams.delete('participant');
     window.history.replaceState({}, '', url);
     return normalized;
   }
@@ -76,14 +76,14 @@ window.PortfolioSupabase = (() => {
     if (error) throw error;
   }
 
-  async function loadPortfolio(username) {
+  async function loadPortfolio(participantId) {
     const sb = client();
-    const normalized = normalizeUsername(username);
+    const normalized = normalizeParticipantId(participantId);
     if (!sb || !normalized) return null;
     const { data, error } = await sb
       .from('portfolios')
-      .select('username, theme_json, content_json, updated_at')
-      .eq('username', normalized)
+      .select('participant_id, theme_json, content_json, updated_at')
+      .eq('participant_id', normalized)
       .maybeSingle();
     if (error) {
       console.warn('[supabase] load failed:', error.message);
@@ -92,17 +92,17 @@ window.PortfolioSupabase = (() => {
     return data || null;
   }
 
-  async function savePortfolio(username, theme, content) {
+  async function savePortfolio(participantId, theme, content) {
     const sb = client();
-    const normalized = normalizeUsername(username);
+    const normalized = normalizeParticipantId(participantId);
     if (!sb) throw new Error('Supabase is not configured.');
-    if (!normalized) throw new Error('Choose a username before saving to Supabase.');
+    if (!normalized) throw new Error('Enter your participant ID before saving.');
     const currentUser = await ensureUser();
     if (!currentUser) throw new Error('Could not create a Supabase session.');
 
     const row = {
       user_id: currentUser.id,
-      username: normalized,
+      participant_id: normalized,
       theme_json: theme,
       content_json: content,
       updated_at: new Date().toISOString(),
@@ -112,7 +112,7 @@ window.PortfolioSupabase = (() => {
       .from('portfolios')
       .upsert(row, { onConflict: 'user_id' });
     if (error) throw error;
-    setUsernameInUrl(normalized);
+    setParticipantIdInUrl(normalized);
     return row;
   }
 
@@ -120,13 +120,13 @@ window.PortfolioSupabase = (() => {
     client,
     isConfigured,
     loadPortfolio,
-    normalizeUsername,
+    normalizeParticipantId,
+    participantIdFromLocation,
     savePortfolio,
     session,
-    setUsernameInUrl,
+    setParticipantIdInUrl,
     signInAnonymously,
     signOut,
     user,
-    usernameFromLocation,
   };
 })();

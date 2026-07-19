@@ -84,12 +84,12 @@ async function loadData() {
   }
 
   let rawContent = await fetchContent(themeRaw);
-  const supabaseUsername = window.PortfolioSupabase?.usernameFromLocation?.() || '';
-  if (supabaseUsername && window.PortfolioSupabase?.isConfigured?.()) {
-    const remote = await window.PortfolioSupabase.loadPortfolio(supabaseUsername);
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
+  if (participantId && window.PortfolioSupabase?.isConfigured?.()) {
+    const remote = await window.PortfolioSupabase.loadPortfolio(participantId);
     if (remote?.theme_json) themeSource = remote.theme_json;
     if (remote?.content_json) rawContent = remote.content_json;
-    if (remote) document.documentElement.dataset.portfolioUser = supabaseUsername;
+    if (remote) document.documentElement.dataset.participantId = participantId;
   }
 
   const theme = { ...themeSource };

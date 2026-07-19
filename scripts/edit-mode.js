@@ -43,6 +43,10 @@ function isLocalPortfolioHost() {
 }
 
 async function initEditMode() {
+  const loadingTitle = document.getElementById('editor-loading-title');
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
+  if (loadingTitle && participantId) loadingTitle.textContent = `Loading participant session ${participantId}…`;
+
   if (window.loadPortfolioLayouts) await window.loadPortfolioLayouts();
 
   const { manifest, theme, content, contentModel: loadedContent } = await window.appData;
@@ -96,6 +100,12 @@ async function initEditMode() {
   setupDeleteLayout();
   setupCreatePanel();
   setupInspectModel();
+
+  const loading = document.getElementById('editor-loading');
+  if (loading) {
+    loading.classList.add('is-ready');
+    window.setTimeout(() => loading.remove(), 220);
+  }
 }
 
 function getCurrentPresentationId() {
@@ -4063,10 +4073,10 @@ function setupCollectionArranger() {
   });
 }
 
-function supabaseUsernameValue() {
-  const input = document.getElementById('supabase-username');
-  const fromInput = window.PortfolioSupabase?.normalizeUsername?.(input?.value || '') || '';
-  return fromInput || window.PortfolioSupabase?.usernameFromLocation?.() || '';
+function participantIdValue() {
+  const input = document.getElementById('participant-id');
+  const fromInput = window.PortfolioSupabase?.normalizeParticipantId?.(input?.value || '') || '';
+  return fromInput || window.PortfolioSupabase?.participantIdFromLocation?.() || '';
 }
 
 function setSupabaseStatus(message, { error = false, persist = false } = {}) {
@@ -4091,7 +4101,7 @@ async function refreshSupabaseSessionUI() {
   if (!window.PortfolioSupabase?.isConfigured?.()) {
     if (loginBtn) loginBtn.disabled = true;
     if (logoutBtn) logoutBtn.hidden = true;
-    setSupabaseStatus('Supabase disabled: add URL/key in scripts/supabase-config.js to save by username.', { persist: true });
+    setSupabaseStatus('Study sessions are stored locally. Configure Supabase to save sessions remotely.', { persist: true });
     return;
   }
 
@@ -4102,26 +4112,26 @@ async function refreshSupabaseSessionUI() {
 }
 
 function setupSupabaseControls() {
-  const usernameInput = document.getElementById('supabase-username');
+  const participantInput = document.getElementById('participant-id');
   const loginBtn = document.getElementById('supabase-login-btn');
   const logoutBtn = document.getElementById('supabase-logout-btn');
-  if (!usernameInput || !window.PortfolioSupabase) return;
+  if (!participantInput || !window.PortfolioSupabase) return;
 
-  usernameInput.value = window.PortfolioSupabase.usernameFromLocation() || '';
-  usernameInput.addEventListener('change', () => {
-    const username = window.PortfolioSupabase.setUsernameInUrl(usernameInput.value);
-    usernameInput.value = username;
-    setSupabaseStatus(username ? `Editing username "${username}". Save to publish this profile.` : 'No username selected.', { persist: true });
+  participantInput.value = window.PortfolioSupabase.participantIdFromLocation() || '';
+  participantInput.addEventListener('change', () => {
+    const participantId = window.PortfolioSupabase.setParticipantIdInUrl(participantInput.value);
+    participantInput.value = participantId;
+    setSupabaseStatus(participantId ? `Participant session ${participantId} selected.` : 'Enter the participant ID assigned by the researcher.', { persist: true });
   });
 
   loginBtn?.addEventListener('click', async () => {
     try {
-      const username = window.PortfolioSupabase.setUsernameInUrl(usernameInput.value);
-      usernameInput.value = username;
-      if (!username) throw new Error('Choose a username first.');
+      const participantId = window.PortfolioSupabase.setParticipantIdInUrl(participantInput.value);
+      participantInput.value = participantId;
+      if (!participantId) throw new Error('Enter the participant ID assigned by the researcher.');
       await window.PortfolioSupabase.signInAnonymously();
-      setSupabaseStatus(`Using username "${username}". Save to publish this profile.`, { persist: true });
       await refreshSupabaseSessionUI();
+      setSupabaseStatus(`Participant session ${participantId} started.`, { persist: true });
     } catch (err) {
       setSupabaseStatus(err.message, { error: true, persist: true });
     }
@@ -4130,7 +4140,10 @@ function setupSupabaseControls() {
   logoutBtn?.addEventListener('click', async () => {
     try {
       await window.PortfolioSupabase.signOut();
+      window.PortfolioSupabase.setParticipantIdInUrl('');
+      participantInput.value = '';
       await refreshSupabaseSessionUI();
+      setSupabaseStatus('Session ended. Enter the next participant ID to begin.', { persist: true });
     } catch (err) {
       setSupabaseStatus(err.message, { error: true, persist: true });
     }
@@ -4221,13 +4234,12 @@ async function saveChanges() {
 
     if (window.PortfolioSupabase?.isConfigured?.()) {
       try {
-        const username = supabaseUsernameValue();
-        await window.PortfolioSupabase.savePortfolio(username, editedTheme, editedContent);
-        const input = document.getElementById('supabase-username');
-        if (input) input.value = username;
+        const participantId = participantIdValue();
+        await window.PortfolioSupabase.savePortfolio(participantId, editedTheme, editedContent);
+        const input = document.getElementById('participant-id');
+        if (input) input.value = participantId;
         remoteSaved = true;
-        const publicFile = selectedLayout?.file || 'ver1.html';
-        setSupabaseStatus(`Saved Supabase profile "${username}". Public URL: ${publicFile}?user=${username}`, { persist: true });
+        setSupabaseStatus(`Participant session ${participantId} saved.`, { persist: true });
       } catch (err) {
         errors.push(err.message || 'Supabase save failed');
         setSupabaseStatus(err.message || 'Supabase save failed', { error: true, persist: true });
@@ -4247,7 +4259,7 @@ async function saveChanges() {
   } catch (e) {
     btn.textContent = original;
     btn.disabled = false;
-    alert(`Could not save:\n\n${e.message}\n\nFor local file saves, start the local editor:\n\n    node scripts/serve.js\n\nFor public username saves, configure Supabase and choose a username.`);
+    alert(`Could not save:\n\n${e.message}\n\nFor local file saves, start the local editor:\n\n    node scripts/serve.js\n\nFor remote study saves, configure Supabase and enter a participant ID.`);
   }
 }
 
@@ -4774,4 +4786,14 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
 </html>`;
 }
 
-document.addEventListener('DOMContentLoaded', initEditMode);
+document.addEventListener('DOMContentLoaded', () => {
+  initEditMode().catch((error) => {
+    console.error('[editor] initialization failed:', error);
+    const loading = document.getElementById('editor-loading');
+    const title = document.getElementById('editor-loading-title');
+    const detail = document.getElementById('editor-loading-detail');
+    loading?.classList.add('has-error');
+    if (title) title.textContent = 'Could not load this participant session';
+    if (detail) detail.textContent = 'Check the local server and refresh the page.';
+  });
+});

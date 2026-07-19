@@ -93,7 +93,7 @@ function normalizeQuestion(item, fallbackIndex = 1) {
     question: String(item.question).slice(0, 140),
     options: item.options.slice(0, 3).map((option) => ({
       label: String(option.label || '').slice(0, 48),
-      description: String(option.description || '').slice(0, 120),
+      description: String(option.description || '').slice(0, 400),
     })).filter((option) => option.label),
   };
   return question.options.length === 3 ? question : null;

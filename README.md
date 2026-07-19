@@ -158,20 +158,22 @@ A skeuomorphic filing cabinet portfolio where each collection is a labeled drawe
 
 Visit `https://yourusername.github.io/repo-name/ver1.html` to see your portfolio.
 
-### Optional Supabase usernames
+### Optional Supabase participant sessions
 
-Supabase lets people save edited portfolio settings to a public username URL such as `ver1.html?user=kate`.
+Supabase lets study participants save edited portfolio settings under an anonymous ID such as `P001`. Keep the separate name-to-ID lookup outside this repository.
 
 1. Create a Supabase project.
 2. Run `supabase/schema.sql` in the Supabase SQL editor.
 3. Enable anonymous sign-ins in Supabase Auth settings.
 4. Copy your Supabase project URL and anon public key into `scripts/supabase-config.js`.
-5. In the editor, enter a username and click **Use username**.
-6. Click **Save Changes**. The editor saves locally when the local server is running, and also saves the current `theme` + `content` JSON to Supabase for that username.
+5. Give the participant an anonymous ID, then have them enter it in the editor and click **Begin session**.
+6. Click **Save Changes**. The editor saves locally when the local server is running, and also saves the current `theme` + `content` JSON to Supabase for that participant ID.
 
-Public pages load a saved profile with `?user=username`. If Supabase is not configured, or the username is missing, the site falls back to the default local files.
+Pages load a saved study session with `?participant=p001`. If Supabase is not configured, or the participant ID is missing, the site falls back to the default local files.
 
-The selected layout is saved with each Supabase username profile. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
+The selected layout is saved with each participant session. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
+
+To permanently remove legacy username-based records and start the study with an empty participant-ID table, run `supabase/reset-study-data.sql` once in the Supabase SQL editor. This reset is destructive and cannot be undone.
 
 ## Edit mode features
 
