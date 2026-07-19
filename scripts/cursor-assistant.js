@@ -119,7 +119,17 @@
     bubble.innerHTML = `
       <div class="cursor-assistant-title"></div>
       <div class="cursor-assistant-peek">
-        <button type="button" class="cursor-assistant-open" aria-label="Ask AI to change this" title="Ask AI to change this">✦</button>
+        <button type="button" class="cursor-assistant-open" aria-label="Ask AI to change this" title="Ask AI to change this">
+          <svg class="assistant-glasses" viewBox="0 0 30 16" width="18" height="10" aria-hidden="true" focusable="false">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="5.4" stroke-width="2.15"/>
+              <circle cx="22" cy="8" r="5.4" stroke-width="2.15"/>
+              <path stroke-width="1.95" d="M13.4 8h3.2"/>
+              <path stroke-width="1.7" d="M2.6 7.2c-1.4-.4-2-.3-2.4.2"/>
+              <path stroke-width="1.7" d="M27.4 7.2c1.4-.4 2-.3 2.4.2"/>
+            </g>
+          </svg>
+        </button>
       </div>
       <form class="cursor-assistant-form" hidden>
         <textarea rows="2" placeholder="What should change here?"></textarea>
@@ -331,6 +341,12 @@
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         font-size: 1rem;
         line-height: 1;
+      }
+      .cursor-assistant.is-peek .cursor-assistant-open .assistant-glasses {
+        display: block;
+        width: 18px;
+        height: 10px;
+        overflow: visible;
       }
       .cursor-assistant.is-peek .cursor-assistant-open:hover {
         transform: translateY(-1px);

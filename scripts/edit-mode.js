@@ -2880,7 +2880,7 @@ function setupAI() {
   const generateStatus = document.getElementById('generate-status');
   const questionsEl = document.getElementById('generate-questions');
   const generatePanel = generateBtn?.closest('.generate-panel');
-  const generateTitle = generatePanel?.querySelector('.generate-panel-head strong');
+  const generateTitleLabel = generatePanel?.querySelector('.generate-panel-head .panel-title__label');
   const promptEl = document.getElementById('ai-prompt');
   const imageInput = document.getElementById('image-vibe-input');
   const imagePickBtn = document.getElementById('image-vibe-pick');
@@ -2893,7 +2893,7 @@ function setupAI() {
 
   const setGenerateMode = (mode = 'compose') => {
     if (generatePanel) generatePanel.dataset.generateMode = mode;
-    if (generateTitle) generateTitle.textContent = mode === 'question' ? 'Design questions' : 'Generate';
+    if (generateTitleLabel) generateTitleLabel.textContent = mode === 'question' ? 'Design questions' : 'Generate';
   };
 
   const resetQuestions = () => {
@@ -3393,10 +3393,12 @@ function setThemeColor(key, value, { rebuild = false } = {}) {
 
 function patchPreviewColors() {
   if (!previewIframe?.contentWindow) return;
+  const colors = getCurrentVersionColors();
+  if (colors.background) previewIframe.style.background = colors.background;
   previewIframe.contentWindow.postMessage({
     source: 'portfolio-editor',
     type: 'colors',
-    colors: getCurrentVersionColors(),
+    colors,
   }, '*');
 }
 
@@ -4350,13 +4352,12 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const layoutViewClass = `view-${layout.key}`;
   const directoryViewClass = layout.key === 'directory' ? ' view-directory' : '';
   const previewViewClass = `${layoutViewClass}${directoryViewClass}`;
-  const previewBackground = previewColors.background || DEFAULT_THEME_COLORS.background;
   const editMode = options.editMode !== false;
   const enableAssistant = editMode && options.enableAssistant !== false;
   const editScripts = editMode
     ? `
   <script src="./scripts/text-edit.js"><\/script>
-  ${enableAssistant ? '<script src="./scripts/cursor-assistant.js"><\\/script>' : ''}
+  ${enableAssistant ? '<script src="./scripts/cursor-assistant.js?v=glasses-no-eyes-20260719"><\\/script>' : ''}
   <script>
     requestAnimationFrame(() => {
       if (document.body.dataset.editMode && !document.querySelector('.text-edit-toolbar')) {
@@ -4366,7 +4367,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       }
       if (document.body.dataset.editMode && !document.querySelector('.cursor-assistant')) {
         const assistantScript = document.createElement('script');
-        assistantScript.src = './scripts/cursor-assistant.js';
+        assistantScript.src = './scripts/cursor-assistant.js?v=glasses-no-eyes-20260719';
         document.body.appendChild(assistantScript);
       }
     });
@@ -4643,11 +4644,11 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     }
     html {
       min-height: 100%;
-      background: ${previewBackground};
+      background: var(--color-background);
       overscroll-behavior: none;
     }
     body {
-      background: ${previewBackground};
+      background: var(--color-background);
       overscroll-behavior: none;
     }
     ${directoryInlineStyles}

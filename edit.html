@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Art Portfolio — Editor</title>
-  <link rel="stylesheet" href="./styles.css?v=compact-header-20260713">
-  <link rel="stylesheet" href="./edit-mode.css?v=flush-toolbar-20260718">
+  <link rel="stylesheet" href="./styles.css?v=builtin-bg-var-20260719">
+  <link rel="stylesheet" href="./edit-mode.css?v=generate-lil-guy-20260719">
   <script src="./scripts/content.js?v=compact-header-20260713"></script>
   <script src="./scripts/palette-colors.js?v=compact-header-20260713"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,7 +17,18 @@
   <header class="edit-header">
     <div class="edit-toolbar">
       <div class="toolbar-row">
-        <h1>Edit Mode</h1>
+        <h1 class="edit-mode-title">
+          Edit Mode
+          <svg class="edit-mode-title__pen" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke-width="1.9" d="M8.2 23.6l1.1-4.1L21.8 6.9c.9-.9 2.4-.9 3.3 0l1.6 1.6c.9.9.9 2.4 0 3.3L14.2 24.3l-4.6 1.3-1.4-2z"/>
+              <path stroke-width="1.7" d="M20.5 8.3l4.8 4.8"/>
+              <path stroke-width="1.7" d="M11.2 20.4l3.1 3.1"/>
+              <path stroke-width="1.8" d="M6.4 26.2c2.2-.4 3.8-1.2 5.1-2.4"/>
+              <path stroke-width="1.55" d="M24.8 10.2c.7.4 1.6 1.5 1.5 2.6"/>
+            </g>
+          </svg>
+        </h1>
         <div class="edit-controls">
           <input id="supabase-username" class="supabase-field" type="text" placeholder="username" aria-label="Portfolio username">
           <button id="supabase-login-btn" class="ghost-btn" type="button">Use username</button>
@@ -37,7 +48,18 @@
     <aside class="design-sidebar" aria-label="Design space navigation">
       <section class="design-space-panel" aria-label="Design space instrument">
         <div class="design-space-head">
-          <strong>Design Space</strong>
+          <strong class="design-space-title">
+            Design Space
+            <svg class="design-space-title__icon" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true" focusable="false">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5.5" y="5.5" width="21" height="21" rx="3.2" stroke-width="1.7"/>
+                <path stroke-width="1.55" d="M5.5 21.2h21"/>
+                <path stroke-width="1.55" d="M10.8 5.5v21"/>
+                <circle cx="19.2" cy="12.6" r="2.15" fill="currentColor" stroke="none"/>
+                <path stroke-width="1.4" d="M19.2 12.6l3.4-3.2"/>
+              </g>
+            </svg>
+          </strong>
           <div class="design-space-head-actions">
             <button id="expand-design-space" class="ghost-btn design-space-expand-btn" type="button">Expand</button>
             <button id="hide-design-space" class="ghost-btn design-space-hide-btn" type="button">Hide</button>
@@ -56,7 +78,20 @@
         </div>
         <div id="design-space-legend" class="design-space-legend" aria-label="Template positions"></div>
         <div class="sidebar-axis-panel" aria-label="Design-space axes">
-          <div class="sidebar-axis-head">Axes</div>
+          <div class="sidebar-axis-head panel-title">
+            Axes
+            <svg class="panel-title__icon panel-title__icon--axes" viewBox="0 0 32 32" width="18" height="18" aria-hidden="true" focusable="false">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke-width="1.75" d="M5 25.5 L5 7.2"/>
+                <path stroke-width="1.75" d="M5 25.5 L23.8 25.5"/>
+                <path stroke-width="1.55" d="M5 8.6l-2-2.4M5 8.6l2-2.4"/>
+                <path stroke-width="1.55" d="M22.4 25.5l2.4-2M22.4 25.5l2.4 2"/>
+                <circle cx="12.2" cy="18.4" r="1.85" fill="currentColor" stroke="none"/>
+                <circle cx="18.6" cy="12.8" r="2.15" fill="currentColor" stroke="none"/>
+                <path stroke-width="1.35" d="M12.2 18.4 L18.6 12.8" opacity="0.55"/>
+              </g>
+            </svg>
+          </div>
           <div id="sidebar-axis-list" class="sidebar-axis-list"></div>
         </div>
       </section>
@@ -71,7 +106,18 @@
 
     <section id="design-space-expanded" class="design-space-expanded" hidden aria-label="Expanded design space">
       <div class="design-space-expanded-head">
-        <h2>Design Space</h2>
+        <h2 class="design-space-title">
+          Design Space
+          <svg class="design-space-title__icon" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5.5" y="5.5" width="21" height="21" rx="3.2" stroke-width="1.7"/>
+              <path stroke-width="1.55" d="M5.5 21.2h21"/>
+              <path stroke-width="1.55" d="M10.8 5.5v21"/>
+              <circle cx="19.2" cy="12.6" r="2.15" fill="currentColor" stroke="none"/>
+              <path stroke-width="1.4" d="M19.2 12.6l3.4-3.2"/>
+            </g>
+          </svg>
+        </h2>
         <button id="collapse-design-space" class="ghost-btn" type="button">Close</button>
       </div>
       <div class="design-space-expanded-body">
@@ -92,14 +138,54 @@
         <aside class="design-space-expanded-controls" aria-label="Design space controls">
           <section class="custom-axis-panel" aria-label="Custom design-space axes">
             <div class="custom-axis-head">
-              <strong>Axes</strong>
+              <strong class="panel-title">
+                Axes
+                <svg class="panel-title__icon panel-title__icon--axes" viewBox="0 0 32 32" width="18" height="18" aria-hidden="true" focusable="false">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke-width="1.75" d="M5 25.5 L5 7.2"/>
+                    <path stroke-width="1.75" d="M5 25.5 L23.8 25.5"/>
+                    <path stroke-width="1.55" d="M5 8.6l-2-2.4M5 8.6l2-2.4"/>
+                    <path stroke-width="1.55" d="M22.4 25.5l2.4-2M22.4 25.5l2.4 2"/>
+                    <circle cx="12.2" cy="18.4" r="1.85" fill="currentColor" stroke="none"/>
+                    <circle cx="18.6" cy="12.8" r="2.15" fill="currentColor" stroke="none"/>
+                    <path stroke-width="1.35" d="M12.2 18.4 L18.6 12.8" opacity="0.55"/>
+                  </g>
+                </svg>
+              </strong>
               <button id="add-design-axis" class="ghost-btn" type="button">Add axis</button>
             </div>
             <div id="custom-axis-list" class="custom-axis-list"></div>
           </section>
           <section class="generate-panel" aria-label="Generate interface">
             <div class="generate-panel-head">
-              <strong>Generate</strong>
+              <strong class="panel-title">
+                <span class="panel-title__label">Generate</span>
+                <svg class="panel-title__icon panel-title__icon--generate lil-guy" viewBox="0 0 64 58" width="20" height="18" aria-hidden="true" focusable="false">
+                  <path class="lil-guy__body" d="M8.5 57.5
+                    C8.5 48.5 11.5 42.5 18 38.5
+                    C13.5 35 10.5 29.5 10.5 23
+                    C10.5 11.5 19.5 3.5 32 3.5
+                    C44.5 3.5 53.5 11.5 53.5 23
+                    C53.5 29.5 50.5 35 46 38.5
+                    C52.5 42.5 55.5 48.5 55.5 57.5"/>
+                  <path class="lil-guy__body-sketch" d="M9.2 57.2
+                    C9.4 48.8 12.2 43 18.6 39.1
+                    C14.2 35.4 11.4 30 11.5 23.4
+                    C11.8 12.2 20.2 4.4 32.2 4.2
+                    C43.8 4 52.2 12 52.4 23.2
+                    C52.5 29.6 49.8 34.8 45.6 38.3
+                    C51.8 42.2 54.6 48.2 54.8 57"/>
+                  <g class="lil-guy__glasses" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="23.5" cy="23.5" r="7.2" stroke-width="2.7"/>
+                    <circle cx="40.5" cy="23.5" r="7.2" stroke-width="2.7"/>
+                    <path stroke-width="2.4" d="M30.7 23.5h2.6"/>
+                    <path stroke-width="2.2" d="M16.3 22.6c-2.4-.5-4.1-.7-5.3-.2"/>
+                    <path stroke-width="2.2" d="M47.7 22.6c2.4-.5 4.1-.7 5.3-.2"/>
+                  </g>
+                  <circle class="lil-guy__eye" cx="23.5" cy="23.5" r="2.05"/>
+                  <circle class="lil-guy__eye" cx="40.5" cy="23.5" r="2.05"/>
+                </svg>
+              </strong>
             </div>
             <div class="prompt-examples" id="prompt-examples"></div>
             <div class="image-vibe-panel" id="image-vibe-panel">
@@ -163,7 +249,36 @@
         <div id="preview-frame"></div>
       </div>
       <button id="asset-assistant-btn" class="sparkle-btn portfolio-scope-sparkle" type="button" aria-label="Ask AI to change this portfolio" title="Ask AI to change this portfolio">
-        <span class="sparkle-btn__icon" aria-hidden="true">✦</span>
+        <span class="sparkle-btn__icon" aria-hidden="true">
+          <svg class="lil-guy" viewBox="0 0 64 58" width="32" height="29" focusable="false">
+            <!-- round head → wide open base (shoulders flare out) -->
+            <path class="lil-guy__body" d="M8.5 57.5
+              C8.5 48.5 11.5 42.5 18 38.5
+              C13.5 35 10.5 29.5 10.5 23
+              C10.5 11.5 19.5 3.5 32 3.5
+              C44.5 3.5 53.5 11.5 53.5 23
+              C53.5 29.5 50.5 35 46 38.5
+              C52.5 42.5 55.5 48.5 55.5 57.5"/>
+            <path class="lil-guy__body-sketch" d="M9.2 57.2
+              C9.4 48.8 12.2 43 18.6 39.1
+              C14.2 35.4 11.4 30 11.5 23.4
+              C11.8 12.2 20.2 4.4 32.2 4.2
+              C43.8 4 52.2 12 52.4 23.2
+              C52.5 29.6 49.8 34.8 45.6 38.3
+              C51.8 42.2 54.6 48.2 54.8 57"/>
+            <g class="lil-guy__glasses" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="23.5" cy="23.5" r="7.2" stroke-width="2.7"/>
+              <circle cx="40.5" cy="23.5" r="7.2" stroke-width="2.7"/>
+              <path stroke-width="2.4" d="M30.7 23.5h2.6"/>
+              <path stroke-width="2.2" d="M16.3 22.6c-2.4-.5-4.1-.7-5.3-.2"/>
+              <path stroke-width="2.2" d="M47.7 22.6c2.4-.5 4.1-.7 5.3-.2"/>
+              <path class="lil-guy__glasses-echo" stroke-width="1.15" d="M17.2 24.4c.2-3.6 2.9-6.4 6.4-6.5"/>
+              <path class="lil-guy__glasses-echo" stroke-width="1.15" d="M34.4 24.2c.3-3.5 3-6.2 6.5-6.2"/>
+            </g>
+            <circle class="lil-guy__eye" cx="23.5" cy="23.5" r="2.05"/>
+            <circle class="lil-guy__eye" cx="40.5" cy="23.5" r="2.05"/>
+          </svg>
+        </span>
       </button>
       <div id="cursor-undo-toast" class="cursor-undo-toast" hidden>
         <span>Applied local edit.</span>
@@ -217,6 +332,6 @@
 
   <script src="./scripts/layouts.js?v=compact-header-20260713"></script>
   <script src="./scripts/inspect-model.js?v=compact-header-20260713"></script>
-  <script src="./scripts/edit-mode.js?v=saved-layout-selection-20260718"></script>
+  <script src="./scripts/edit-mode.js?v=glasses-no-eyes-20260719"></script>
 </body>
 </html>

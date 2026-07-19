@@ -35,6 +35,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body.view-grid,
+body.view-clothesline,
+body.view-desk,
+body.view-directory {
+  background-color: var(--color-background);
+}
+
 /* ---- Header / nav ---- */
 header {
   max-width: 1180px;
