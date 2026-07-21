@@ -87,8 +87,9 @@ Output ONLY valid JSON:
 }
 
 Rules:
-- Create 3 to 6 assets that satisfy the artist request.
+- Create 3 to 4 assets that satisfy the artist request.
 - SVG only. No raster images, external URLs, script, foreignObject, embedded fonts, or event handlers.
+- Keep each SVG compact (at most 1800 characters). Prefer a few expressive paths and shapes over intricate path data.
 - Use currentColor, var(--color-accent), var(--color-primary), var(--color-paper), var(--color-secondary), and opacity so assets inherit the interface theme.
 - Match the current layout's visual language and material system.
 - Assets should be decorative interface art, not replacement portfolio work.
@@ -96,6 +97,16 @@ Rules:
 - placement.size is pixels between 36 and 180.
 - placement.rotate is degrees between -28 and 28.
 - placement.opacity is between 0.25 and 0.95.`;
+}
+
+function buildAssetRetrySystemPrompt() {
+  return `${buildAssetSystemPrompt()}
+
+Your previous answer was cut off or was not valid JSON. Return a smaller response:
+- Return exactly 3 compact assets.
+- Keep each SVG under 1200 characters.
+- Use simple geometric shapes and short path data.
+- Do not include markdown fences, commentary, or any text outside the JSON object.`;
 }
 
 function buildAssetUserPrompt({ layout, presentation, prompt, existingAssets }) {
@@ -150,18 +161,34 @@ async function generateDecorativeAssets({ apiKey, provider, layoutKey, prompt })
   const existingAssets = Array.isArray(existingIndex) ? existingIndex : existingIndex.files || [];
 
   const normalizedProvider = normalizeProvider(provider);
-  const result = await callTextModel({
+  const requestAssets = (system, maxTokens, temperature) => callTextModel({
     provider: normalizedProvider,
     apiKey,
-    system: buildAssetSystemPrompt(),
+    system,
     user: buildAssetUserPrompt({ layout, presentation, prompt: prompt.trim(), existingAssets }),
-    maxTokens: 4200,
-    temperature: 0.55,
+    maxTokens,
+    temperature,
     responseFormat: normalizedProvider === 'cerebras' ? { type: 'json_object' } : null,
   });
+
+  let result = await requestAssets(buildAssetSystemPrompt(), 6000, 0.5);
   if (!result.text) throw new Error(`${providerLabel(normalizedProvider)} returned no assets`);
 
-  const parsed = extractJson(result.text);
+  let parsed;
+  try {
+    parsed = extractJson(result.text);
+  } catch (firstError) {
+    console.warn(
+      `[assets/generate] Retrying compact response after ${result.stopReason || 'unknown stop reason'}: ${firstError.message}`
+    );
+    result = await requestAssets(buildAssetRetrySystemPrompt(), 6000, 0.25);
+    if (!result.text) throw new Error(`${providerLabel(normalizedProvider)} returned no assets on retry`);
+    try {
+      parsed = extractJson(result.text);
+    } catch (retryError) {
+      throw new Error(`The decoration response was incomplete twice. Please try again with a more specific request. (${retryError.message})`);
+    }
+  }
   const rawAssets = Array.isArray(parsed.assets) ? parsed.assets : [];
   if (!rawAssets.length) throw new Error('No SVG assets were returned.');
 

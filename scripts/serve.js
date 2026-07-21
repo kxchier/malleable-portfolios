@@ -36,7 +36,6 @@ const { buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
 const { generateTemplate } = require('./generate-template.js');
-const { generateQuestions } = require('./generate-questions.js');
 const { parseCursorOperation } = require('./operation-parser.js');
 const { parsePortfolioOperation } = require('./portfolio-operation-parser.js');
 const { scoreDesignAxis } = require('./design-axis-parser.js');
@@ -280,7 +279,10 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/generate-questions' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const result = await generateQuestions({
+      // Reload so description truncation / prompt tweaks apply without a full restart.
+      delete require.cache[require.resolve('./generate-questions.js')];
+      const { generateQuestions: askGenerateQuestions } = require('./generate-questions.js');
+      const result = await askGenerateQuestions({
         prompt: body.prompt,
         designSpace: body.designSpace,
         answers: Array.isArray(body.answers) ? body.answers : [],

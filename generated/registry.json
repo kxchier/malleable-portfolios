@@ -238,6 +238,74 @@
         ]
       },
       "createdAt": "2026-07-06T20:15:59.260Z"
+    },
+    {
+      "id": 14,
+      "key": "room",
+      "presentationId": "room",
+      "name": "Studio Room",
+      "metaphor": "artist_studio_room",
+      "file": "ver14.html",
+      "generated": true,
+      "prompt": "A skeuomorphic studio room portfolio where furniture represents collections. Clicking furniture opens a side panel containing the corresponding artwork.",
+      "examplePrompt": "A skeuomorphic studio room portfolio where furniture represents collections. Clicking furniture opens a side panel containing the corresponding artwork.",
+      "colorKeys": [
+        "background",
+        "primary",
+        "accent",
+        "paper",
+        "panel",
+        "secondary"
+      ],
+      "designSpace": {
+        "x": 0.42,
+        "y": 0.88
+      },
+      "createdAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 15,
+      "key": "fairground_carousel",
+      "presentationId": "fairground_carousel",
+      "name": "Fairground",
+      "metaphor": "fairground_carousel",
+      "file": "ver15.html",
+      "generated": true,
+      "prompt": "a carousal portfolio that spins with horses !!\n\nDesign direction:\nMake something that feels like: slow reveal + world fragment.\nUse these as starting points: Desk + Aqua City.\nOther cues:\n- Visible to Friction: slow reveal\n- Abstract to Skeuomorphic: world fragment\n\nDesign clarification answers:\n- Your carousel spins with horses — what world does it exist inside?\n  Answer: Fairground at Dusk\n  Rationale: A worn wooden carousel platform lit by bare bulbs, peeling gilt paint, sawdust underfoot — artwork panels appear on each\n- How does a visitor experience the carousel as it spins?\n  Answer: Catch a Horse\n  Rationale: Carousel spins freely; visitor clicks a passing horse to stop it and reveal the artwork panel — timing and choice matter\n- Who are you stopping the carousel for right now?\n  Answer: The Keeper of Records\n  Rationale: Built as a personal archive — every horse is a piece preserved, the carousel a living catalog of the full body of work o",
+      "examplePrompt": "a carousal portfolio that spins with horses !!\n\nDesign direction:\nMake something that feels like: slow reveal + world fragment.\nUse these as starting points: Desk + Aqua City.\nOther cues:\n- Visible to Friction: slow reveal\n- Abstract to Skeuomorphic: world fragment\n\nDesign clarification answers:\n- Your carousel spins with horses — what world does it exist inside?\n  Answer: Fairground at Dusk\n  Rationale: A worn wooden carousel platform lit by bare bulbs, peeling gilt paint, sawdust underfoot — artwork panels appear on each\n- How does a visitor experience the carousel as it spins?\n  Answer: Catch a Horse\n  Rationale: Carousel spins freely; visitor clicks a passing horse to stop it and reveal the artwork panel — timing and choice matter\n- Who are you stopping the carousel for right now?\n  Answer: The Keeper of Records\n  Rationale: Built as a personal archive — every horse is a piece preserved, the carousel a living catalog of the full body of work o",
+      "colorKeys": [
+        "background",
+        "primary",
+        "accent",
+        "paper",
+        "panel",
+        "secondary"
+      ],
+      "designSpace": {
+        "x": 0.8016228953669567,
+        "y": 0.8058720172306297,
+        "customAxes": [
+          {
+            "id": "axis_visible_friction",
+            "name": "Visible to Friction",
+            "leftLabel": "Visible",
+            "rightLabel": "Friction",
+            "value": 0.8016228953669567,
+            "leftImage": null,
+            "rightImage": null
+          },
+          {
+            "id": "axis_abstract_skeuomorphic",
+            "name": "Abstract to Skeuomorphic",
+            "leftLabel": "Abstract",
+            "rightLabel": "Skeuomorphic",
+            "value": 0.8058720172306297,
+            "leftImage": null,
+            "rightImage": null
+          }
+        ]
+      },
+      "createdAt": "2026-07-20T17:21:24.762Z"
     }
   ]
 }

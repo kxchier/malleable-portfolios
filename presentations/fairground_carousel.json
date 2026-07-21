@@ -1,0 +1,68 @@
+{
+  "id": "fairground_carousel",
+  "layout_family": "radial_interactive",
+  "metaphor": "fairground_carousel",
+  "visual_language": "worn wooden fairground carousel, bare incandescent bulbs, peeling gilt paint, sawdust floor, spinning horses carrying artwork panels, dusk atmosphere",
+  "encounter": "catch_a_horse",
+  "intent": "personal archive as living catalog — visitor clicks a passing horse mid-spin to stop the carousel and reveal the artwork panel it carries",
+  "components": [
+    {
+      "id": "carousel_stage",
+      "role": "scene container",
+      "description": "Full-viewport circular stage with dusk sky gradient and sawdust ground"
+    },
+    {
+      "id": "carousel_platform",
+      "role": "spinning platform",
+      "description": "Rotating wooden platform with gilt edge decorations and bare-bulb lights"
+    },
+    {
+      "id": "horse_pole",
+      "role": "work carrier",
+      "description": "Each horse+pole unit carries one collection panel; horses bob up/down as platform spins"
+    },
+    {
+      "id": "collection_panel",
+      "role": "artwork reveal",
+      "description": "Clicking a horse stops the spin and slides out an artwork panel from the horse's saddle-bag"
+    },
+    {
+      "id": "center_topper",
+      "role": "portfolio title",
+      "description": "Decorative carousel topper with portfolio name in gilt lettering"
+    },
+    {
+      "id": "ticket_booth",
+      "role": "navigation legend",
+      "description": "Small booth UI listing collections by name with horse count"
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO.title": {
+      "editable": true,
+      "location": "center_topper",
+      "role": "display"
+    },
+    "COLLECTION.title": {
+      "editable": true,
+      "location": "horse_banner",
+      "role": "label"
+    },
+    "COLLECTION.works": {
+      "editable": true,
+      "location": "collection_panel_grid"
+    },
+    "WORK.images": {
+      "editable": true,
+      "location": "panel_tile"
+    }
+  },
+  "layout_engine": {
+    "type": "radial_spin_reveal",
+    "spin_mode": "continuous_requestAnimationFrame",
+    "stop_mode": "click_horse_halts_spin",
+    "reveal_mode": "panel_slides_from_horse",
+    "horse_count": "one_per_collection",
+    "bob_animation": "sine_wave_vertical_offset"
+  }
+}

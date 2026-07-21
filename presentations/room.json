@@ -1,0 +1,60 @@
+{
+  "id": "room",
+  "layout_family": "spatial_environment",
+  "metaphor": "artist_studio_room",
+  "visual_language": "warm isometric studio corner with bookshelf, easel, plant, and work table as collection entry points",
+  "encounter": "The visitor arrives in a quiet studio corner. Click the bookshelf, easel, plant, or table to browse that collection in a side panel.",
+  "intent": "Make browsing feel like exploring a lived-in studio: click an object to open its collection beside the room.",
+  "components": [
+    {
+      "id": "room-scene",
+      "role": "background",
+      "description": "Isometric room corner with floor and two walls"
+    },
+    {
+      "id": "room-object",
+      "role": "collection_entry",
+      "description": "Clickable furniture hotspot that opens a collection side panel"
+    },
+    {
+      "id": "side-panel",
+      "role": "collection_container",
+      "description": "Sliding side panel listing works from the selected collection"
+    },
+    {
+      "id": "work-tile",
+      "role": "work_display",
+      "description": "Artwork tile inside the open side panel"
+    }
+  ],
+  "ui_spec": {
+    "editable": [
+      {
+        "entity": "PORTFOLIO",
+        "field": "title",
+        "selector": "[data-text-role='portfolio.title']"
+      },
+      {
+        "entity": "COLLECTION",
+        "field": "title",
+        "selector": "[data-text-role='collection.title']"
+      },
+      {
+        "entity": "COLLECTION",
+        "field": "works",
+        "selector": ".room-work"
+      },
+      {
+        "entity": "WORK",
+        "field": "images",
+        "selector": ".room-work img"
+      }
+    ]
+  },
+  "layout_engine": {
+    "type": "spatial_hotspots",
+    "collection_layout": "room_objects",
+    "work_display": "side_panel_grid",
+    "scroll": "room is fixed; panel scrolls its works"
+  }
+}

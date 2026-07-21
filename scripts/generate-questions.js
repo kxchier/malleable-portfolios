@@ -14,6 +14,15 @@ function extractJson(text) {
   }
 }
 
+function truncateAtWord(text, maxChars) {
+  const value = String(text || '').trim().replace(/\s+/g, ' ');
+  if (value.length <= maxChars) return value;
+  const sliced = value.slice(0, maxChars);
+  const lastSpace = sliced.lastIndexOf(' ');
+  const trimmed = (lastSpace > Math.floor(maxChars * 0.6) ? sliced.slice(0, lastSpace) : sliced).trim();
+  return trimmed.replace(/[,;:—–-]+$/, '').trim();
+}
+
 function buildQuestionSystemPrompt() {
   return `You help an artist explore portfolio interface designs before generation.
 
@@ -25,7 +34,7 @@ Return ONLY valid JSON:
     "category": "metaphor_place_world",
     "question": "short question",
     "options": [
-      { "label": "Option", "description": "brief effect" }
+      { "label": "Option", "description": "One short complete sentence." }
     ]
   }
 }
@@ -40,6 +49,8 @@ Ask questions in this category order unless the user's prompt already fully answ
 3. artist_intent - what the portfolio is mainly for right now, such as commissions, social connection, professional review, archive, or experimentation.
 If previous answers cover all three categories, return { "done": true }.
 The question must have exactly 3 options.
+Each option label should be short (a few words).
+Each option description must be one complete sentence of at most 18 words. Never truncate mid-word or mid-thought.
 Focus on the category's design decision, not generic style preferences.
 When targetCategory is metaphor_place_world, every option must be a new metaphor/place-world not already represented in existingInterfaces. Avoid semantically equivalent versions of those existing metaphors; change the actual object world, material system, and encounter.
 Options may imply distinct material and color worlds, and they do not need to preserve the current portfolio palette unless the user asks for continuity.
@@ -92,8 +103,8 @@ function normalizeQuestion(item, fallbackIndex = 1) {
     category: String(item.category || questionCategoryForIndex(fallbackIndex - 1)).slice(0, 40),
     question: String(item.question).slice(0, 140),
     options: item.options.slice(0, 3).map((option) => ({
-      label: String(option.label || '').slice(0, 48),
-      description: String(option.description || '').slice(0, 400),
+      label: truncateAtWord(option.label || '', 48),
+      description: truncateAtWord(option.description || '', 160),
     })).filter((option) => option.label),
   };
   return question.options.length === 3 ? question : null;

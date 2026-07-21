@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — The Studio Room</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./generated/room/style.css?v=close-fix-20260720">
+  <script src="./scripts/content.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./scripts/supabase-config.js"></script>
+  <script src="./scripts/supabase-client.js"></script>
+  <script src="./scripts/loader.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/room/render.js?v=close-fix-20260720"></script>
+</head>
+<body class="view-room">
+  <header>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+  </header>
+  <main class="container generated-layout-container"><div id="content"></div></main>
+  <script>
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('room', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
+      });
+      if (window.PortfolioContent) {
+        PortfolioContent.applyColorVars(data.theme, 'room');
+        PortfolioContent.applyTypographyVars(data.theme, 'room');
+      }
+      const spacing = data.theme?.versions?.room?.spacing || {};
+      Object.entries(spacing).forEach(([key, value]) => document.documentElement.style.setProperty(`--space-${key}`, value));
+      await GeneratedRuntime.mount({ root: document.getElementById('content'), layoutKey: 'room', models });
+    });
+  </script>
+</body>
+</html>

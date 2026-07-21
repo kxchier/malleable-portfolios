@@ -248,6 +248,38 @@
         "artSize": "220px",
         "imagePadding": "10px"
       }
+    },
+    "fairground_carousel": {
+      "colors": {
+        "background": "#1a0f05",
+        "primary": "#f5e6c8",
+        "accent": "#c8860a",
+        "paper": "#2d1a08",
+        "panel": "#3d2410",
+        "secondary": "#7a3b1e"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'American Typewriter', 'Courier New', Georgia, serif",
+          "fontSize": "2.2rem",
+          "fontWeight": "700"
+        },
+        "heading2": {
+          "fontFamily": "'American Typewriter', 'Courier New', Georgia, serif",
+          "fontSize": "1.1rem",
+          "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontSize": "0.9rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "24px",
+        "artSize": "320px",
+        "imagePadding": "16px"
+      }
     }
   }
 }

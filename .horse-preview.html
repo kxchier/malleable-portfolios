@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: radial-gradient(ellipse at 50% 30%, #2a1505 0%, #1a0f05 40%, #0a0503 100%); min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; gap: 40px; --color-accent: #c88719; --color-paper: #f7dfad; }
+  .h { width: 144px; }
+  .h.big { width: 400px; }
+  .h svg { width: 100%; height: auto; display: block; }
+</style>
+</head>
+<body>
+  <div class="h big" style="color:#c8a86e"></div>
+  <div class="h" style="color:#a0785c"></div>
+  <div class="h" style="color:#d4b896"></div>
+  <div class="h" style="color:#8c6b4a"></div>
+  <div class="h" style="color:#b89060"></div>
+  <script>
+    fetch('generated/fairground_carousel/assets/horse.svg').then(r => r.text()).then(t => {
+      document.querySelectorAll('.h').forEach(d => d.innerHTML = t);
+    });
+  </script>
+</body>
+</html>
