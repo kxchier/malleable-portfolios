@@ -11,25 +11,53 @@ window.PortfolioContent = (() => {
     body: { fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: '1rem', fontWeight: '400' },
   };
 
+  // Keep in sync with the web-font @import in styles.css and the typography
+  // guidance in scripts/generate-prompt.js.
   const FONT_OPTIONS = [
+    // Serif / display serif
     'Cormorant Garamond',
+    'Playfair Display',
+    'Fraunces',
+    'DM Serif Display',
+    'Cinzel',
+    'Zilla Slab',
+    'Georgia',
+    'Times New Roman',
+    // Sans
     'DM Sans',
+    'Space Grotesk',
+    'Outfit',
+    'Archivo',
+    'Oswald',
+    'Avenir Next Condensed',
+    'DIN Alternate',
+    'Arial Narrow',
+    'Trebuchet MS',
+    'Arial',
+    'system-ui',
+    // Playful / rounded
+    'Fredoka',
+    'Baloo 2',
+    'Bungee',
+    'Chewy',
+    'Pacifico',
     'Cooper Black',
     'Arial Rounded MT Bold',
+    // Handwritten
+    'Caveat',
+    'Shadows Into Light',
+    'Gochi Hand',
     'Comic Sans MS',
     'Chalkboard SE',
     'Marker Felt',
     'Bradley Hand',
+    // Mono / typewriter
+    'Special Elite',
+    'Courier Prime',
+    'Space Mono',
+    'VT323',
     'American Typewriter',
-    'Avenir Next Condensed',
-    'DIN Alternate',
-    'Arial Narrow',
-    'Georgia',
-    'Trebuchet MS',
-    'Arial',
     'Courier New',
-    'Times New Roman',
-    'system-ui',
   ];
 
   const TEXT_STYLE_PROPS = [

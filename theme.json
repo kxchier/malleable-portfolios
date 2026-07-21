@@ -40,18 +40,18 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "2rem",
           "fontWeight": "400"
         },
         "heading2": {
-          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "1.1rem",
           "fontWeight": "400"
         },
         "body": {
-          "fontFamily": "'Trebuchet MS', Arial, sans-serif",
-          "fontSize": "0.85rem",
+          "fontFamily": "'Zilla Slab', Georgia, serif",
+          "fontSize": "0.9rem",
           "fontWeight": "400"
         }
       },
@@ -71,17 +71,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'Cooper Black', 'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', sans-serif",
+          "fontFamily": "'Baloo 2', 'Cooper Black', 'Arial Rounded MT Bold', sans-serif",
           "fontSize": "2.8rem",
           "fontWeight": "700"
         },
         "heading2": {
-          "fontFamily": "'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif",
+          "fontFamily": "'Fredoka', 'Arial Rounded MT Bold', 'Comic Sans MS', sans-serif",
           "fontSize": "1.5rem",
-          "fontWeight": "700"
+          "fontWeight": "600"
         },
         "body": {
-          "fontFamily": "'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif",
+          "fontFamily": "'Fredoka', 'Comic Sans MS', 'Chalkboard SE', sans-serif",
           "fontSize": "1rem",
           "fontWeight": "400"
         }
@@ -102,17 +102,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'American Typewriter', 'Courier New', Courier, monospace",
+          "fontFamily": "'Courier Prime', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "2rem",
           "fontWeight": "700"
         },
         "heading2": {
-          "fontFamily": "'American Typewriter', 'Courier New', Courier, monospace",
+          "fontFamily": "'Courier Prime', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "1.1rem",
-          "fontWeight": "600"
+          "fontWeight": "700"
         },
         "body": {
-          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
           "fontSize": "0.9rem",
           "fontWeight": "400"
         }
@@ -165,17 +165,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif",
+          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
           "fontSize": "2.2rem",
           "fontWeight": "400"
         },
         "heading2": {
-          "fontFamily": "'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif",
+          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
           "fontSize": "1.2rem",
           "fontWeight": "600"
         },
         "body": {
-          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
           "fontSize": "0.95rem",
           "fontWeight": "400"
         }
@@ -196,17 +196,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'Didot', 'Bodoni MT', 'Playfair Display', 'Times New Roman', Georgia, serif",
+          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
           "fontSize": "2.4rem",
           "fontWeight": "400"
         },
         "heading2": {
-          "fontFamily": "'Didot', 'Bodoni MT', 'Playfair Display', 'Times New Roman', Georgia, serif",
+          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
           "fontSize": "1.1rem",
           "fontWeight": "400"
         },
         "body": {
-          "fontFamily": "'Gill Sans', 'Gill Sans MT', 'Optima', 'Trebuchet MS', sans-serif",
+          "fontFamily": "'Outfit', 'Gill Sans', 'Optima', sans-serif",
           "fontSize": "0.9rem",
           "fontWeight": "400"
         }
@@ -228,17 +228,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'DIN Alternate', 'Arial Narrow', 'Avenir Next Condensed', sans-serif",
+          "fontFamily": "'Oswald', 'DIN Alternate', 'Arial Narrow', sans-serif",
           "fontSize": "2.2rem",
           "fontWeight": "700"
         },
         "heading2": {
-          "fontFamily": "'DIN Alternate', 'Arial Narrow', 'Avenir Next Condensed', sans-serif",
+          "fontFamily": "'Space Grotesk', 'DIN Alternate', 'Arial Narrow', sans-serif",
           "fontSize": "1.1rem",
-          "fontWeight": "600"
+          "fontWeight": "700"
         },
         "body": {
-          "fontFamily": "'Courier New', Courier, monospace",
+          "fontFamily": "'Space Mono', 'Courier New', Courier, monospace",
           "fontSize": "0.85rem",
           "fontWeight": "400"
         }
@@ -260,17 +260,17 @@
       },
       "typography": {
         "heading1": {
-          "fontFamily": "'American Typewriter', 'Courier New', Georgia, serif",
-          "fontSize": "2.2rem",
-          "fontWeight": "700"
+          "fontFamily": "'Bungee', 'Cooper Black', 'American Typewriter', sans-serif",
+          "fontSize": "2rem",
+          "fontWeight": "400"
         },
         "heading2": {
-          "fontFamily": "'American Typewriter', 'Courier New', Georgia, serif",
+          "fontFamily": "'Cinzel', 'American Typewriter', Georgia, serif",
           "fontSize": "1.1rem",
-          "fontWeight": "600"
+          "fontWeight": "700"
         },
         "body": {
-          "fontFamily": "Georgia, 'Times New Roman', serif",
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
           "fontSize": "0.9rem",
           "fontWeight": "400"
         }

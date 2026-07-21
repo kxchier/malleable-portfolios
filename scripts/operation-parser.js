@@ -102,6 +102,12 @@ Allowed operation types:
 
 Rules:
 - Prefer stylePatch for text requests such as rotate, tilt, align, make italic, space letters, underline, fade, enlarge.
+- For font change requests, prefer these always-loaded web fonts, matched to the requested mood:
+  serif/elegant: 'Playfair Display', 'Fraunces', 'DM Serif Display', 'Cinzel', 'Zilla Slab', 'Cormorant Garamond';
+  sans/modern: 'Space Grotesk', 'Outfit', 'Archivo', 'Oswald', 'DM Sans';
+  playful/bold: 'Fredoka', 'Baloo 2', 'Bungee', 'Chewy', 'Pacifico';
+  handwritten: 'Caveat', 'Shadows Into Light', 'Gochi Hand';
+  mono/typewriter: 'Special Elite', 'Courier Prime', 'Space Mono', 'VT323'.
 - For text alignment requests such as "center this text" or "align this in the middle", return stylePatch with textAlign "center". The renderer will position block headings consistently across edit and preview surfaces.
 - For relative text size requests, return a concrete fontSize value. If target.currentStyle.fontSize is present, use it as the starting point: "a little bigger" means about +2px, "bigger/larger" means about +4px, "a little smaller" means about -2px, and "smaller" means about -4px. Keep the final fontSize between 10px and 96px.
 - Prefer elementStylePatch for clicked image/work/object requests such as make this image a circle, round this, make this black and white, add a border, fade this, tilt this, make this artwork cropped/contained.

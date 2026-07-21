@@ -88,15 +88,20 @@ themeColors (REQUIRED):
 themeTypography / themeSpacing (OPTIONAL but encouraged):
 - Use these when the generated interface should change the whole website shell, not just generated components.
 - themeTypography controls the shared body, portfolio title, and collection-title variables.
-- Choose typography with real personality that matches the metaphor. Avoid defaulting to Arial, Trebuchet MS, DM Sans, or system-ui unless the concept is intentionally plain/utilitarian.
-- Use diverse local/system font stacks that are likely available. Examples:
-  - bubbly/playful/aquatic: 'Cooper Black', 'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', Trebuchet MS, sans-serif
-  - handmade/zine/sketchbook: 'Comic Sans MS', 'Marker Felt', 'Chalkboard SE', 'Bradley Hand', cursive
-  - typewriter/archive/research: 'American Typewriter', 'Courier New', Courier, monospace
-  - elegant/gallery/literary: 'Cormorant Garamond', Georgia, 'Times New Roman', serif
-  - futuristic/technical: 'DIN Alternate', 'Avenir Next Condensed', 'Arial Narrow', system-ui, sans-serif
+- Choose typography with real personality that matches the metaphor. Avoid defaulting to Arial, Trebuchet MS, DM Sans, Georgia, Cormorant Garamond, or system-ui unless the concept is intentionally plain/utilitarian.
+- The page shell already loads this curated web-font palette, so these families ALWAYS render. Strongly prefer them as the first family in each stack:
+  - Display serif / editorial: 'Playfair Display', 'Fraunces', 'DM Serif Display', 'Cinzel', 'Zilla Slab'
+  - Elegant/literary serif: 'Cormorant Garamond', Georgia, 'Times New Roman'
+  - Modern/technical sans: 'Space Grotesk', 'Outfit', 'Archivo', 'Oswald'
+  - Playful/rounded/bold: 'Fredoka', 'Baloo 2', 'Bungee', 'Chewy', 'Pacifico'
+  - Handwritten/sketchbook: 'Caveat', 'Shadows Into Light', 'Gochi Hand'
+  - Typewriter/archive: 'Special Elite', 'Courier Prime', 'American Typewriter'
+  - Mono/terminal/retro-digital: 'Space Mono', 'VT323', 'Courier New'
+  - Local flavor extras (may not exist on every OS — use only as a middle fallback, never first): 'Cooper Black', 'Arial Rounded MT Bold', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'Bradley Hand', 'DIN Alternate', 'Avenir Next Condensed', 'Arial Narrow'
+- Always end each stack with a generic family (serif, sans-serif, cursive, or monospace) that matches the first font.
+- Mix categories across heading1/heading2/body — do not reuse one family for all three unless the metaphor demands it. Vary your picks between generations; do not gravitate to the same one or two families every time.
 - Use heading1 as the most expressive display font; heading2 should harmonize; body can stay more readable.
-- Do NOT import fonts or use external URLs.
+- Do NOT add @import, @font-face, or external URLs in generated CSS — the palette above is already loaded by the shell.
 - themeSpacing controls shared spacing variables: gridGap, artSize, imagePadding. Use CSS lengths like "28px", "13rem", "0.8rem".
 
 css (CRITICAL — editor swatches depend on this):

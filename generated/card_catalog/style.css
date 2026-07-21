@@ -32,7 +32,7 @@ body.view-card_catalog {
 }
 
 .cc-nameplate .cc-subtitle {
-  font-family: Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.75rem;
   color: var(--color-accent);
   letter-spacing: 0.25em;
@@ -187,7 +187,7 @@ body.view-card_catalog {
 }
 
 .cc-label-card .cc-label-meta {
-  font-family: Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.65rem;
   color: var(--color-accent);
   margin-top: 1px;
@@ -284,7 +284,7 @@ body.view-card_catalog {
 }
 
 .cc-tab-head .cc-tab-num {
-  font-family: Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.52rem;
   color: var(--color-accent);
   display: block;
@@ -438,7 +438,7 @@ body.view-card_catalog {
 .cc-cabinet-footer {
   text-align: center;
   margin-top: 8px;
-  font-family: Georgia, serif;
+  font-family: 'Zilla Slab', Georgia, serif;
   font-size: 0.6rem;
   letter-spacing: 0.2em;
   color: color-mix(in srgb, var(--color-primary) 45%, transparent);

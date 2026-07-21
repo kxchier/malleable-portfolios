@@ -35,10 +35,17 @@ Allowed operation types:
 2. typographyPatch
    Use for broad title/body typography changes.
    { "type": "typographyPatch", "typography": {
-     "heading1": { "fontFamily": "Georgia, serif", "fontSize": "3rem", "fontWeight": "700" },
-     "heading2": { "fontFamily": "DM Sans, system-ui, sans-serif", "fontSize": "1.1rem", "fontWeight": "600" },
-     "body": { "fontFamily": "DM Sans, system-ui, sans-serif", "fontSize": "1rem", "fontWeight": "400" }
+     "heading1": { "fontFamily": "'Playfair Display', Georgia, serif", "fontSize": "3rem", "fontWeight": "700" },
+     "heading2": { "fontFamily": "'Space Grotesk', system-ui, sans-serif", "fontSize": "1.1rem", "fontWeight": "600" },
+     "body": { "fontFamily": "'Outfit', system-ui, sans-serif", "fontSize": "1rem", "fontWeight": "400" }
    } }
+   These web fonts are always loaded and safe to use first in a stack:
+   serif: 'Playfair Display', 'Fraunces', 'DM Serif Display', 'Cinzel', 'Zilla Slab', 'Cormorant Garamond';
+   sans: 'Space Grotesk', 'Outfit', 'Archivo', 'Oswald', 'DM Sans';
+   playful: 'Fredoka', 'Baloo 2', 'Bungee', 'Chewy', 'Pacifico';
+   handwritten: 'Caveat', 'Shadows Into Light', 'Gochi Hand';
+   mono/typewriter: 'Special Elite', 'Courier Prime', 'Space Mono', 'VT323'.
+   Pick the family that matches the requested mood; end stacks with a generic family.
 
 3. spacing
    Use only for the editor's global density sliders. gridGap changes the gap between artworks/items; artSize changes artwork size; imagePadding changes mats/padding inside artwork tiles.
