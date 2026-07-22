@@ -96,6 +96,20 @@ function collectionsForRequest(req) {
   return buildCollections(artSelection(req).root);
 }
 
+function participantIdForRequest(req) {
+  const requestUrl = new URL(req.url, 'http://localhost');
+  const participantId = String(requestUrl.searchParams.get('participant') || '').trim().toLowerCase();
+  return /^[a-z0-9_-]{1,40}$/.test(participantId) ? participantId : '';
+}
+
+function layoutsForRequest(req) {
+  const participantId = participantIdForRequest(req);
+  if (!participantId) return listAllLayouts();
+  return listAllLayouts().filter((layout) => (
+    !layout.ownerParticipantId || layout.ownerParticipantId === participantId
+  ));
+}
+
 function textOverridesForRequest(req, textOverrides) {
   if (artSelection(req).kind === 'participant') return textOverrides;
   return { 'portfolio.title': textOverrides['portfolio.title'] };
@@ -186,7 +200,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/layouts' && req.method === 'GET') {
-    return sendJSON(res, 200, { layouts: listAllLayouts() });
+    return sendJSON(res, 200, { layouts: layoutsForRequest(req) });
   }
 
   if (pathname === '/api/layouts/delete' && req.method === 'POST') {
@@ -194,7 +208,13 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req));
       const key = body.key || body.layoutKey;
       if (!key) return sendJSON(res, 400, { error: 'missing layout key' });
+      const requestedLayout = listAllLayouts().find((layout) => layout.key === key);
+      const participantId = participantIdForRequest(req);
+      if (requestedLayout?.ownerParticipantId && requestedLayout.ownerParticipantId !== participantId) {
+        return sendJSON(res, 403, { error: 'this layout belongs to another participant' });
+      }
       const result = deleteGeneratedLayout(key);
+      result.layouts = layoutsForRequest(req);
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[layouts/delete]', e.message);
@@ -205,7 +225,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/operation' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const collections = buildCollections();
+      const collections = collectionsForRequest(req);
       let theme = {};
       try {
         theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
@@ -234,14 +254,14 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/portfolio-operation' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const collections = buildCollections();
+      const collections = collectionsForRequest(req);
       let theme = {};
       try {
         theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
       } catch {
         // defaults
       }
-      const layouts = listAllLayouts();
+      const layouts = layoutsForRequest(req);
       const layout = layouts.find((item) => item.key === body.layoutKey || item.presentationId === body.presentationId);
       let presentation = {};
       if (layout?.key) {
@@ -277,7 +297,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/design-axis' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const layouts = listAllLayouts();
+      const layouts = layoutsForRequest(req);
       const result = await scoreDesignAxis({
         axis: body.axis,
         layouts,
@@ -307,6 +327,11 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/assets/generate' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
+      const requestedLayout = listAllLayouts().find((layout) => layout.key === body.layoutKey);
+      const participantId = participantIdForRequest(req);
+      if (requestedLayout?.ownerParticipantId && requestedLayout.ownerParticipantId !== participantId) {
+        return sendJSON(res, 403, { error: 'this layout belongs to another participant' });
+      }
       const result = await generateDecorativeAssets({
         layoutKey: body.layoutKey,
         prompt: body.prompt,
@@ -328,7 +353,7 @@ const server = http.createServer(async (req, res) => {
         prompt: body.prompt,
         designSpace: body.designSpace,
         answers: Array.isArray(body.answers) ? body.answers : [],
-        layouts: listAllLayouts(),
+        layouts: layoutsForRequest(req),
       });
       return sendJSON(res, 200, result);
     } catch (e) {
@@ -348,14 +373,14 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         // no overrides
       }
-      const collections = buildCollections();
+      const collections = collectionsForRequest(req);
       let theme = {};
       try {
         theme = JSON.parse(fs.readFileSync(path.join(ROOT, 'theme.json'), 'utf8'));
       } catch (e) {
         // defaults
       }
-      const existingLayouts = listAllLayouts();
+      const existingLayouts = layoutsForRequest(req);
 
       const { layout, versionTheme, versionColors, versionTypography, versionSpacing } = await generateTemplate({
         prompt: body.prompt,
@@ -367,6 +392,7 @@ const server = http.createServer(async (req, res) => {
           background: theme.colors?.background,
           designSpace: body.designSpace,
           referenceImage: body.referenceImage,
+          ownerParticipantId: participantIdForRequest(req),
         },
       });
 
@@ -376,7 +402,7 @@ const server = http.createServer(async (req, res) => {
         versionColors,
         versionTypography,
         versionSpacing,
-        layouts: listAllLayouts(),
+        layouts: layoutsForRequest(req),
       });
     } catch (e) {
       console.error('[generate]', e.message);

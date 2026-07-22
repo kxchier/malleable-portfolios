@@ -15,10 +15,11 @@ async function loadStaticLayoutRegistry() {
       .then((r) => (r.ok ? r.json() : { layouts: [] }))
       .catch(() => ({ layouts: [] })),
   ]);
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
   const layouts = [
     ...(Array.isArray(builtins) ? builtins : []),
     ...(Array.isArray(generatedRegistry?.layouts) ? generatedRegistry.layouts : []),
-  ];
+  ].filter((layout) => !participantId || !layout.ownerParticipantId || layout.ownerParticipantId === participantId);
   const byId = new Map();
   layouts.forEach((layout) => byId.set(layout.id, layout));
   return [...byId.values()].sort((a, b) => a.id - b.id);
@@ -27,7 +28,8 @@ async function loadStaticLayoutRegistry() {
 window.loadPortfolioLayouts = async function loadPortfolioLayouts() {
   if (canUseLocalPortfolioApi()) {
     try {
-      const res = await fetch('/api/layouts');
+      const url = window.PortfolioSupabase?.portfolioApiUrl?.('/api/layouts') || '/api/layouts';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.layouts) && data.layouts.length) {

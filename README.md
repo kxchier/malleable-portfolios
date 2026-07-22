@@ -177,9 +177,17 @@ Supabase lets study participants save edited portfolio settings under an anonymo
 5. Give the participant an anonymous ID, then have them enter it in the editor and click **Begin session**.
 6. Click **Save Changes**. The editor saves locally when the local server is running, and also saves the current `theme` + `content` JSON to Supabase for that participant ID.
 
+If the project was previously configured with the legacy `username` schema and
+Supabase reports that `participant_id` is missing from its schema cache, run
+`supabase/migrate-participant-id.sql` in the SQL editor. It preserves existing rows.
+
 Pages load a saved study session with `?participant=p001`. If Supabase is not configured, or the participant ID is missing, the site falls back to the default local files.
 
 The selected layout is saved with each participant session. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
+
+Generated layouts are tagged with the participant ID active at creation time and
+only appear in that participant's editor. Built-in and older unowned layouts remain shared.
+The participant-free `edit.html` researcher view shows every generated layout.
 
 To permanently remove legacy username-based records and start the study with an empty participant-ID table, run `supabase/reset-study-data.sql` once in the Supabase SQL editor. This reset is destructive and cannot be undone.
 

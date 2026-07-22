@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — Painted World</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./generated/painted_world/style.css">
+  <style>
+    body.view-painted_world .generated-layout-container {
+      max-width: none;
+      width: 100%;
+      min-height: 100vh;
+      padding: 0;
+    }
+    body.view-painted_world > header {
+      position: relative;
+      z-index: 1000;
+      isolation: isolate;
+    }
+    body.view-painted_world #content {
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+  <script src="./scripts/content.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./scripts/supabase-config.js"></script>
+  <script src="./scripts/supabase-client.js"></script>
+  <script src="./scripts/loader.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/painted_world/render.js"></script>
+</head>
+<body class="view-painted_world">
+  <header>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+    
+  </header>
+
+  <main class="container generated-layout-container">
+    <div id="content"></div>
+  </main>
+
+  <script>
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('painted_world', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
+      });
+      if (window.PortfolioContent) {
+        PortfolioContent.applyColorVars(data.theme, 'painted_world');
+        PortfolioContent.applyTypographyVars(data.theme, 'painted_world');
+      }
+      const versionSpacing = data.theme?.versions?.['painted_world']?.spacing || {};
+      Object.entries(versionSpacing).forEach(([spacingKey, value]) => {
+        document.documentElement.style.setProperty(`--space-${spacingKey}`, value);
+      });
+      await GeneratedRuntime.mount({
+        root: document.getElementById('content'),
+        layoutKey: 'painted_world',
+        models,
+      });
+    });
+  </script>
+</body>
+</html>

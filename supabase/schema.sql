@@ -12,6 +12,28 @@ create table if not exists public.portfolios (
   updated_at timestamptz not null default now()
 );
 
+-- `create table if not exists` does not upgrade a table created by older
+-- versions of this project. Preserve those rows by renaming the legacy column.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'portfolios' and column_name = 'username'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'portfolios' and column_name = 'participant_id'
+  ) then
+    alter table public.portfolios rename column username to participant_id;
+  end if;
+end
+$$;
+
+alter table public.portfolios add column if not exists participant_id text;
+update public.portfolios
+set participant_id = 'legacy-' || left(id::text, 8)
+where participant_id is null or btrim(participant_id) = '';
+alter table public.portfolios alter column participant_id set not null;
+
 create unique index if not exists portfolios_user_id_key on public.portfolios(user_id);
 
 alter table public.portfolios enable row level security;
@@ -36,3 +58,6 @@ using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
 create index if not exists portfolios_participant_id_idx on public.portfolios(participant_id);
+create unique index if not exists portfolios_participant_id_key on public.portfolios(participant_id);
+
+notify pgrst, 'reload schema';

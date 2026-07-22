@@ -8,6 +8,12 @@ body.view-fairground_carousel {
   overflow-x: hidden;
 }
 
+/* The modal is nested in the generated preview's z-index: 1 content wrapper. */
+body.view-fairground_carousel:has(.fc-panel-overlay.open) #content,
+body.view-fairground_carousel:has(.fc-panel-overlay.open) #preview-content {
+  z-index: 1100 !important;
+}
+
 .fc-stage {
   position: relative;
   width: 100%;
@@ -227,7 +233,8 @@ body.view-fairground_carousel {
   position: fixed;
   inset: 0;
   background: rgba(10,5,2,0.88);
-  z-index: 100;
+  /* Keep the modal and its close button above the shared portfolio header. */
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;

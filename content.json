@@ -25,16 +25,301 @@
       }
     },
     "collection.0": {
-      "content": "Comics / Fall Chilly"
-    },
-    "collection.1": {
-      "content": "Comics / vanishing"
-    },
-    "collection.2": {
-      "content": "VTubers"
-    },
-    "collection.3": {
-      "content": "photography"
+      "content": "Louis Wain"
     }
-  }
+  },
+  "designAxes": [
+    {
+      "id": "axis_visible_friction",
+      "endpointMode": "concept",
+      "leftLabel": "Visible",
+      "rightLabel": "Friction",
+      "leftImage": null,
+      "rightImage": null,
+      "name": "Visible to Friction",
+      "value": 0.9208125878909962,
+      "mapRole": "x",
+      "terms": [
+        {
+          "value": 0,
+          "label": "Visible",
+          "description": ""
+        },
+        {
+          "value": 0.18,
+          "label": "open overview",
+          "description": "everything is easy to scan"
+        },
+        {
+          "value": 0.36,
+          "label": "browseable field",
+          "description": "visible with light exploration"
+        },
+        {
+          "value": 0.55,
+          "label": "guided encounter",
+          "description": "some deliberate movement required"
+        },
+        {
+          "value": 0.74,
+          "label": "slow reveal",
+          "description": "visitor uncovers work through interaction"
+        },
+        {
+          "value": 1,
+          "label": "Friction",
+          "description": ""
+        }
+      ],
+      "scores": [
+        {
+          "key": "grid",
+          "name": "Grid",
+          "value": 0.08,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "clothesline",
+          "name": "Clothesline",
+          "value": 0.38,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "desk",
+          "name": "Desk",
+          "value": 0.58,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "directory",
+          "name": "Directory",
+          "value": 0.74,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "zine_rack",
+          "name": "Zine Rack",
+          "value": 0.3773835820222693,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "aqua_city",
+          "name": "Aqua City",
+          "value": 0.7611008429878736,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "card_catalog",
+          "name": "Card Catalog",
+          "value": 0.38,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "dream_pages",
+          "name": "Dream Pages",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "quilt_patch",
+          "name": "Quilt",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "grand_hotel",
+          "name": "Grand Hotel",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "signal_tower",
+          "name": "Signal Tower",
+          "value": 0.8620280273755762,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "room",
+          "name": "Studio Room",
+          "value": 0.42,
+          "rationale": "seeded from layout position",
+          "manual": false
+        },
+        {
+          "key": "fairground_carousel",
+          "name": "Fairground",
+          "value": 0.8016228953669567,
+          "rationale": "generated at selected axis position",
+          "manual": false
+        },
+        {
+          "key": "painted_world",
+          "name": "Painted World",
+          "value": 0.35,
+          "rationale": "generated from inferred design ranking",
+          "manual": false
+        }
+      ]
+    },
+    {
+      "id": "axis_abstract_skeuomorphic",
+      "endpointMode": "concept",
+      "leftLabel": "Abstract",
+      "rightLabel": "Skeuomorphic",
+      "leftImage": null,
+      "rightImage": null,
+      "name": "Abstract to Skeuomorphic",
+      "value": 0.0912543218273536,
+      "mapRole": "y",
+      "terms": [
+        {
+          "value": 0,
+          "label": "Abstract",
+          "description": ""
+        },
+        {
+          "value": 0.16,
+          "label": "diagrammatic",
+          "description": "interface-native structure"
+        },
+        {
+          "value": 0.32,
+          "label": "symbolic object",
+          "description": "object idea without full materiality"
+        },
+        {
+          "value": 0.5,
+          "label": "material hint",
+          "description": "texture and surface begin to matter"
+        },
+        {
+          "value": 0.68,
+          "label": "tactile artifact",
+          "description": "feels handled or physical"
+        },
+        {
+          "value": 0.84,
+          "label": "world fragment",
+          "description": "a small believable scene"
+        },
+        {
+          "value": 1,
+          "label": "Skeuomorphic",
+          "description": ""
+        }
+      ],
+      "scores": [
+        {
+          "key": "grid",
+          "name": "Grid",
+          "value": 0.1,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "clothesline",
+          "name": "Clothesline",
+          "value": 0.68,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "desk",
+          "name": "Desk",
+          "value": 0.75,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "directory",
+          "name": "Directory",
+          "value": 0.2,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "zine_rack",
+          "name": "Zine Rack",
+          "value": 0.39432541980312685,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "aqua_city",
+          "name": "Aqua City",
+          "value": 0.4239722061378113,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "card_catalog",
+          "name": "Card Catalog",
+          "value": 0.68,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "dream_pages",
+          "name": "Dream Pages",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "quilt_patch",
+          "name": "Quilt",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "grand_hotel",
+          "name": "Grand Hotel",
+          "value": 0.35,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "signal_tower",
+          "name": "Signal Tower",
+          "value": 0.40814740814740813,
+          "rationale": "seeded example",
+          "manual": false
+        },
+        {
+          "key": "room",
+          "name": "Studio Room",
+          "value": 0.88,
+          "rationale": "seeded from layout position",
+          "manual": false
+        },
+        {
+          "key": "fairground_carousel",
+          "name": "Fairground",
+          "value": 0.8058720172306297,
+          "rationale": "generated at selected axis position",
+          "manual": false
+        },
+        {
+          "key": "painted_world",
+          "name": "Painted World",
+          "value": 0.35,
+          "rationale": "generated from inferred design ranking",
+          "manual": false
+        }
+      ]
+    }
+  ],
+  "selectedLayoutKey": "painted_world"
 }

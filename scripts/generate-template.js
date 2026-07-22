@@ -511,6 +511,7 @@ function writeGeneratedTemplate(bundle, userPrompt, context = {}) {
     metaphor: validated.presentation.metaphor,
     file,
     generated: true,
+    ownerParticipantId: context.ownerParticipantId || undefined,
     prompt: userPrompt,
     examplePrompt: userPrompt,
     colorKeys,

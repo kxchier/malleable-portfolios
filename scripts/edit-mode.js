@@ -407,7 +407,7 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
 }
 
 async function parseOperationWithAI({ target, prompt, scope, presentationId, versionKey }) {
-  const result = await fetchJson('/api/operation', {
+  const result = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/operation') || '/api/operation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1262,7 +1262,7 @@ function setupDeleteLayout() {
     btn.textContent = 'Deleting…';
 
     try {
-      const data = await fetchJson('/api/layouts/delete', {
+      const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/layouts/delete') || '/api/layouts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: layout.key }),
@@ -2333,7 +2333,7 @@ async function scoreCustomDesignAxis(axis) {
     return;
   }
   const manualScores = new Map((axis.scores || []).filter((score) => score.manual).map((score) => [score.key, score]));
-  const data = await fetchJson('/api/design-axis', {
+  const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/design-axis') || '/api/design-axis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2782,7 +2782,7 @@ function setupAssetAssistant() {
         colors: getVersionColorsForKey(versionKey),
         typography: getVersionTypographyForKey(versionKey),
       };
-      const result = await fetchJson('/api/portfolio-operation', {
+      const result = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2809,7 +2809,7 @@ function setupAssetAssistant() {
       let generatedAssetCount = 0;
       for (const operation of assetOperations) {
         setStatus('Drawing page decorations...', 'busy');
-        const data = await fetchJson('/api/assets/generate', {
+        const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/assets/generate') || '/api/assets/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3230,7 +3230,7 @@ function setupAI() {
 
   const askNextQuestion = async (prompt) => {
     const designSpace = generationDesignSpaceSelection();
-    const data = await fetchJson('/api/generate-questions', {
+    const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate-questions') || '/api/generate-questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3338,7 +3338,7 @@ function setupAI() {
     try {
       const designSpace = generationDesignSpaceSelection();
       const referenceImage = /REFERENCE_FIDELITY:\s*high/i.test(clarifiedPrompt) ? analyzedReferenceImage : null;
-      const data = await fetchJson('/api/generate', {
+      const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate') || '/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: clarifiedPrompt, designSpace, referenceImage }),
@@ -4106,8 +4106,10 @@ async function refreshSupabaseSessionUI() {
   }
 
   const user = await window.PortfolioSupabase.user();
-  if (loginBtn) loginBtn.hidden = Boolean(user);
-  if (logoutBtn) logoutBtn.hidden = !user;
+  const activeParticipantId = window.PortfolioSupabase.participantIdFromLocation();
+  const hasActiveParticipantSession = Boolean(user && activeParticipantId);
+  if (loginBtn) loginBtn.hidden = hasActiveParticipantSession;
+  if (logoutBtn) logoutBtn.hidden = !hasActiveParticipantSession;
   setSupabaseStatus('');
 }
 
@@ -4133,9 +4135,14 @@ function setupSupabaseControls() {
     });
   }
   participantInput.addEventListener('change', () => {
-    const participantId = window.PortfolioSupabase.setParticipantIdInUrl(participantInput.value);
+    const participantId = window.PortfolioSupabase.normalizeParticipantId(participantInput.value);
     participantInput.value = participantId;
-    setSupabaseStatus(participantId ? `Participant session ${participantId} selected.` : 'Enter the participant ID assigned by the researcher.', { persist: true });
+    setSupabaseStatus(
+      participantId
+        ? `Participant ${participantId} is ready. Click Begin session to continue.`
+        : 'Enter the participant ID assigned by the researcher.',
+      { persist: true }
+    );
   });
 
   loginBtn?.addEventListener('click', async () => {
@@ -4237,7 +4244,7 @@ async function saveChanges() {
       const { content } = rebuildData;
       if (content) contentModel = content;
       try {
-        const data = await fetchJson('/api/layouts');
+        const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/layouts') || '/api/layouts');
         if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
       } catch {
         // Layouts are already in memory; refresh is just for the save label.

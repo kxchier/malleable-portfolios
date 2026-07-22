@@ -1,0 +1,42 @@
+{
+  "id": "painted_world",
+  "layout_family": "layered_canvas",
+  "metaphor": "painterly_portrait_canvas",
+  "visual_language": "impasto oil painting, thick visible brushstrokes, floral eye motifs, layered color washes, vibrant chromatic palette",
+  "encounter": "The viewer enters a living painted canvas — enormous brushstroke washes of orange, purple, and deep blue form the background. A central floral eye motif anchors the top, petals radiating outward. Collections emerge as paint-layered panels, each framed by fur-like stroke clusters and leaf shapes.",
+  "intent": "Evoke the tactile richness of a painterly cat portrait — every surface feels built from pigment, every heading is a brushstroke, every artwork tile floats on a wash of layered color.",
+  "components": [
+    {
+      "id": "canvas_hero",
+      "type": "decorative_header",
+      "description": "Central floral eye motif with radiating petal SVGs and brushstroke wash background"
+    },
+    {
+      "id": "collection_panel",
+      "type": "collection_section",
+      "description": "Paint-textured collection cards with fur-stroke borders and leaf accents"
+    },
+    {
+      "id": "work_tile",
+      "type": "artwork_tile",
+      "description": "Individual artwork in a thick paint-framed tile with hover shimmer"
+    }
+  ],
+  "ui_spec": {
+    "PORTFOLIO.title": {
+      "editable": true,
+      "role": "portfolio-title"
+    },
+    "COLLECTION.title": {
+      "editable": true,
+      "role": "collection-title"
+    },
+    "COLLECTION.works": {
+      "editable": true
+    },
+    "WORK.images": {
+      "editable": true
+    }
+  },
+  "layout_engine": "css_grid_layered_canvas"
+}
