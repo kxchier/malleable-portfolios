@@ -55,10 +55,14 @@ async function initEditMode() {
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
 
-  const savedLayout = (window.PORTFOLIO_LAYOUTS || []).find(
-    (layout) => layout.key === editedContent.selectedLayoutKey
-  );
-  if (savedLayout) currentVersion = savedLayout.id;
+  const firstLayout = (window.PORTFOLIO_LAYOUTS || [])[0];
+  if (firstLayout) currentVersion = firstLayout.id;
+  if (participantId) {
+    const savedLayout = (window.PORTFOLIO_LAYOUTS || []).find(
+      (layout) => layout.key === editedContent.selectedLayoutKey
+    );
+    if (savedLayout) currentVersion = savedLayout.id;
+  }
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
   if (!editedTheme.colors.background) editedTheme.colors.background = DEFAULT_THEME_COLORS.background;

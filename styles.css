@@ -503,6 +503,16 @@ h2 {
   height: auto;
 }
 
+/* Pin standard grid images inside the mat so all four white edges remain equal.
+   Percentage heights on an auto-sized aspect-ratio tile can otherwise consume
+   the bottom padding and get clipped by the tile's overflow. */
+.view-grid .grid-item:not(.metadata-below):not(.metadata-side) img {
+  position: absolute;
+  inset: var(--space-imagePadding);
+  width: calc(100% - var(--space-imagePadding) - var(--space-imagePadding));
+  height: calc(100% - var(--space-imagePadding) - var(--space-imagePadding));
+}
+
 /* ---- Assistant layout overrides ---- */
 .layout-override-works {
   gap: var(--space-gridGap);
