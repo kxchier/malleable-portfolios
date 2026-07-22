@@ -239,6 +239,24 @@
   color: var(--ed-muted);
 }
 
+.art-source-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ed-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.art-source-control select {
+  padding: 0.3rem 0.45rem;
+  border: 1.5px solid var(--ed-line);
+  border-radius: var(--ed-radius);
+  background: var(--ed-surface);
+  color: var(--ed-text);
+  font: inherit;
+}
+
 .supabase-status {
   position: fixed;
   right: 1rem;

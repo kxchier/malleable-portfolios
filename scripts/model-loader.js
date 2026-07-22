@@ -20,14 +20,19 @@ window.PortfolioModels = (() => {
   async function fetchContentModel() {
     if (canUseLocalPortfolioApi()) {
       try {
-        const res = await fetch('/api/content-model');
+        const url = window.PortfolioSupabase?.portfolioApiUrl?.('/api/content-model') || '/api/content-model';
+        const res = await fetch(url);
         if (res.ok) return await res.json();
       } catch (e) {
         // local server not running
       }
     }
     try {
-      return await fetch('./models/content.json').then((r) => r.json());
+      const url = window.PortfolioSupabase?.staticContentModelUrl?.() || './models/content.json';
+      return await fetch(url).then((r) => {
+        if (!r.ok) throw new Error(`content model unavailable (${r.status})`);
+        return r.json();
+      });
     } catch (e) {
       return null;
     }
@@ -99,7 +104,8 @@ window.PortfolioModels = (() => {
   async function fetchManifestLegacy() {
     if (canUseLocalPortfolioApi()) {
       try {
-        const res = await fetch('/api/manifest');
+        const url = window.PortfolioSupabase?.portfolioApiUrl?.('/api/manifest') || '/api/manifest';
+        const res = await fetch(url);
         if (res.ok) return await res.json();
       } catch (e) {
         // fall through

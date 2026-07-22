@@ -1,0 +1,263 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Comics / Fall Chilly",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Comics / vanishing",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3",
+        "work_1_4",
+        "work_1_5",
+        "work_1_6",
+        "work_1_7"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "VTubers",
+      "works": [
+        "work_2_0",
+        "work_2_1",
+        "work_2_2",
+        "work_2_3",
+        "work_2_4"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "photography",
+      "works": [
+        "work_3_0"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "Fall Chilly 00",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/00.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_1",
+      "title": "Fall Chilly 01",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/01.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_2",
+      "title": "Fall Chilly 02",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/02.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_3",
+      "title": "Fall Chilly 03",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/03.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_4",
+      "title": "Fall Chilly 04",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/04.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_5",
+      "title": "Fall Chilly 05",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/05.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_6",
+      "title": "Fall Chilly 06",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/06.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_7",
+      "title": "Fall Chilly 07",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/07.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_8",
+      "title": "Fall Chilly 08",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/08.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_0_9",
+      "title": "Fall Chilly 09",
+      "images": [
+        "Art/participants/01/Comics/Fall Chilly/09.jpg"
+      ],
+      "description": "A page from the Fall Chilly comic."
+    },
+    {
+      "id": "work_1_0",
+      "title": "Object Permanence 01",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE01.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_1",
+      "title": "Object Permanence 02",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE02.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_2",
+      "title": "Object Permanence 03",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE03.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_3",
+      "title": "Object Permanence 04",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE04.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_4",
+      "title": "Object Permanence 05",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE05.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_5",
+      "title": "Object Permanence 06",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE06.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_6",
+      "title": "Object Permanence 07",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE07.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_1_7",
+      "title": "Object Permanence 08",
+      "images": [
+        "Art/participants/01/Comics/vanishing/OBJECT_PERMANENCE08.jpg"
+      ],
+      "description": "A page from the Object Permanence comic."
+    },
+    {
+      "id": "work_2_0",
+      "title": "Doodlezone",
+      "images": [
+        "Art/participants/01/VTubers/Doodlezone_.jpg"
+      ],
+      "description": "A character artwork sample."
+    },
+    {
+      "id": "work_2_1",
+      "title": "Kyle",
+      "images": [
+        "Art/participants/01/VTubers/Kyle.jpg"
+      ],
+      "description": "A character artwork sample."
+    },
+    {
+      "id": "work_2_2",
+      "title": "Mouseydog 1",
+      "images": [
+        "Art/participants/01/VTubers/Mouseydog1.png"
+      ],
+      "description": "A character artwork sample."
+    },
+    {
+      "id": "work_2_3",
+      "title": "Quinn",
+      "images": [
+        "Art/participants/01/VTubers/Quinn.jpg"
+      ],
+      "description": "A character artwork sample."
+    },
+    {
+      "id": "work_2_4",
+      "title": "Yin",
+      "images": [
+        "Art/participants/01/VTubers/Yin_.jpg"
+      ],
+      "description": "A character artwork sample."
+    },
+    {
+      "id": "work_3_0",
+      "title": "IMG 8506",
+      "images": [
+        "Art/participants/01/photography/IMG_8506.jpg"
+      ],
+      "description": "A photography sample."
+    }
+  ]
+}

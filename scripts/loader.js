@@ -12,7 +12,8 @@ function canUseLocalPortfolioApi() {
 async function fetchManifest() {
   if (canUseLocalPortfolioApi()) {
     try {
-      const res = await fetch('/api/manifest');
+      const url = window.PortfolioSupabase?.portfolioApiUrl?.('/api/manifest') || '/api/manifest';
+      const res = await fetch(url);
       if (res.ok) return await res.json();
     } catch (e) {
       // local server not running — fall through to the static file
@@ -38,14 +39,19 @@ async function fetchContentModel() {
   }
   if (canUseLocalPortfolioApi()) {
     try {
-      const res = await fetch('/api/content-model');
+      const url = window.PortfolioSupabase?.portfolioApiUrl?.('/api/content-model') || '/api/content-model';
+      const res = await fetch(url);
       if (res.ok) return await res.json();
     } catch (e) {
       // fall through
     }
   }
   try {
-    return await fetch('./models/content.json').then((r) => r.json());
+    const url = window.PortfolioSupabase?.staticContentModelUrl?.() || './models/content.json';
+    return await fetch(url).then((r) => {
+      if (!r.ok) throw new Error(`content model unavailable (${r.status})`);
+      return r.json();
+    });
   } catch (e) {
     return null;
   }
@@ -61,6 +67,16 @@ function toManifestFromContent(content) {
       workItems: (col.works || []).map((wid) => worksById[wid]).filter(Boolean),
     })),
   };
+}
+
+function contentForSelectedArt(rawContent) {
+  if (window.PortfolioSupabase?.artSourceFromLocation?.() !== 'example') return rawContent;
+  const filtered = { ...(rawContent || {}) };
+  filtered.text = Object.fromEntries(
+    Object.entries(filtered.text || {}).filter(([id]) => !id.startsWith('collection.'))
+  );
+  delete filtered.arrangements;
+  return filtered;
 }
 
 async function loadData() {
@@ -91,6 +107,7 @@ async function loadData() {
     if (remote?.content_json) rawContent = remote.content_json;
     if (remote) document.documentElement.dataset.participantId = participantId;
   }
+  rawContent = contentForSelectedArt(rawContent);
 
   const theme = { ...themeSource };
   delete theme.content;

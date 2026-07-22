@@ -40,6 +40,13 @@
           <input id="participant-id" class="supabase-field" type="text" placeholder="Participant ID" aria-label="Participant ID" autocomplete="off" autocapitalize="characters" spellcheck="false">
           <button id="supabase-login-btn" class="ghost-btn" type="button">Begin session</button>
           <button id="supabase-logout-btn" class="ghost-btn" type="button" hidden>End session</button>
+          <label class="art-source-control">
+            <span>Artwork</span>
+            <select id="art-source" aria-label="Artwork collection">
+              <option value="participant">My art</option>
+              <option value="example">Example art</option>
+            </select>
+          </label>
           <button id="delete-layout-btn" class="ghost-btn delete-layout-btn" type="button" hidden>Delete layout</button>
           <button id="collections-btn" class="ghost-btn collections-toggle-btn" type="button">Collections</button>
           <button id="inspect-btn" class="inspect-toggle-btn" type="button">Inspect model</button>

@@ -16,15 +16,19 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    cd malleable-portfolios
    ```
 
-2. Add your artwork to `Art/`, organized by collection. Nested folders that contain images each become a collection (example art may be included; in practice this folder might be gitignored):
+2. Put shared study images in `Art/example/` and each participant's images in
+   `Art/participants/<id>/`, organized by collection. Nested folders that contain images
+   become collections:
    ```
-   Art/VTubers/Kyle.jpg
-   Art/Comics/Fall Chilly/00.jpg     →  collection "Comics / Fall Chilly"
+   Art/example/Louis Wain/a-good-read.jpeg
+   Art/participants/01/VTubers/Kyle.jpg
+   Art/participants/01/Comics/Fall Chilly/00.jpg
+                                      →  collection "Comics / Fall Chilly"
    ```
    To add optional metadata for an image, place a same-name `.txt` file beside it:
    ```
-   Art/VTubers/Kyle.jpg
-   Art/VTubers/Kyle.txt
+   Art/participants/01/VTubers/Kyle.jpg
+   Art/participants/01/VTubers/Kyle.txt
    ```
    The text file can be plain blurb text, or key/value lines like `title: Kyle`, `blurb: Character portrait`, `link: https://...`, `medium: Digital`, `year: 2026`, and `tags: portrait, vtuber`. In the editor toolbar, use **Metadata** to display this text hidden, below the image, beside the image, or overlaid on it for each site version.
 
@@ -49,7 +53,10 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    - **Directory view**: http://localhost:8080/ver4.html
    - **Generated views**: `ver5.html`, `ver6.html`, etc. after creating templates
 
-   With the local server running, views read `Art/` live via `/api/content-model` — newly added art shows up on refresh. Hit **Save** in the editor to write static files for deploy.
+   With the local server running, views read the selected example or participant folder
+   live via `/api/content-model` — newly added art shows up on refresh. In the editor,
+   enter the participant ID and use **Artwork → My art / Example art** to switch sets.
+   Hit **Save** to write static files for deploy.
 
 > **Static-only fallback:** You can open the site with any static server (e.g. `python3 -m http.server`), but then it reads committed `models/content.json` / `manifest.json` instead of scanning live, and Save won't have a backend. Run `node scripts/build-content.js` manually to refresh those files.
 
@@ -69,13 +76,14 @@ The site is driven by three layers:
 | Layer | Location | What it describes |
 |-------|----------|-------------------|
 | **Schema** | `models/schema.json` | Entity types (Portfolio, Artist, Collection, Work) and relationships |
-| **Content** | `models/content.json` | Your actual art — built from `Art/` (one image = one work in v1) |
+| **Content** | `models/content.json`, `models/participants/*.json` | Shared example art and participant-specific art (one image = one work in v1) |
 | **Presentation** | `presentations/*.json` | How work is encountered — layout, metaphor, navigation, UI spec |
 
 Shared styling and text overrides still live in `theme.json` and `content.json`.
 
 ```
-Art/  →  build-content.js  →  models/content.json
+Art/example/  →  build-content.js  →  models/content.json
+Art/participants/01/  →  build-content.js  →  models/participants/01.json
                                     ↓
 presentations/grid.json       ──→  scripts/render.js            →  ver1.html (thin shell)
 presentations/clothesline.json                                      →  ver2.html

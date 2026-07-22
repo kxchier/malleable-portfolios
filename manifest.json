@@ -1,47 +1,21 @@
 {
   "collections": [
     {
-      "name": "Comics / Fall Chilly",
+      "name": "Louis Wain",
       "images": [
-        "Art/Comics/Fall Chilly/00.jpg",
-        "Art/Comics/Fall Chilly/01.jpg",
-        "Art/Comics/Fall Chilly/02.jpg",
-        "Art/Comics/Fall Chilly/03.jpg",
-        "Art/Comics/Fall Chilly/04.jpg",
-        "Art/Comics/Fall Chilly/05.jpg",
-        "Art/Comics/Fall Chilly/06.jpg",
-        "Art/Comics/Fall Chilly/07.jpg",
-        "Art/Comics/Fall Chilly/08.jpg",
-        "Art/Comics/Fall Chilly/09.jpg"
-      ]
-    },
-    {
-      "name": "Comics / vanishing",
-      "images": [
-        "Art/Comics/vanishing/OBJECT_PERMANENCE01.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE02.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE03.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE04.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE05.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE06.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE07.jpg",
-        "Art/Comics/vanishing/OBJECT_PERMANENCE08.jpg"
-      ]
-    },
-    {
-      "name": "VTubers",
-      "images": [
-        "Art/VTubers/Doodlezone_.jpg",
-        "Art/VTubers/Kyle.jpg",
-        "Art/VTubers/Mouseydog1.png",
-        "Art/VTubers/Quinn.jpg",
-        "Art/VTubers/Yin_.jpg"
-      ]
-    },
-    {
-      "name": "photography",
-      "images": [
-        "Art/photography/IMG_8506.jpg"
+        "Art/example/Louis Wain/a-good-read.jpeg",
+        "Art/example/Louis Wain/all-the-fishes-came-up.jpg",
+        "Art/example/Louis Wain/blue_cat.jpg",
+        "Art/example/Louis Wain/ginger-cat-in-decoration.jpeg",
+        "Art/example/Louis Wain/in-the-vineyard.jpeg",
+        "Art/example/Louis Wain/k-little-kathleen-out-with-her-kite-it-broke-from-the-string-and-flew-out-of-sight.jpeg",
+        "Art/example/Louis Wain/playing-catch.jpg",
+        "Art/example/Louis Wain/priscilla-set-off-in-a-very-grumpy-mood.jpg",
+        "Art/example/Louis Wain/sicilian.jpeg",
+        "Art/example/Louis Wain/snoozems.jpg",
+        "Art/example/Louis Wain/untitled-1.jpeg",
+        "Art/example/Louis Wain/untitled-3.jpg",
+        "Art/example/Louis Wain/untitled.jpeg"
       ]
     }
   ]

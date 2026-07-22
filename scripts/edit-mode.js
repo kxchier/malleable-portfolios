@@ -4115,9 +4115,23 @@ function setupSupabaseControls() {
   const participantInput = document.getElementById('participant-id');
   const loginBtn = document.getElementById('supabase-login-btn');
   const logoutBtn = document.getElementById('supabase-logout-btn');
+  const artSource = document.getElementById('art-source');
   if (!participantInput || !window.PortfolioSupabase) return;
 
   participantInput.value = window.PortfolioSupabase.participantIdFromLocation() || '';
+  if (artSource) {
+    const participantOption = artSource.querySelector('option[value="participant"]');
+    const syncArtSource = () => {
+      const hasParticipant = Boolean(window.PortfolioSupabase.participantIdFromLocation());
+      if (participantOption) participantOption.disabled = !hasParticipant;
+      artSource.value = window.PortfolioSupabase.artSourceFromLocation();
+    };
+    syncArtSource();
+    artSource.addEventListener('change', () => {
+      window.PortfolioSupabase.setArtSourceInUrl(artSource.value);
+      window.location.reload();
+    });
+  }
   participantInput.addEventListener('change', () => {
     const participantId = window.PortfolioSupabase.setParticipantIdInUrl(participantInput.value);
     participantInput.value = participantId;
@@ -4131,7 +4145,8 @@ function setupSupabaseControls() {
       if (!participantId) throw new Error('Enter the participant ID assigned by the researcher.');
       await window.PortfolioSupabase.signInAnonymously();
       await refreshSupabaseSessionUI();
-      setSupabaseStatus(`Participant session ${participantId} started.`, { persist: true });
+      window.PortfolioSupabase.setArtSourceInUrl('participant');
+      window.location.reload();
     } catch (err) {
       setSupabaseStatus(err.message, { error: true, persist: true });
     }
@@ -4141,9 +4156,8 @@ function setupSupabaseControls() {
     try {
       await window.PortfolioSupabase.signOut();
       window.PortfolioSupabase.setParticipantIdInUrl('');
-      participantInput.value = '';
-      await refreshSupabaseSessionUI();
-      setSupabaseStatus('Session ended. Enter the next participant ID to begin.', { persist: true });
+      window.PortfolioSupabase.setArtSourceInUrl('example');
+      window.location.reload();
     } catch (err) {
       setSupabaseStatus(err.message, { error: true, persist: true });
     }
@@ -4209,7 +4223,7 @@ async function saveChanges() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(themePayload),
         }),
-        fetch('/api/rebuild', { method: 'POST' }),
+        fetch(window.PortfolioSupabase?.portfolioApiUrl?.('/api/rebuild') || '/api/rebuild', { method: 'POST' }),
       ]);
       if (!themeRes.ok || !rebuildRes.ok) throw new Error('local server error');
       localSaved = true;

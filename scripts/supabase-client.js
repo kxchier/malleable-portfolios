@@ -41,6 +41,38 @@ window.PortfolioSupabase = (() => {
     return normalized;
   }
 
+  function artSourceFromLocation() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('art') === 'example') return 'example';
+    return participantIdFromLocation() ? 'participant' : 'example';
+  }
+
+  function setArtSourceInUrl(source) {
+    const url = new URL(window.location.href);
+    const normalized = source === 'participant' && participantIdFromLocation()
+      ? 'participant'
+      : 'example';
+    url.searchParams.set('art', normalized);
+    window.history.replaceState({}, '', url);
+    return normalized;
+  }
+
+  function portfolioApiUrl(pathname) {
+    const params = new URLSearchParams();
+    params.set('art', artSourceFromLocation());
+    const participantId = participantIdFromLocation();
+    if (participantId) params.set('participant', participantId);
+    return `${pathname}?${params.toString()}`;
+  }
+
+  function staticContentModelUrl() {
+    const participantId = participantIdFromLocation();
+    if (artSourceFromLocation() === 'participant' && participantId) {
+      return `./models/participants/${encodeURIComponent(participantId)}.json`;
+    }
+    return './models/content.json';
+  }
+
   async function session() {
     const sb = client();
     if (!sb) return null;
@@ -118,15 +150,19 @@ window.PortfolioSupabase = (() => {
 
   return {
     client,
+    artSourceFromLocation,
     isConfigured,
     loadPortfolio,
     normalizeParticipantId,
     participantIdFromLocation,
+    portfolioApiUrl,
     savePortfolio,
     session,
     setParticipantIdInUrl,
+    setArtSourceInUrl,
     signInAnonymously,
     signOut,
+    staticContentModelUrl,
     user,
   };
 })();

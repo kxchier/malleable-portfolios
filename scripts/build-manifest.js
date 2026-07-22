@@ -19,11 +19,12 @@ let isSea = false;
 try { isSea = require('node:sea').isSea(); } catch (e) { /* older Node: not a SEA */ }
 const ROOT = isSea ? path.dirname(process.execPath) : path.join(__dirname, '..');
 const ART_DIR = path.join(ROOT, 'Art');
+const EXAMPLE_ART_DIR = path.join(ART_DIR, 'example');
 const OUTPUT_FILE = path.join(ROOT, 'manifest.json');
 
 const IMAGE_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
 
-function walk(dir, collections) {
+function walk(dir, collections, collectionRoot) {
   const entries = fs.readdirSync(dir).sort();
 
   const images = entries
@@ -31,7 +32,7 @@ function walk(dir, collections) {
     .map(f => path.relative(ROOT, path.join(dir, f)));
 
   if (images.length > 0) {
-    const rel = path.relative(ART_DIR, dir);
+    const rel = path.relative(collectionRoot, dir);
     const name = rel === '' ? 'Art' : rel.split(path.sep).join(' / ');
     collections.push({ name, images });
   }
@@ -39,16 +40,16 @@ function walk(dir, collections) {
   entries.forEach(entry => {
     const fullPath = path.join(dir, entry);
     if (fs.statSync(fullPath).isDirectory()) {
-      walk(fullPath, collections);
+      walk(fullPath, collections, collectionRoot);
     }
   });
 }
 
 /** Scan Art/ and return the collections array (no disk write). */
-function buildCollections() {
-  if (!fs.existsSync(ART_DIR)) return [];
+function buildCollections(collectionRoot = (fs.existsSync(EXAMPLE_ART_DIR) ? EXAMPLE_ART_DIR : ART_DIR)) {
+  if (!fs.existsSync(collectionRoot)) return [];
   const collections = [];
-  walk(ART_DIR, collections);
+  walk(collectionRoot, collections, collectionRoot);
   return collections;
 }
 
@@ -59,12 +60,13 @@ function writeManifest() {
   return collections;
 }
 
-module.exports = { buildCollections, writeManifest, OUTPUT_FILE, ROOT };
+module.exports = { ART_DIR, EXAMPLE_ART_DIR, buildCollections, writeManifest, OUTPUT_FILE, ROOT };
 
 // Run as a CLI (GitHub Actions, or `node scripts/build-manifest.js`)
 if (require.main === module) {
-  const { writeContent } = require('./build-content.js');
-  const { manifest } = writeContent();
+  const { buildContentModel, toManifestShim } = require('./build-content.js');
+  const manifest = toManifestShim(buildContentModel(buildCollections(), {}));
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifest, null, 2));
   console.log('Manifest built:', OUTPUT_FILE);
   console.log('Collections:', manifest.collections.map((c) => `${c.name} (${c.images.length} images)`).join(', ') || '(none)');
 }

@@ -151,15 +151,19 @@ function toManifestShim(content) {
   };
 }
 
-function writeContent() {
-  const collections = buildCollections();
-  const textOverrides = readTextOverrides();
+function writeContent(collectionsOverride, textOverridesOverride, options = {}) {
+  const collections = collectionsOverride || buildCollections();
+  const textOverrides = textOverridesOverride || readTextOverrides();
   const content = buildContentModel(collections, textOverrides);
   const manifest = toManifestShim(content);
+  const contentFile = options.contentFile || CONTENT_FILE;
+  const manifestFile = options.manifestFile || MANIFEST_FILE;
 
-  fs.mkdirSync(MODELS_DIR, { recursive: true });
-  fs.writeFileSync(CONTENT_FILE, JSON.stringify(content, null, 2));
-  fs.writeFileSync(MANIFEST_FILE, JSON.stringify(manifest, null, 2));
+  fs.mkdirSync(path.dirname(contentFile), { recursive: true });
+  fs.writeFileSync(contentFile, JSON.stringify(content, null, 2));
+  if (options.writeManifest !== false) {
+    fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
+  }
 
   return { content, manifest, collections };
 }
@@ -167,7 +171,22 @@ function writeContent() {
 module.exports = { buildContentModel, toManifestShim, writeContent, CONTENT_FILE };
 
 if (require.main === module) {
-  const { content, manifest } = writeContent();
+  const storedText = readTextOverrides();
+  const { content, manifest } = writeContent(undefined, {
+    'portfolio.title': storedText['portfolio.title'],
+  });
+  const participantsDir = path.join(ROOT, 'Art', 'participants');
+  if (fs.existsSync(participantsDir)) {
+    fs.readdirSync(participantsDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && /^[a-z0-9_-]{1,40}$/i.test(entry.name))
+      .forEach((entry) => {
+        const participantCollections = buildCollections(path.join(participantsDir, entry.name));
+        writeContent(participantCollections, storedText, {
+          contentFile: path.join(MODELS_DIR, 'participants', `${entry.name.toLowerCase()}.json`),
+          writeManifest: false,
+        });
+      });
+  }
   console.log('Content model built:', CONTENT_FILE);
   console.log('Manifest shim written:', MANIFEST_FILE);
   console.log(

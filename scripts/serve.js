@@ -32,7 +32,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { buildCollections, ROOT } = require('./build-manifest.js');
+const { ART_DIR, EXAMPLE_ART_DIR, buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
 const { generateTemplate } = require('./generate-template.js');
@@ -77,6 +77,30 @@ function readBody(req) {
   });
 }
 
+function artSelection(req) {
+  const requestUrl = new URL(req.url, 'http://localhost');
+  const participantId = String(requestUrl.searchParams.get('participant') || '')
+    .trim().toLowerCase();
+  const wantsParticipant = requestUrl.searchParams.get('art') === 'participant';
+  if (wantsParticipant && /^[a-z0-9_-]{1,40}$/.test(participantId)) {
+    return {
+      kind: 'participant',
+      participantId,
+      root: path.join(ART_DIR, 'participants', participantId),
+    };
+  }
+  return { kind: 'example', participantId: '', root: EXAMPLE_ART_DIR };
+}
+
+function collectionsForRequest(req) {
+  return buildCollections(artSelection(req).root);
+}
+
+function textOverridesForRequest(req, textOverrides) {
+  if (artSelection(req).kind === 'participant') return textOverrides;
+  return { 'portfolio.title': textOverrides['portfolio.title'] };
+}
+
 const server = http.createServer(async (req, res) => {
   let pathname;
   try {
@@ -91,7 +115,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/manifest' && req.method === 'GET') {
-    return sendJSON(res, 200, { collections: buildCollections() });
+    return sendJSON(res, 200, { collections: collectionsForRequest(req) });
   }
 
   if (pathname === '/api/content-model' && req.method === 'GET') {
@@ -103,12 +127,30 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       // no overrides yet
     }
-    const content = buildContentModel(buildCollections(), textOverrides);
+    const content = buildContentModel(
+      collectionsForRequest(req),
+      textOverridesForRequest(req, textOverrides)
+    );
     return sendJSON(res, 200, content);
   }
 
   if (pathname === '/api/rebuild' && req.method === 'POST') {
-    const { content, manifest } = writeContent();
+    let textOverrides = {};
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'content.json'), 'utf8'));
+      textOverrides = raw?.text || {};
+    } catch (e) {
+      // no overrides yet
+    }
+    const selection = artSelection(req);
+    const contentFile = selection.kind === 'participant'
+      ? path.join(ROOT, 'models', 'participants', `${selection.participantId}.json`)
+      : path.join(ROOT, 'models', 'content.json');
+    const { content, manifest } = writeContent(
+      collectionsForRequest(req),
+      textOverridesForRequest(req, textOverrides),
+      { contentFile, writeManifest: selection.kind === 'example' }
+    );
     console.log(`[rebuild] ${manifest.collections.length} collection(s) — content model + manifest written`);
     return sendJSON(res, 200, { collections: manifest.collections, content, written: true });
   }
