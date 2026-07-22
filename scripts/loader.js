@@ -69,9 +69,46 @@ function toManifestFromContent(content) {
   };
 }
 
-function contentForSelectedArt(rawContent) {
-  if (window.PortfolioSupabase?.artSourceFromLocation?.() !== 'example') return rawContent;
+function contentForSelectedArt(rawContent, manifest) {
+  const artSource = window.PortfolioSupabase?.artSourceFromLocation?.() || 'example';
   const filtered = { ...(rawContent || {}) };
+
+  if (artSource === 'participant') {
+    const exampleTitles = new Set(['louis wain']);
+    filtered.text = { ...(filtered.text || {}) };
+
+    (manifest?.collections || []).forEach((collection, index) => {
+      const id = `collection.${index}`;
+      const entry = filtered.text[id];
+      const savedTitle = String(entry?.content || '').trim().toLowerCase();
+      const sourceTitle = String(collection?.name || '').trim().toLowerCase();
+      if (!exampleTitles.has(savedTitle) || savedTitle === sourceTitle) return;
+
+      const cleanedEntry = { ...entry };
+      delete cleanedEntry.content;
+      filtered.text[id] = cleanedEntry;
+    });
+
+    if (filtered.arrangements) {
+      filtered.arrangements = Object.fromEntries(
+        Object.entries(filtered.arrangements).map(([versionKey, arrangement]) => [
+          versionKey,
+          {
+            ...arrangement,
+            collections: (arrangement?.collections || []).map((collection) => {
+              const match = String(collection?.id || '').match(/^collection\.(\d+)$/);
+              const sourceCollection = match ? manifest?.collections?.[Number(match[1])] : null;
+              const savedTitle = String(collection?.title || '').trim().toLowerCase();
+              if (!sourceCollection || !exampleTitles.has(savedTitle)) return collection;
+              return { ...collection, title: sourceCollection.name };
+            }),
+          },
+        ])
+      );
+    }
+    return filtered;
+  }
+
   filtered.text = Object.fromEntries(
     Object.entries(filtered.text || {}).filter(([id]) => !id.startsWith('collection.'))
   );
@@ -107,7 +144,7 @@ async function loadData() {
     if (remote?.content_json) rawContent = remote.content_json;
     if (remote) document.documentElement.dataset.participantId = participantId;
   }
-  rawContent = contentForSelectedArt(rawContent);
+  rawContent = contentForSelectedArt(rawContent, manifest);
 
   const theme = { ...themeSource };
   delete theme.content;
