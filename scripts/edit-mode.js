@@ -2997,6 +2997,26 @@ function setupAI() {
   const renderImageTokens = (tokens, model) => {
     if (!imageTokensEl) return;
     const palette = Array.isArray(tokens.palette) ? tokens.palette.slice(0, 6) : [];
+    const detailValue = (value) => (Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value || '').trim());
+    const detailRows = [
+      ['Keywords', tokens.keywords],
+      ['Mood', tokens.mood],
+      ['Visual style', tokens.visualStyle],
+      ['Materials', tokens.materialSystem],
+      ['Background', tokens.layoutContract?.background],
+      ['Composition', tokens.layoutContract?.composition || tokens.layout?.composition],
+      ['Density', tokens.layoutContract?.density || tokens.layout?.density],
+      ['Typography', tokens.typography?.personality],
+      ['Motifs to preserve', tokens.requiredMotifs],
+      ['Materials to preserve', tokens.requiredMaterials],
+      ['Avoid', tokens.forbiddenSimplifications],
+      ['Components', tokens.interfaceTranslation?.components || tokens.components],
+      ['Navigation', tokens.interfaceTranslation?.navigation],
+      ['Motion', tokens.interaction?.motion],
+      ['Generator brief', tokens.generationPrompt],
+    ]
+      .map(([label, value]) => [label, detailValue(value)])
+      .filter(([, value]) => value);
     imageTokensEl.hidden = false;
     imageTokensEl.innerHTML = `
       <div class="image-vibe-token-head">
@@ -3005,6 +3025,19 @@ function setupAI() {
       </div>
       ${tokens.summary ? `<p>${PortfolioContent.escapeHtml(tokens.summary)}</p>` : ''}
       ${palette.length ? `<div class="image-vibe-palette">${palette.map(colorChipHtml).join('')}</div>` : ''}
+      ${detailRows.length ? `
+        <details class="image-vibe-details">
+          <summary>View full vibe</summary>
+          <dl>
+            ${detailRows.map(([label, value]) => `
+              <div>
+                <dt>${PortfolioContent.escapeHtml(label)}</dt>
+                <dd>${PortfolioContent.escapeHtml(value)}</dd>
+              </div>
+            `).join('')}
+          </dl>
+        </details>
+      ` : ''}
     `;
   };
 
