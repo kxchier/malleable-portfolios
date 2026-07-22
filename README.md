@@ -2,7 +2,7 @@
 
 HI GUYZ~! :D
 
-This is a mockup of a malleable, editable art portfolio template site, designed for GitHub Pages. It includes a **Portfolio Editor** (run locally) for direct manipulation, AI-generated presentation templates, and a cursor-local AI editing assistant. Art lives in the `Art/` folder; the site renders it through multiple **presentation formats** (Grid, Clothesline, Desk, Directory, plus generated templates) from a single shared **content model**.
+This is a mockup of a malleable, editable art portfolio template site, designed for GitHub Pages. It includes a **Portfolio Editor** for direct manipulation, AI-generated presentation templates, and situated AI editing assistants. Local authoring can write repository files; signed-in public study sessions persist through Supabase. Art lives in the `Art/` folder; the site renders it through multiple **presentation formats** (Grid, Clothesline, Desk, Directory, plus generated templates) from a single shared **content model**.
 
 Built as a prototype for [Walo] — separating *what the work is* from *how it is encountered* — using a task-driven data model inspired by [Jelly](https://doi.org/10.1145/3706598.3713285).
 
@@ -185,18 +185,26 @@ Pages load a saved study session with `?participant=p001`. If Supabase is not co
 
 The selected layout is saved with each participant session. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
 
-#### Public image-vibe extraction
+#### Public AI helpers
 
-The public GitHub Pages editor sends image-vibe analysis to the authenticated Supabase Edge Function in `supabase/functions/image-design-tokens`. Localhost continues to use the local Node endpoint.
+The public GitHub Pages editor sends image-vibe analysis and design-axis layout ranking to authenticated Supabase Edge Functions. Localhost continues to use the local Node endpoints.
 
-Set the OpenAI secret and deploy the function once:
+Set the AI secrets and deploy the functions once. Design-axis ranking uses Anthropic; image analysis uses OpenAI.
 
 ```bash
+supabase secrets set ANTHROPIC_API_KEY=your-key
 supabase secrets set OPENAI_API_KEY=your-key
 supabase functions deploy image-design-tokens
+supabase functions deploy design-axis
+supabase functions deploy generate-public-layout
+supabase functions deploy ai-assisted-edit
 ```
 
-Keep JWT verification enabled (the default). The editor creates an anonymous Supabase Auth session before invoking the function, and the OpenAI key never reaches the browser.
+Keep JWT verification enabled (the default). The editor creates an anonymous Supabase Auth session before invoking the functions, and the provider API keys never reach the browser.
+
+Signed-in study participants can generate full layout bundles on the public GitHub Pages editor. Each bundle contains presentation JSON, custom CSS, a renderer script, SVG assets, and theme tokens. The Edge Function rejects network, storage, parent-window, cookie, dynamic-code, and external-resource capabilities; accepted renderers run inside an opaque-origin sandboxed iframe. Bundles are stored in that participant's `content_json`, restored on reload, and removed when the participant deletes the layout. Localhost continues to use the file-generating authoring pipeline.
+
+Cursor-assisted edits, whole-page sparkle edits, and decorative SVG generation also run publicly for signed-in participants through `ai-assisted-edit`. Returned operations are validated by both the Edge Function and browser before application. Public decorative assets are sanitized inline SVG data URLs saved with the participant portfolio; local authoring continues to write SVG files.
 
 Generated layouts are tagged with the participant ID active at creation time and
 only appear in that participant's editor. Built-in and older unowned layouts remain shared.
@@ -235,7 +243,7 @@ Supported local operation families:
 | **Collection** | this only | "hide this collection in this interface" |
 | **Interface spacing** | current interface | "make this less crowded" |
 
-The assistant sends the clicked target and prompt to `/api/operation`. The AI returns a small JSON operation, not arbitrary HTML/CSS. The editor validates the operation against allowlists before applying it:
+Locally, the assistant sends the clicked target and prompt to `/api/operation`; public participant sessions use the authenticated `ai-assisted-edit` Edge Function. The AI returns a small JSON operation, not arbitrary HTML/CSS. The editor validates the operation against allowlists before applying it:
 
 - `stylePatch` for text styles
 - `elementStylePatch` for clicked image/object styles

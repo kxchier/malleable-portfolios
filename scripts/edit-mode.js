@@ -42,6 +42,91 @@ function isLocalPortfolioHost() {
   return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '';
 }
 
+function requireLocalPortfolioApi(feature) {
+  if (isLocalPortfolioHost()) return;
+  throw new Error(`${feature} requires the local authoring server. Run node scripts/serve.js and open the localhost editor.`);
+}
+
+function hydratePublicLayouts() {
+  const stored = Array.isArray(editedContent.publicLayouts) ? editedContent.publicLayouts : [];
+  if (!stored.length) return;
+  const byKey = new Map((window.PORTFOLIO_LAYOUTS || []).map((layout) => [layout.key, layout]));
+  stored.forEach((layout) => {
+    if (!layout?.key || (!layout?.publicSpec && !layout?.publicBundle)) return;
+    byKey.set(layout.key, { ...layout, generated: true, publicGenerated: true });
+  });
+  window.PORTFOLIO_LAYOUTS = [...byKey.values()].sort((a, b) => Number(a.id) - Number(b.id));
+}
+
+function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage = null) {
+  if (!data?.bundle || !data?.name || !data?.key) throw new Error('The public generator returned an invalid layout bundle.');
+  const suffix = (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase();
+  const sourceKey = String(data.key).toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'study';
+  const keyBase = sourceKey.slice(0, 28);
+  const key = `public_${keyBase}_${suffix}`;
+  const ids = (window.PORTFOLIO_LAYOUTS || []).map((layout) => Number(layout.id)).filter(Number.isFinite);
+  const replaceKey = (value) => String(value || '').split(sourceKey).join(key).split('KEY').join(key);
+  const bundle = {
+    ...data.bundle,
+    presentation: { ...(data.bundle.presentation || {}), id: key, metaphor: data.metaphor || data.bundle.presentation?.metaphor || key },
+    css: replaceKey(data.bundle.css),
+    renderScript: replaceKey(data.bundle.renderScript).replace(
+      /(GeneratedLayouts\s*\[\s*['"])[^'"]+(['"]\s*\])/g,
+      `$1${key}$2`
+    ),
+  };
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))) {
+    bundle.assets = { ...(bundle.assets || {}), 'reference-image': referenceImage.image };
+  }
+  return {
+    id: (ids.length ? Math.max(...ids) : 0) + 1,
+    key,
+    presentationId: key,
+    name: String(data.name).slice(0, 40),
+    metaphor: String(data.metaphor || 'custom portfolio').slice(0, 80),
+    generated: true,
+    publicGenerated: true,
+    prompt,
+    examplePrompt: prompt,
+    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel', 'secondary'],
+    designSpace: designSpace || null,
+    publicBundle: bundle,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function publicLayoutTheme(layout) {
+  if (layout.publicBundle) {
+    return {
+      colors: { ...(layout.publicBundle.themeColors || {}) },
+      typography: { ...(layout.publicBundle.themeTypography || {}) },
+      spacing: { ...(layout.publicBundle.themeSpacing || {}) },
+    };
+  }
+  const spec = layout.publicSpec || {};
+  const fonts = {
+    serif: "'Playfair Display', Georgia, serif",
+    sans: "'Space Grotesk', system-ui, sans-serif",
+    display: "'Bungee', 'Arial Black', sans-serif",
+    handwritten: "'Caveat', cursive",
+    mono: "'Space Mono', monospace",
+  };
+  const family = fonts[spec.headingStyle] || fonts.sans;
+  return {
+    colors: { ...(spec.colors || {}) },
+    typography: {
+      heading1: { fontFamily: family, fontSize: '3rem', fontWeight: '700' },
+      heading2: { fontFamily: family, fontSize: '1.4rem', fontWeight: '700' },
+      body: { fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '1rem', fontWeight: '400' },
+    },
+    spacing: {
+      gridGap: `${spec.spacing?.gridGap || 24}px`,
+      artSize: `${spec.spacing?.artSize || 210}px`,
+      imagePadding: `${spec.spacing?.imagePadding || 12}px`,
+    },
+  };
+}
+
 async function initEditMode() {
   const loadingTitle = document.getElementById('editor-loading-title');
   const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
@@ -54,8 +139,10 @@ async function initEditMode() {
   contentModel = loadedContent;
   editedTheme = JSON.parse(JSON.stringify(theme));
   editedContent = JSON.parse(JSON.stringify(content));
+  hydratePublicLayouts();
 
-  const firstLayout = (window.PORTFOLIO_LAYOUTS || [])[0];
+  const firstLayout = (window.PORTFOLIO_LAYOUTS || []).find((layout) => layout.key === editedContent.selectedLayoutKey)
+    || (window.PORTFOLIO_LAYOUTS || [])[0];
   if (firstLayout) currentVersion = firstLayout.id;
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
@@ -296,6 +383,7 @@ function syncEditChromeAfterLocalEdit() {
 function setupTextEditBridge() {
   window.addEventListener('message', (e) => {
     if (!e.data) return;
+    if (previewIframe?.contentWindow && e.source !== previewIframe.contentWindow) return;
     if (e.data.source === 'portfolio-preview-nav') {
       const layout = PORTFOLIO_LAYOUTS.find((item) => item.key === e.data.key || item.presentationId === e.data.key);
       if (layout) selectVersion(layout.id);
@@ -405,16 +493,18 @@ async function proposeCursorOperation({ target, prompt, scope, presentationId })
 }
 
 async function parseOperationWithAI({ target, prompt, scope, presentationId, versionKey }) {
-  const result = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/operation') || '/api/operation', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      target,
-      prompt,
-      scope,
-      presentationId,
-    }),
-  });
+  if (!isLocalPortfolioHost() && !participantIdValue()) {
+    throw new Error('Begin a participant session before using AI-assisted editing.');
+  }
+  const payload = { target, prompt, scope, presentationId };
+  const result = isLocalPortfolioHost()
+    ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/operation') || '/api/operation', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    })
+    : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
+      mode: 'cursor', ...payload,
+      context: { theme: getVersionColorsForKey(versionKey) },
+    });
 
   const operation = validateCursorOperation(result.operation, { target, scope, prompt, presentationId, versionKey });
   return proposalFor(operation, operation.type === 'noop' ? messageForOperation(operation) : (result.message || messageForOperation(operation)));
@@ -1195,7 +1285,9 @@ function syncDeleteLayoutButton() {
   if (!btn) return;
   const layout = getLayout(currentVersion);
   btn.hidden = !layout?.generated;
-  btn.title = layout?.generated ? `Delete “${layout.name}” and remove its files` : '';
+  btn.title = layout?.publicGenerated
+    ? `Delete “${layout.name}” from this participant session`
+    : layout?.generated ? `Delete “${layout.name}” and remove its files` : '';
 }
 
 function syncPreviewReferenceChip() {
@@ -1260,6 +1352,17 @@ function setupDeleteLayout() {
     btn.textContent = 'Deleting…';
 
     try {
+      if (layout.publicGenerated) {
+        editedContent.publicLayouts = (editedContent.publicLayouts || []).filter((item) => item.key !== layout.key);
+        window.PORTFOLIO_LAYOUTS = (window.PORTFOLIO_LAYOUTS || []).filter((item) => item.key !== layout.key);
+        if (editedTheme.versions?.[layout.key]) delete editedTheme.versions[layout.key];
+        const fallback = window.PORTFOLIO_LAYOUTS[0];
+        applyLayoutMetadata();
+        if (fallback) selectVersion(fallback.id);
+        await saveParticipantPortfolioRemotely();
+        return;
+      }
+      requireLocalPortfolioApi('Deleting generated layouts');
       const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/layouts/delete') || '/api/layouts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2327,19 +2430,37 @@ async function scoreCustomDesignAxis(axis) {
     return;
   }
   const manualScores = new Map((axis.scores || []).filter((score) => score.manual).map((score) => [score.key, score]));
-  const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/design-axis') || '/api/design-axis', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      axis: {
-        ...axis,
-        leftLabel: axisEndpointLabel(axis, 'left'),
-        rightLabel: axisEndpointLabel(axis, 'right'),
-        leftImage: axisEndpointPrompt(axis.leftImage, axisEndpointLabel(axis, 'left')),
-        rightImage: axisEndpointPrompt(axis.rightImage, axisEndpointLabel(axis, 'right')),
-      },
-    }),
-  });
+  const payload = {
+    axis: {
+      ...axis,
+      leftLabel: axisEndpointLabel(axis, 'left'),
+      rightLabel: axisEndpointLabel(axis, 'right'),
+      leftImage: axisEndpointPrompt(axis.leftImage, axisEndpointLabel(axis, 'left')),
+      rightImage: axisEndpointPrompt(axis.rightImage, axisEndpointLabel(axis, 'right')),
+    },
+    layouts: (window.PORTFOLIO_LAYOUTS || []).map((layout) => ({
+      key: layout.key,
+      name: layout.name,
+      metaphor: layout.metaphor,
+      description: layout.prompt || layout.examplePrompt || '',
+      generated: Boolean(layout.generated),
+      designSpace: layout.designSpace || null,
+      colorKeys: layout.colorKeys || [],
+    })),
+  };
+  let data;
+  if (isLocalPortfolioHost()) {
+    data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/design-axis') || '/api/design-axis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } else {
+    if (!window.PortfolioSupabase?.isConfigured?.()) {
+      throw new Error('Layout ranking needs Supabase on the public editor.');
+    }
+    data = await window.PortfolioSupabase.invoke('design-axis', payload);
+  }
   axis.scores = (data.scores || []).map((score) => ({
     ...score,
     name: layoutNameByKey(score.key),
@@ -2770,23 +2891,31 @@ function setupAssetAssistant() {
     syncUndoButton();
     setStatus('Thinking through the whole page...', 'busy');
     try {
+      if (!isLocalPortfolioHost() && !participantIdValue()) {
+        throw new Error('Begin a participant session before using AI-assisted editing.');
+      }
       const beforeChange = cloneEditState();
       const versionKey = layout.key;
       const currentTheme = {
         colors: getVersionColorsForKey(versionKey),
         typography: getVersionTypographyForKey(versionKey),
       };
-      const result = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          layoutKey: layout.key,
-          presentationId: getCurrentPresentationId(),
-          prompt,
+      const portfolioPayload = {
+        layoutKey: layout.key, presentationId: getCurrentPresentationId(), prompt,
+        theme: currentTheme, spacing: getVersionSpacingForKey(versionKey),
+      };
+      const result = isLocalPortfolioHost()
+        ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(portfolioPayload),
+        })
+        : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
+          mode: 'portfolio', prompt,
+          layout: { key: layout.key, name: layout.name, metaphor: layout.metaphor, prompt: layout.prompt },
+          presentation: layout.publicBundle?.presentation || null,
           theme: currentTheme,
           spacing: getVersionSpacingForKey(versionKey),
-        }),
-      });
+          contentSummary: { collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })) },
+        });
 
       const operations = validatePortfolioOperations(result.operations || result.operation, {
         versionKey,
@@ -2803,20 +2932,26 @@ function setupAssetAssistant() {
       let generatedAssetCount = 0;
       for (const operation of assetOperations) {
         setStatus('Drawing page decorations...', 'busy');
-        const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/assets/generate') || '/api/assets/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            layoutKey: layout.key,
-            prompt: operation.prompt,
-          }),
-        });
+        const decorations = ensureDecorations(layout.key);
+        const data = isLocalPortfolioHost()
+          ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/assets/generate') || '/api/assets/generate', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layoutKey: layout.key, prompt: operation.prompt }),
+          })
+          : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
+            mode: 'assets', prompt: operation.prompt,
+            layout: { key: layout.key, name: layout.name, metaphor: layout.metaphor },
+            presentation: layout.publicBundle?.presentation || null,
+            existingDecorationCount: decorations.length,
+          });
         if (Array.isArray(data?.assets) && data.assets.length) {
-          const decorations = ensureDecorations(layout.key);
           data.assets.forEach((asset) => {
-            if (!asset.src) return;
+            const src = asset.src || (asset.svg
+              ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(asset.svg)}`
+              : '');
+            if (!src) return;
             decorations.push({
-              src: asset.src,
+              src,
               alt: asset.alt || '',
               x: asset.x,
               y: asset.y,
@@ -3267,15 +3402,22 @@ function setupAI() {
 
   const askNextQuestion = async (prompt) => {
     const designSpace = generationDesignSpaceSelection();
-    const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate-questions') || '/api/generate-questions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: promptWithHiddenImageContract(prompt),
-        designSpace,
-        answers: pendingGenerateAnswers,
-      }),
-    });
+    if (!isLocalPortfolioHost() && !participantIdValue()) {
+      throw new Error('Begin a participant session before generating a public layout.');
+    }
+    const payload = {
+      mode: 'question',
+      prompt: promptWithHiddenImageContract(prompt),
+      designSpace,
+      answers: pendingGenerateAnswers,
+    };
+    const data = isLocalPortfolioHost()
+      ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate-questions') || '/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      : await window.PortfolioSupabase.invoke('generate-public-layout', payload);
     if (data.done) return false;
     pendingGenerateQuestion = normalizeGenerateQuestion(data.question);
     if (!pendingGenerateQuestion) throw new Error('AI did not return a usable design question');
@@ -3375,11 +3517,49 @@ function setupAI() {
     try {
       const designSpace = generationDesignSpaceSelection();
       const referenceImage = /REFERENCE_FIDELITY:\s*high/i.test(clarifiedPrompt) ? analyzedReferenceImage : null;
-      const data = await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate') || '/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: clarifiedPrompt, designSpace, referenceImage }),
-      });
+      const publicGeneration = !isLocalPortfolioHost();
+      if (publicGeneration && !participantIdValue()) {
+        throw new Error('Begin a participant session before generating a public layout.');
+      }
+      const data = publicGeneration
+        ? await window.PortfolioSupabase.invoke('generate-public-layout', {
+          mode: 'generate',
+          prompt: clarifiedPrompt,
+          designSpace,
+          answers: pendingGenerateAnswers,
+          hasReferenceImage: Boolean(referenceImage?.image),
+          collections: (sourceManifest?.collections || []).map((collection) => ({
+            name: collection.name,
+            imageCount: (collection.images || []).length,
+          })),
+          layouts: (window.PORTFOLIO_LAYOUTS || []).map((layout) => ({
+            name: layout.name, metaphor: layout.metaphor, designSpace: layout.designSpace || null,
+          })),
+        })
+        : await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/generate') || '/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: clarifiedPrompt, designSpace, referenceImage }),
+        });
+
+      if (publicGeneration) {
+        const publicLayout = createPublicGeneratedLayout(data, clarifiedPrompt, designSpace, referenceImage);
+        const versionTheme = publicLayoutTheme(publicLayout);
+        window.PORTFOLIO_LAYOUTS.push(publicLayout);
+        editedContent.publicLayouts = [...(editedContent.publicLayouts || []), publicLayout];
+        editedContent.selectedLayoutKey = publicLayout.key;
+        editedTheme.versions = editedTheme.versions || {};
+        editedTheme.versions[publicLayout.key] = versionTheme;
+        applyLayoutMetadata();
+        placeGeneratedLayoutOnAxes(publicLayout, { explicitPoint: Boolean(designSpace) });
+        renderDesignSpace();
+        selectVersion(publicLayout.id);
+        await saveParticipantPortfolioRemotely();
+        generateStatus.textContent = `Created and saved “${publicLayout.name}”.`;
+        generateStatus.className = 'generate-status generate-status--ok';
+        resetQuestions();
+        return;
+      }
 
       if (data.layouts) window.PORTFOLIO_LAYOUTS = data.layouts;
       const layout = data.layout;
@@ -4116,6 +4296,13 @@ function participantIdValue() {
   return fromInput || window.PortfolioSupabase?.participantIdFromLocation?.() || '';
 }
 
+async function saveParticipantPortfolioRemotely() {
+  if (!window.PortfolioSupabase?.isConfigured?.()) throw new Error('Supabase is not configured.');
+  const participantId = participantIdValue();
+  if (!participantId) throw new Error('Begin a participant session before saving or generating.');
+  await window.PortfolioSupabase.savePortfolio(participantId, editedTheme, editedContent);
+}
+
 function setSupabaseStatus(message, { error = false, persist = false } = {}) {
   const status = document.getElementById('supabase-status');
   if (!status) return;
@@ -4233,6 +4420,13 @@ function openLivePreviewWindow() {
       editMode: false,
       enableAssistant: false,
     });
+    if (getLayout(currentVersion)?.publicBundle) {
+      previewWindow.document.open();
+      previewWindow.document.write('<!DOCTYPE html><title>Generated portfolio preview</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;display:block}</style><iframe id="sandbox" sandbox="allow-scripts"></iframe>');
+      previewWindow.document.close();
+      previewWindow.document.getElementById('sandbox').srcdoc = html;
+      return;
+    }
     previewWindow.document.open();
     previewWindow.document.write(html);
     previewWindow.document.close();
@@ -4260,7 +4454,7 @@ async function saveChanges() {
     const selectedLayout = getLayout(currentVersion);
     if (selectedLayout?.key) editedContent.selectedLayoutKey = selectedLayout.key;
     const themePayload = { ...editedTheme, content: editedContent };
-    try {
+    if (isLocalPortfolioHost()) try {
       const [themeRes, rebuildRes] = await Promise.all([
         fetch('/api/theme', {
           method: 'POST',
@@ -4339,7 +4533,9 @@ function updatePreview() {
   iframe.style.background = getCurrentVersionColors().background || DEFAULT_THEME_COLORS.background;
   iframe.style.transformOrigin = 'top left';
   iframe.scrolling = getLayout(currentVersion)?.key === 'directory' ? 'no' : 'auto';
-  iframe.sandbox.add('allow-same-origin', 'allow-scripts');
+  const selectedLayout = getLayout(currentVersion);
+  if (selectedLayout?.publicBundle) iframe.sandbox.add('allow-scripts');
+  else iframe.sandbox.add('allow-same-origin', 'allow-scripts');
   viewport.appendChild(iframe);
   container.appendChild(viewport);
   previewIframe = iframe;
@@ -4362,7 +4558,14 @@ function updatePreview() {
   }
 
   window.appData.then(({ manifest }) => {
-    const html = buildPreviewHTML(manifest, currentVersion, previewWidth);
+    const isSandboxedPublicBundle = Boolean(getLayout(currentVersion)?.publicBundle);
+    const html = buildPreviewHTML(manifest, currentVersion, previewWidth, isSandboxedPublicBundle
+      ? { baseHref: new URL('./', window.location.href).href }
+      : {});
+    if (isSandboxedPublicBundle) {
+      iframe.srcdoc = html;
+      return;
+    }
     const iframeDoc = iframe.contentDocument;
     iframeDoc.write(html);
     iframeDoc.close();
@@ -4391,6 +4594,52 @@ function buildTextHeading(tag, className, id, role, fallback, theme, content, ve
 
 function buildPreviewNav(activeLayout) {
   return '';
+}
+
+function publicLayoutCss(layout) {
+  const spec = layout.publicSpec || {};
+  const composition = ['grid', 'horizontal', 'stacked', 'masonry'].includes(spec.composition) ? spec.composition : 'grid';
+  const columns = Math.max(1, Math.min(5, Number(spec.columns) || 3));
+  const gap = Math.max(8, Math.min(56, Number(spec.spacing?.gridGap) || 24));
+  const padding = Math.max(0, Math.min(30, Number(spec.spacing?.imagePadding) || 12));
+  const radius = { square: '0', rounded: '20px', polaroid: '4px', ticket: '14px 2px 14px 2px' }[spec.cardShape] || '20px';
+  const justify = spec.alignment === 'center' ? 'center' : 'start';
+  const pattern = {
+    dots: 'radial-gradient(var(--color-secondary) 1px, transparent 1px)',
+    grid: 'linear-gradient(var(--color-panel) 1px, transparent 1px), linear-gradient(90deg, var(--color-panel) 1px, transparent 1px)',
+    stripes: 'repeating-linear-gradient(135deg, transparent 0 18px, color-mix(in srgb, var(--color-panel) 45%, transparent) 18px 20px)',
+    glow: 'radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--color-accent) 30%, transparent), transparent 38%)',
+    none: 'none',
+  }[spec.backgroundPattern] || 'none';
+  const surface = {
+    flat: 'none',
+    paper: '0 10px 28px color-mix(in srgb, var(--color-primary) 16%, transparent)',
+    glass: '0 12px 34px color-mix(in srgb, var(--color-primary) 18%, transparent)',
+    fabric: 'inset 0 0 0 2px color-mix(in srgb, var(--color-secondary) 45%, transparent)',
+  }[spec.surface] || 'none';
+  const hover = {
+    lift: 'translateY(-8px)', tilt: 'rotate(-2deg) scale(1.02)', glow: 'scale(1.02)', reveal: 'translateY(-3px)',
+  }[spec.hover] || 'translateY(-8px)';
+  const worksLayout = composition === 'horizontal'
+    ? `display:flex;overflow-x:auto;scroll-snap-type:x mandatory;`
+    : composition === 'stacked'
+      ? `display:flex;flex-direction:column;align-items:${justify};`
+      : composition === 'masonry'
+        ? `display:block;columns:${columns};column-gap:${gap}px;`
+        : `display:grid;grid-template-columns:repeat(${columns},minmax(0,1fr));`;
+  return `
+    .public-layout { min-height:100vh;padding:${spec.density === 'airy' ? '8vw' : spec.density === 'dense' ? '3vw' : '5vw'};background-image:${pattern};background-size:24px 24px;color:var(--color-primary); }
+    .public-layout-section { position:relative;margin:0 auto ${gap * 2}px;max-width:1500px;text-align:${spec.alignment === 'center' ? 'center' : 'left'}; }
+    .public-layout-section>h2 { margin:0 0 ${gap}px;font-family:var(--font-heading2-family);font-size:var(--font-heading2); }
+    .public-layout-number { display:block;color:var(--color-accent);font:700 .78rem/1 var(--font-body-family);letter-spacing:.18em;margin-bottom:8px; }
+    .public-layout-works { ${worksLayout} gap:${gap}px;align-items:start; }
+    .public-layout-card { box-sizing:border-box;margin:0 0 ${composition === 'masonry' ? gap : 0}px;padding:${padding}px;border-radius:${radius};background:${spec.surface === 'glass' ? 'color-mix(in srgb, var(--color-paper) 68%, transparent)' : 'var(--color-paper)'};box-shadow:${surface};overflow:hidden;break-inside:avoid;scroll-snap-align:start;transition:transform .24s ease,box-shadow .24s ease,filter .24s ease; }
+    .public-layout-card:hover { transform:${hover};${spec.hover === 'glow' ? 'box-shadow:0 0 35px color-mix(in srgb,var(--color-accent) 55%,transparent);' : ''} }
+    .public-layout-card img { width:100%;height:${composition === 'masonry' ? 'auto' : 'var(--space-artSize)'};object-fit:${spec.imageFit === 'cover' ? 'cover' : 'contain'} !important;background:var(--color-panel); }
+    .public-layout--masonry .public-layout-card { width:100%!important;min-width:0!important;max-width:none!important;display:inline-block; }
+    .public-layout--horizontal .public-layout-card { flex:0 0 var(--space-artSize); }
+    @media(max-width:720px){.public-layout{padding:24px 16px}.public-layout-works{display:flex;flex-direction:column;columns:auto}.public-layout-card{width:100%!important;max-width:none!important}}
+  `;
 }
 
 function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) {
@@ -4586,16 +4835,33 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js"><\/script>`
     : '';
 
-  const generatedHead = layout.generated
+  const publicBundleCss = String(layout.publicBundle?.css || '').replace(/<\/style/gi, '<\\/style');
+  const generatedHead = layout.publicBundle
+    ? `<style>${publicBundleCss}</style>`
+    : layout.publicGenerated
+    ? `<style>${publicLayoutCss(layout)}</style>`
+    : layout.generated
     ? `<link rel="stylesheet" href="./generated/${layout.key}/style.css">`
     : '';
 
-  const generatedScripts = layout.generated
+  const publicLayoutJson = JSON.stringify(layout).replace(/</g, '\\u003c');
+  const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
+  const generatedScripts = layout.publicBundle
+    ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
+  <script src="./scripts/generated-runtime.js?v=public-full-generation-20260722"><\/script>
+  <script src="./scripts/decorations-runtime.js"><\/script>
+  <script>${publicRenderScript}<\/script>`
+    : layout.publicGenerated
+    ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
+  <script src="./scripts/generated-runtime.js?v=public-generation-20260722"><\/script>
+  <script src="./scripts/decorations-runtime.js"><\/script>
+  <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
+    : layout.generated
     ? `<script src="./scripts/generated-runtime.js"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
-  <script src="./scripts/model-loader.js"><\/script>
+  <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${deskScripts}
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/render.js"><\/script>`;
@@ -4607,6 +4873,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       theme: window.__EDIT_STATE__.theme,
       contentOverrides: window.__EDIT_STATE__.content,
       contentModel,
+      ${layout.publicGenerated ? 'presentation: window.__PUBLIC_LAYOUT__.publicBundle?.presentation || window.__PUBLIC_LAYOUT__.publicSpec,' : ''}
+      ${layout.publicBundle ? 'schema: null,' : ''}
     });
     const previewRoot = document.getElementById('preview-content');
     await GeneratedRuntime.mount({
@@ -4626,6 +4894,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       theme: window.__EDIT_STATE__.theme,
       contentOverrides: window.__EDIT_STATE__.content,
       contentModel,
+      ${layout.publicGenerated ? 'presentation: window.__PUBLIC_LAYOUT__.publicBundle?.presentation || window.__PUBLIC_LAYOUT__.publicSpec,' : ''}
+      ${layout.publicBundle ? 'schema: null,' : ''}
     });
     const previewRoot = document.getElementById('preview-content');
     PortfolioRender.renderCollections(
@@ -4684,10 +4954,16 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     }
   };`;
 
+  const sandboxOrigin = options.baseHref ? new URL(options.baseHref).origin : window.location.origin;
+  const publicBundleCsp = layout.publicBundle
+    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' ${sandboxOrigin}; style-src 'unsafe-inline' ${sandboxOrigin} https://fonts.googleapis.com; font-src ${sandboxOrigin} https://fonts.gstatic.com; img-src ${sandboxOrigin} data: blob:; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri ${sandboxOrigin}">`
+    : '';
+
   return `<!DOCTYPE html>
 <html class="${previewViewClass.trim()}">
 <head>
   <meta charset="UTF-8">
+  ${publicBundleCsp}
   ${options.baseHref ? `<base href="${PortfolioContent.escapeHtml(options.baseHref)}">` : ''}
   <link rel="stylesheet" href="./styles.css">
   ${generatedHead}
@@ -4769,7 +5045,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
   <script src="./scripts/content.js"><\/script>
-  <script src="./scripts/model-loader.js"><\/script>
+  <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${generatedScripts}
   <script>
   ${mountScript}

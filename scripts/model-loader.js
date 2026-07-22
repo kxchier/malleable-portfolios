@@ -62,11 +62,13 @@ window.PortfolioModels = (() => {
   async function load(presentationId, options = {}) {
     const [contentModel, presentation, themeRaw, schema] = await Promise.all([
       options.contentModel ? Promise.resolve(options.contentModel) : fetchContentModel(),
-      fetchPresentation(presentationId),
+      options.presentation ? Promise.resolve(options.presentation) : fetchPresentation(presentationId),
       options.theme
         ? Promise.resolve(options.theme)
         : fetch('./theme.json').then((r) => r.json()),
-      fetch('./models/schema.json').then((r) => r.json()).catch(() => null),
+      Object.prototype.hasOwnProperty.call(options, 'schema')
+        ? Promise.resolve(options.schema)
+        : fetch('./models/schema.json').then((r) => r.json()).catch(() => null),
     ]);
 
     let manifest;

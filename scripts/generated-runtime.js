@@ -1,6 +1,7 @@
 /** Runtime for AI-generated layouts — Model + Canvas + Cursor Assistant layers. */
 window.GeneratedRuntime = (() => {
   async function fetchSvgAssets(layoutKey) {
+    if (window.__PUBLIC_LAYOUT__?.key === layoutKey) return { ...(window.__PUBLIC_LAYOUT__.publicBundle?.assets || {}) };
     const assets = {};
     const known = [
       'frame.svg',
@@ -63,6 +64,7 @@ window.GeneratedRuntime = (() => {
   }
 
   async function fetchDecorations(layoutKey) {
+    if (window.__PUBLIC_LAYOUT__?.key === layoutKey) return [];
     try {
       const res = await fetch(`./generated/${layoutKey}/assets/decorations.json?ts=${Date.now()}`);
       if (!res.ok) return [];

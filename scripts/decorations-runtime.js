@@ -55,7 +55,7 @@ window.PortfolioDecorations = (() => {
 
     decorations.forEach((decoration) => {
       const src = String(decoration.src || '').trim();
-      if (!src || !/^(generated|layout-assets)\//.test(src)) return;
+      if (!src || !(/^(generated|layout-assets)\//.test(src) || /^data:image\/svg\+xml(?:;charset=utf-8)?,/i.test(src))) return;
       const item = document.createElement('span');
       item.className = 'portfolio-decoration';
       item.style.setProperty('--decoration-x', `${Number(decoration.x) || 12}%`);
