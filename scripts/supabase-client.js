@@ -158,10 +158,23 @@ window.PortfolioSupabase = (() => {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await sb
+    const updates = {
+      theme_json: theme,
+      content_json: content,
+      updated_at: row.updated_at,
+    };
+    const { data: existing, error: updateError } = await sb
       .from('portfolios')
-      .upsert(row, { onConflict: 'user_id' });
-    if (error) throw error;
+      .update(updates)
+      .eq('participant_id', normalized)
+      .select('participant_id')
+      .maybeSingle();
+    if (updateError) throw updateError;
+
+    if (!existing) {
+      const { error: insertError } = await sb.from('portfolios').insert(row);
+      if (insertError) throw insertError;
+    }
     setParticipantIdInUrl(normalized);
     return row;
   }

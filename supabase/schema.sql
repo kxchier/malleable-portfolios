@@ -48,14 +48,14 @@ drop policy if exists "Users can insert their own portfolio" on public.portfolio
 create policy "Users can insert their own portfolio"
 on public.portfolios
 for insert
-with check (auth.uid() = user_id);
+with check (true);
 
 drop policy if exists "Users can update their own portfolio" on public.portfolios;
 create policy "Users can update their own portfolio"
 on public.portfolios
 for update
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (true)
+with check (true);
 
 create index if not exists portfolios_participant_id_idx on public.portfolios(participant_id);
 create unique index if not exists portfolios_participant_id_key on public.portfolios(participant_id);

@@ -27,6 +27,7 @@ const SOCIAL_PROTOTYPE_VALUES = ['none', 'likes', 'comments', 'likes-comments', 
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
 let designSpacePointSelected = false;
 let customDesignAxes = [];
+let designAxesRemoteSaveTimer = null;
 let draggingAxisNote = null;
 let activeDesignDirectionPrompt = '';
 let pendingGeneratePrompt = '';
@@ -1799,9 +1800,11 @@ function fillAxisScoresForCurrentLayouts({ persist = false } = {}) {
 
 function loadDesignAxes() {
   const persisted = sanitizeStoredAxes(editedContent.designAxes || []);
+  if (!isLocalPortfolioHost()) {
+    return persisted.length ? persisted : createDefaultDesignAxes();
+  }
   try {
     const stored = sanitizeStoredAxes(JSON.parse(localStorage.getItem(DESIGN_AXES_STORE) || '[]'));
-    if (!isLocalPortfolioHost() && persisted.length) return persisted;
     return stored.length ? stored : (persisted.length ? persisted : createDefaultDesignAxes());
   } catch {
     return persisted.length ? persisted : createDefaultDesignAxes();
@@ -1810,11 +1813,26 @@ function loadDesignAxes() {
 
 function saveDesignAxes() {
   editedContent.designAxes = sanitizeStoredAxes(customDesignAxes);
-  try {
-    localStorage.setItem(DESIGN_AXES_STORE, JSON.stringify(editedContent.designAxes));
-  } catch {
-    // Ignore storage failures; the in-memory prototype still works.
+  if (isLocalPortfolioHost()) {
+    try {
+      localStorage.setItem(DESIGN_AXES_STORE, JSON.stringify(editedContent.designAxes));
+    } catch {
+      // Ignore storage failures; the in-memory prototype still works.
+    }
+    return;
   }
+
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
+  if (!participantId || !window.PortfolioSupabase?.isConfigured?.()) return;
+  window.clearTimeout(designAxesRemoteSaveTimer);
+  designAxesRemoteSaveTimer = window.setTimeout(async () => {
+    try {
+      await window.PortfolioSupabase.savePortfolio(participantId, editedTheme, editedContent);
+    } catch (error) {
+      console.warn('[design-axes] remote save failed:', error);
+      setSupabaseStatus(`Could not save design axes: ${error.message || 'remote save failed'}`, { error: true, persist: true });
+    }
+  }, 500);
 }
 
 function mappedAxis(role) {
