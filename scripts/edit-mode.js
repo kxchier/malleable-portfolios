@@ -4724,24 +4724,25 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     }
     .text-edit-selected { outline: 2px solid var(--color-primary) !important; outline-offset: 3px; }
     .text-edit-toolbar {
-      --text-edit-ink: #111111;
-      --text-edit-muted: #5f5f5f;
-      --text-edit-paper: #ffffff;
-      --text-edit-panel: #f7f5ef;
-      --text-edit-line: rgba(17, 17, 17, 0.22);
-      --text-edit-hover: #eee8dc;
+      --text-edit-ink: #24221f;
+      --text-edit-muted: #6f6862;
+      --text-edit-paper: #fafaf9;
+      --text-edit-panel: #f5f5f4;
+      --text-edit-line: #d5d8d4;
+      --text-edit-accent: #6a7368;
+      --text-edit-hover: #eef0ee;
       position: absolute;
       z-index: 2000;
       background: var(--text-edit-paper) !important;
       border: 1px solid var(--text-edit-line);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 0.65rem 0.75rem;
       min-width: 220px;
-      font-family: system-ui, sans-serif;
+      font-family: 'Velvelyne', 'Segoe UI', system-ui, sans-serif;
       font-size: 0.82rem;
       line-height: 1.3;
       color: var(--text-edit-ink) !important;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 1px 2px rgba(106, 115, 104, 0.06), 0 10px 28px rgba(58, 52, 48, 0.06);
     }
     .text-edit-toolbar,
     .text-edit-toolbar * {
@@ -4761,8 +4762,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       font-size: 0.75rem;
     }
     .text-edit-props button:hover { background: var(--text-edit-hover) !important; }
-    .text-edit-props button.active { background: #111111 !important; color: #ffffff !important; }
-    .text-edit-props button.active * { color: #ffffff !important; }
+    .text-edit-props button.active { border-color: var(--text-edit-accent); background: var(--text-edit-accent) !important; color: var(--text-edit-paper) !important; }
+    .text-edit-props button.active * { color: var(--text-edit-paper) !important; }
     .text-edit-panel label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
     .text-edit-hint { font-size: 0.72rem; color: var(--text-edit-muted) !important; margin-bottom: 0.35rem; }
     .text-edit-input, .text-edit-font {
@@ -4779,11 +4780,11 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       box-sizing: border-box;
     }
     .text-edit-size { width: 100%; }
-    .text-edit-size { accent-color: var(--text-edit-ink); }
+    .text-edit-size { accent-color: var(--text-edit-accent); }
     .text-edit-scope { border: none; margin-top: 0.5rem; padding: 0; }
     .text-edit-scope legend { font-weight: 600; font-size: 0.75rem; margin-bottom: 0.25rem; }
     .text-edit-scope label { display: block; font-size: 0.75rem; margin: 0.15rem 0; cursor: pointer; }
-    .text-edit-scope input { accent-color: var(--text-edit-ink); }
+    .text-edit-scope input { accent-color: var(--text-edit-accent); }
     `
     : '';
   const directoryInlineStyles = layout.key === 'directory'

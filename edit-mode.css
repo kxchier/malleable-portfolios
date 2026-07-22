@@ -374,20 +374,20 @@
 }
 
 .asset-assistant-card {
-  --assistant-ink: #111111;
-  --assistant-muted: #5f5f5f;
-  --assistant-paper: #ffffff;
-  --assistant-panel: #f7f5ef;
-  --assistant-line: rgba(17, 17, 17, 0.22);
-  --assistant-hover: #eee8dc;
+  --assistant-ink: var(--ed-text);
+  --assistant-muted: var(--ed-muted);
+  --assistant-paper: var(--ed-surface);
+  --assistant-panel: var(--ed-bg);
+  --assistant-line: var(--ed-line);
+  --assistant-hover: var(--ed-accent-soft);
   width: min(300px, calc(100vw - 2rem));
   padding: 0.6rem;
   border: 1px solid var(--assistant-line);
-  border-radius: 8px;
+  border-radius: var(--ed-radius);
   background: var(--assistant-paper);
   color: var(--assistant-ink);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  font-family: system-ui, sans-serif;
+  box-shadow: var(--ed-shadow);
+  font-family: var(--ed-font);
   font-size: 0.78rem;
   line-height: 1.3;
   pointer-events: auto;
@@ -409,9 +409,10 @@
 
 .asset-assistant-head h2 {
   margin: 0;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
+  color: var(--ed-accent);
+  font-family: var(--ed-display-font);
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.25;
 }
 
@@ -502,7 +503,9 @@
 }
 
 .asset-assistant-actions .publish-btn {
-  background: var(--assistant-panel);
+  border-color: var(--ed-sage);
+  background: var(--ed-sage);
+  color: var(--ed-surface);
 }
 
 /* Version switcher */
@@ -1828,18 +1831,20 @@
   width: min(300px, calc(100vw - 2rem));
   max-width: min(300px, calc(100vw - 2rem));
   padding: 0.6rem;
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  font-family: system-ui, sans-serif;
+  border-color: var(--ed-sage-line);
+  border-radius: var(--ed-radius);
+  box-shadow: var(--ed-shadow);
+  font-family: var(--ed-font);
   font-size: 0.78rem;
   line-height: 1.3;
 }
 
 .modal.asset-assistant-card h2 {
   margin: 0;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
+  color: var(--ed-accent);
+  font-family: var(--ed-display-font);
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.25;
 }
 

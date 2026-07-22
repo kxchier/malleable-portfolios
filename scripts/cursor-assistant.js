@@ -291,25 +291,38 @@
   function injectStyles() {
     const style = document.createElement('style');
     style.textContent = `
+      @font-face {
+        font-family: 'Velvelyne';
+        src: url('./fonts/velvelyne/Velvelyne-Book.woff2') format('woff2');
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Velvelyne';
+        src: url('./fonts/velvelyne/Velvelyne-Bold.woff2') format('woff2');
+        font-weight: 600 800;
+        font-display: swap;
+      }
       [data-model-kind]:hover { outline: 1px dashed color-mix(in srgb, var(--color-accent) 45%, transparent); outline-offset: 3px; }
       .cursor-assistant-target { outline: 2px solid var(--color-accent) !important; outline-offset: 3px; }
       .cursor-assistant {
-        --cursor-assistant-ink: #111111;
-        --cursor-assistant-muted: #5f5f5f;
-        --cursor-assistant-paper: #ffffff;
-        --cursor-assistant-panel: #f7f5ef;
-        --cursor-assistant-line: rgba(17, 17, 17, 0.22);
-        --cursor-assistant-hover: #eee8dc;
+        --cursor-assistant-ink: #24221f;
+        --cursor-assistant-muted: #6f6862;
+        --cursor-assistant-paper: #fafaf9;
+        --cursor-assistant-panel: #f5f5f4;
+        --cursor-assistant-line: #d5d8d4;
+        --cursor-assistant-accent: #6a7368;
+        --cursor-assistant-hover: #eef0ee;
         position: absolute;
         z-index: 2600;
         width: min(280px, calc(100vw - 16px));
         padding: 0.55rem;
         border: 1px solid var(--cursor-assistant-line);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--cursor-assistant-paper);
         color: var(--cursor-assistant-ink) !important;
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-        font-family: system-ui, sans-serif;
+        box-shadow: 0 1px 2px rgba(106, 115, 104, 0.06), 0 10px 28px rgba(58, 52, 48, 0.06);
+        font-family: 'Velvelyne', 'Segoe UI', system-ui, sans-serif;
         font-size: 0.78rem;
         line-height: 1.3;
       }
@@ -352,7 +365,7 @@
         transform: translateY(-1px);
         background: var(--cursor-assistant-hover);
       }
-      .cursor-assistant-title { font-weight: 700; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .cursor-assistant-title { color: var(--cursor-assistant-accent) !important; font-weight: 700; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .cursor-assistant button {
         border: 1px solid var(--cursor-assistant-line);
         border-radius: 5px;
@@ -380,7 +393,7 @@
       .cursor-assistant textarea::placeholder { color: var(--cursor-assistant-muted) !important; opacity: 1; -webkit-text-fill-color: var(--cursor-assistant-muted) !important; }
       .cursor-assistant-scope { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; font-size: 0.68rem; }
       .cursor-assistant-scope label { display: inline-flex; gap: 0.2rem; align-items: center; cursor: pointer; }
-      .cursor-assistant input { accent-color: var(--cursor-assistant-ink); }
+      .cursor-assistant input { accent-color: var(--cursor-assistant-accent); }
       .cursor-assistant-actions { display: flex; justify-content: flex-end; gap: 0.35rem; margin-top: 0.45rem; }
       .cursor-assistant-proposal p { margin: 0; }
       .cursor-assistant.is-busy::after { content: 'Thinking...'; display: block; margin-top: 0.35rem; opacity: 0.68; }
