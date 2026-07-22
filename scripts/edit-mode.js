@@ -1417,14 +1417,10 @@ async function imageFileToFastDataUrlForAnalysis(file) {
 async function enrichAxisEndpointImage(file, endpointData) {
   try {
     const image = await imageFileToFastDataUrlForAnalysis(file);
-    const data = await fetchJson('/api/image-design-tokens', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image,
-        mimeType: file.type,
-        fileName: file.name,
-      }),
+    const data = await analyzeImageDesignTokens({
+      image,
+      mimeType: file.type,
+      fileName: file.name,
     });
     const tokens = data.tokens || {};
     const palette = Array.isArray(tokens.palette) && tokens.palette.length
@@ -2883,6 +2879,20 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+async function analyzeImageDesignTokens(payload) {
+  if (isLocalPortfolioHost()) {
+    return fetchJson('/api/image-design-tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+  if (!window.PortfolioSupabase?.isConfigured?.()) {
+    throw new Error('Image vibe extraction needs Supabase on the public editor.');
+  }
+  return window.PortfolioSupabase.invoke('image-design-tokens', payload);
+}
+
 function setupAI() {
   const generateBtn = document.getElementById('generate-btn');
   const generateStatus = document.getElementById('generate-status');
@@ -3083,14 +3093,10 @@ function setupAI() {
     }
     try {
       const image = await imageFileToFastDataUrl(selectedImageFile);
-      const data = await fetchJson('/api/image-design-tokens', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image,
-          mimeType: selectedImageFile.type,
-          fileName: selectedImageFile.name,
-        }),
+      const data = await analyzeImageDesignTokens({
+        image,
+        mimeType: selectedImageFile.type,
+        fileName: selectedImageFile.name,
       });
       analyzedReferenceImage = {
         image,

@@ -185,6 +185,19 @@ Pages load a saved study session with `?participant=p001`. If Supabase is not co
 
 The selected layout is saved with each participant session. If the selected layout is generated, its generated files must also be committed and deployed; Supabase stores the layout selection and user customizations, not executable renderer code or assets.
 
+#### Public image-vibe extraction
+
+The public GitHub Pages editor sends image-vibe analysis to the authenticated Supabase Edge Function in `supabase/functions/image-design-tokens`. Localhost continues to use the local Node endpoint.
+
+Set the OpenAI secret and deploy the function once:
+
+```bash
+supabase secrets set OPENAI_API_KEY=your-key
+supabase functions deploy image-design-tokens
+```
+
+Keep JWT verification enabled (the default). The editor creates an anonymous Supabase Auth session before invoking the function, and the OpenAI key never reaches the browser.
+
 Generated layouts are tagged with the participant ID active at creation time and
 only appear in that participant's editor. Built-in and older unowned layouts remain shared.
 The participant-free `edit.html` researcher view shows every generated layout.

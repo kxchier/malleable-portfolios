@@ -101,6 +101,24 @@ window.PortfolioSupabase = (() => {
     return signInAnonymously();
   }
 
+  async function invoke(functionName, body) {
+    const sb = client();
+    if (!sb) throw new Error('Supabase is not configured.');
+    await ensureUser();
+    const { data, error } = await sb.functions.invoke(functionName, { body });
+    if (error) {
+      let message = error.message || `Could not call ${functionName}.`;
+      try {
+        const details = await error.context?.json?.();
+        if (details?.error) message = details.error;
+      } catch {
+        // Keep the SDK message when the response body is not JSON.
+      }
+      throw new Error(message);
+    }
+    return data;
+  }
+
   async function signOut() {
     const sb = client();
     if (!sb) return;
@@ -152,6 +170,7 @@ window.PortfolioSupabase = (() => {
     client,
     artSourceFromLocation,
     isConfigured,
+    invoke,
     loadPortfolio,
     normalizeParticipantId,
     participantIdFromLocation,
