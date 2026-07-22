@@ -142,8 +142,7 @@ async function initEditMode() {
   editedContent = JSON.parse(JSON.stringify(content));
   hydratePublicLayouts();
 
-  const firstLayout = (window.PORTFOLIO_LAYOUTS || []).find((layout) => layout.key === editedContent.selectedLayoutKey)
-    || (window.PORTFOLIO_LAYOUTS || [])[0];
+  const firstLayout = (window.PORTFOLIO_LAYOUTS || [])[0];
   if (firstLayout) currentVersion = firstLayout.id;
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
