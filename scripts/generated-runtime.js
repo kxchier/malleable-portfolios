@@ -275,6 +275,12 @@ window.GeneratedRuntime = (() => {
     }
 
     function workTile(imgPath, opts = {}) {
+      const indexedWork = workByKey.get(`${opts.collectionIndex ?? 0}:${opts.workIndex ?? 0}`);
+      const requestedPath = typeof imgPath === 'string'
+        ? imgPath
+        : imgPath?.images?.[0] || imgPath?.image || imgPath?.src || '';
+      const fallbackPath = indexedWork?.images?.[0] || '';
+      const resolvedPath = requestedPath || fallbackPath;
       const tile = document.createElement('div');
       tile.className = opts.className || 'generated-work-tile scroll-item';
       if (!tile.classList.contains('generated-work-tile')) {
@@ -296,20 +302,26 @@ window.GeneratedRuntime = (() => {
         tile.dataset.collectionIndex = String(ci);
         tile.dataset.workIndex = String(wi);
         tile.dataset.workId = opts.workId || `work_${ci}_${wi}`;
-        tile.dataset.modelLabel = opts.label || imgPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+        tile.dataset.modelLabel = opts.label || resolvedPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
       }
 
       const image = document.createElement('img');
-      image.src = imgPath;
+      image.src = resolvedPath;
       image.alt = opts.alt || 'artwork';
       image.draggable = false;
       image.dataset.generatedArtworkImage = 'true';
       image.classList.add('generated-artwork-image');
-      image.onerror = () => image.remove();
+      image.onerror = () => {
+        if (fallbackPath && image.getAttribute('src') !== fallbackPath) {
+          image.src = fallbackPath;
+          return;
+        }
+        image.remove();
+      };
       tile.appendChild(image);
       const inferredWork = opts.work
-        || workByImage.get(imgPath)
-        || workByKey.get(`${opts.collectionIndex ?? 0}:${opts.workIndex ?? 0}`);
+        || workByImage.get(resolvedPath)
+        || indexedWork;
       appendWorkMetadata(tile, workMetadata(inferredWork, opts.label || opts.alt));
       return tile;
     }
