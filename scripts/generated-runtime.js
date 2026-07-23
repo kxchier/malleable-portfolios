@@ -444,6 +444,31 @@ window.GeneratedRuntime = (() => {
     });
   }
 
+  function repairMissingArtworkImages(root, collections) {
+    const collectionsByIndex = new Map();
+    collections.forEach((collection, renderedIndex) => {
+      collectionsByIndex.set(renderedIndex, collection);
+      collectionsByIndex.set(collection.originalIndex ?? renderedIndex, collection);
+    });
+
+    root.querySelectorAll('[data-collection-index][data-work-index]').forEach((tile) => {
+      const collectionIndex = Number(tile.dataset.collectionIndex);
+      const workIndex = Number(tile.dataset.workIndex);
+      if (!Number.isFinite(collectionIndex) || !Number.isFinite(workIndex)) return;
+
+      const fallbackPath = collectionsByIndex.get(collectionIndex)?.images?.[workIndex];
+      if (typeof fallbackPath !== 'string' || !fallbackPath) return;
+
+      const images = Array.from(tile.querySelectorAll('img'));
+      images.forEach((image) => {
+        if (!image.getAttribute('src')) image.src = fallbackPath;
+        image.addEventListener('error', () => {
+          if (image.getAttribute('src') !== fallbackPath) image.src = fallbackPath;
+        }, { once: true });
+      });
+    });
+  }
+
   function bindCanvasDrag(root) {
     root.querySelectorAll('[data-canvas-draggable="true"]').forEach((item) => {
       if (item.dataset.canvasBound === '1') return;
@@ -577,6 +602,7 @@ window.GeneratedRuntime = (() => {
       layoutKey,
       versionKey,
     });
+    repairMissingArtworkImages(root, collections);
     mountDecorations(root, assets, decorations);
 
     bindGeneratedModelTargets(root);

@@ -4868,12 +4868,12 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
   const generatedScripts = layout.publicBundle
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
-  <script src="./scripts/generated-runtime.js?v=public-artwork-fallback-20260723"><\/script>
+  <script src="./scripts/generated-runtime.js?v=public-artwork-repair-20260723"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script>${publicRenderScript}<\/script>`
     : layout.publicGenerated
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
-  <script src="./scripts/generated-runtime.js?v=public-artwork-fallback-20260723"><\/script>
+  <script src="./scripts/generated-runtime.js?v=public-artwork-repair-20260723"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
     : layout.generated
