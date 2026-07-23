@@ -2565,13 +2565,28 @@ function createDesignSpaceNode(layout, index, { preview = false, mode = 'xy', of
     const referenceMarkup = layout.referenceImage
       ? `<span class="design-space-node-reference"><img src="${PortfolioContent.escapeHtml(layout.referenceImage)}" alt=""></span>`
       : '';
+    const previewSrc = layout.publicGenerated ? 'about:blank' : layoutPreviewSrc(layout);
     node.innerHTML = `
       <span class="design-space-node-preview">
-        <iframe src="${PortfolioContent.escapeHtml(layoutPreviewSrc(layout))}" tabindex="-1" loading="lazy"></iframe>
+        <iframe src="${PortfolioContent.escapeHtml(previewSrc)}" tabindex="-1" loading="lazy"></iframe>
       </span>
       ${referenceMarkup}
       <span class="design-space-node-label">${PortfolioContent.escapeHtml(layout.name)}</span>
     `;
+    if (layout.publicGenerated) {
+      const previewFrame = node.querySelector('.design-space-node-preview iframe');
+      previewFrame.sandbox.add('allow-scripts');
+      previewFrame.srcdoc = buildPreviewHTML(
+        sourceManifest || { collections: [] },
+        layout.id,
+        DESKTOP_PREVIEW_WIDTH,
+        {
+          editMode: false,
+          enableAssistant: false,
+          baseHref: new URL('./', window.location.href).href,
+        }
+      );
+    }
   }
 
   node.addEventListener('click', (e) => {
