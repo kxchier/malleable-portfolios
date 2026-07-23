@@ -9,6 +9,7 @@ window.PortfolioSupabase = (() => {
   }
 
   let cachedClient = null;
+  let portfolioSaveQueue = Promise.resolve();
   function client() {
     if (!isConfigured()) return null;
     if (!cachedClient) {
@@ -142,17 +143,31 @@ window.PortfolioSupabase = (() => {
     return data || null;
   }
 
-  async function savePortfolio(participantId, theme, content) {
+  function snapshotJson(value) {
+    if (typeof structuredClone === 'function') return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function transientRequestFailure(error) {
+    const message = String(error?.message || error || '').toLowerCase();
+    return error instanceof TypeError ||
+      message.includes('load failed') ||
+      message.includes('failed to fetch') ||
+      message.includes('network request failed');
+  }
+
+  function retryDelay(milliseconds) {
+    return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+  }
+
+  async function savePortfolioAttempt(participantId, theme, content) {
     const sb = client();
-    const normalized = normalizeParticipantId(participantId);
-    if (!sb) throw new Error('Supabase is not configured.');
-    if (!normalized) throw new Error('Enter your participant ID before saving.');
     const currentUser = await ensureUser();
     if (!currentUser) throw new Error('Could not create a Supabase session.');
 
     const row = {
       user_id: currentUser.id,
-      participant_id: normalized,
+      participant_id: participantId,
       theme_json: theme,
       content_json: content,
       updated_at: new Date().toISOString(),
@@ -166,7 +181,7 @@ window.PortfolioSupabase = (() => {
     const { data: existing, error: updateError } = await sb
       .from('portfolios')
       .update(updates)
-      .eq('participant_id', normalized)
+      .eq('participant_id', participantId)
       .select('participant_id')
       .maybeSingle();
     if (updateError) throw updateError;
@@ -175,8 +190,42 @@ window.PortfolioSupabase = (() => {
       const { error: insertError } = await sb.from('portfolios').insert(row);
       if (insertError) throw insertError;
     }
-    setParticipantIdInUrl(normalized);
     return row;
+  }
+
+  async function savePortfolioWithRetry(participantId, theme, content) {
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await savePortfolioAttempt(participantId, theme, content);
+      } catch (error) {
+        lastError = error;
+        if (!transientRequestFailure(error) || attempt === 2) break;
+        await retryDelay(attempt === 0 ? 350 : 1000);
+      }
+    }
+    if (transientRequestFailure(lastError)) {
+      throw new Error('The connection to Supabase was interrupted after three attempts. Check your connection and try again.');
+    }
+    throw lastError;
+  }
+
+  function savePortfolio(participantId, theme, content) {
+    const sb = client();
+    const normalized = normalizeParticipantId(participantId);
+    if (!sb) return Promise.reject(new Error('Supabase is not configured.'));
+    if (!normalized) return Promise.reject(new Error('Enter your participant ID before saving.'));
+
+    const themeSnapshot = snapshotJson(theme);
+    const contentSnapshot = snapshotJson(content);
+    const runSave = () => savePortfolioWithRetry(normalized, themeSnapshot, contentSnapshot)
+      .then((row) => {
+        setParticipantIdInUrl(normalized);
+        return row;
+      });
+    const queuedSave = portfolioSaveQueue.then(runSave, runSave);
+    portfolioSaveQueue = queuedSave.catch(() => {});
+    return queuedSave;
   }
 
   return {

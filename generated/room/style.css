@@ -1,26 +1,26 @@
 /* Room — original isometric studio + collection side panel */
 
 body.view-room {
-  --room-ink: #2a2622;
-  --room-wall: #f3efe8;
-  --room-wall-shade: #e8e2d8;
-  --room-floor: #d9cfc0;
-  --room-floor-deep: #cbbfae;
-  --room-rug: #c4a484;
-  --room-wood: #8a6544;
-  --room-wood-mid: #a07850;
-  --room-wood-deep: #6b4c32;
-  --room-shelf: #b08968;
-  --room-plant: #5f8f62;
-  --room-plant-deep: #3f6a45;
-  --room-pot: #c47a5a;
-  --room-canvas: #f7f3ea;
-  --room-accent: #6d8f9e;
-  --room-paper: #f5f0e6;
+  --room-ink: var(--color-primary);
+  --room-wall: color-mix(in srgb, var(--color-background) 88%, white);
+  --room-wall-shade: color-mix(in srgb, var(--color-background) 72%, var(--color-panel));
+  --room-floor: color-mix(in srgb, var(--color-panel) 68%, var(--color-background));
+  --room-floor-deep: color-mix(in srgb, var(--color-panel) 78%, var(--color-primary));
+  --room-rug: color-mix(in srgb, var(--color-accent) 46%, var(--color-paper));
+  --room-wood: color-mix(in srgb, var(--color-accent) 72%, var(--color-primary));
+  --room-wood-mid: color-mix(in srgb, var(--color-accent) 62%, var(--color-paper));
+  --room-wood-deep: color-mix(in srgb, var(--color-accent) 58%, var(--color-primary));
+  --room-shelf: color-mix(in srgb, var(--color-accent) 68%, var(--color-paper));
+  --room-plant: var(--color-secondary);
+  --room-plant-deep: color-mix(in srgb, var(--color-secondary) 68%, var(--color-primary));
+  --room-pot: color-mix(in srgb, var(--color-accent) 74%, var(--color-paper));
+  --room-canvas: var(--color-paper);
+  --room-accent: var(--color-secondary);
+  --room-paper: var(--color-paper);
   --room-panel-w: min(26rem, 40vw);
   background:
-    radial-gradient(ellipse 80% 60% at 50% 30%, #faf7f1 0%, transparent 70%),
-    var(--color-background, #efeae2);
+    radial-gradient(ellipse 80% 60% at 50% 30%, color-mix(in srgb, var(--color-paper) 72%, transparent) 0%, transparent 70%),
+    var(--color-background);
   overflow-x: hidden;
 }
 

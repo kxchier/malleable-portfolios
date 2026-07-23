@@ -331,7 +331,9 @@ function handleTextEditChange({ id, role, scope, property, value }) {
 
   if (property === 'content') {
     if (!editedContent.text[id]) editedContent.text[id] = {};
-    editedContent.text[id].content = value;
+    if (!editedContent.text[id].versions) editedContent.text[id].versions = {};
+    if (!editedContent.text[id].versions[versionKey]) editedContent.text[id].versions[versionKey] = {};
+    editedContent.text[id].versions[versionKey].content = value;
   } else if (scope === 'this') {
     if (!editedContent.text[id]) editedContent.text[id] = {};
     if (!editedContent.text[id].versions) editedContent.text[id].versions = {};
@@ -4600,7 +4602,7 @@ function updatePreview() {
 }
 
 function buildTextHeading(tag, className, id, role, fallback, theme, content, versionKey) {
-  const text = PortfolioContent.getText(content, id, fallback);
+  const text = PortfolioContent.getText(content, id, fallback, versionKey);
   const style = PortfolioContent.styleToCss(PortfolioContent.getElementStyle(theme, content, id, role, versionKey));
   const cls = className ? ` class="${className}"` : '';
   const modelAttrs = id === 'portfolio.title'

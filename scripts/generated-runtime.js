@@ -485,6 +485,26 @@ window.GeneratedRuntime = (() => {
     }));
   }
 
+  function collectionVisibilityIds(collection, renderedIndex) {
+    const originalIndex = collection.originalIndex;
+    return [...new Set([
+      collection.arrangementCollectionId,
+      collection.id,
+      originalIndex != null ? window.PortfolioContent?.collectionId(originalIndex) : null,
+      originalIndex != null ? `collection_${originalIndex}` : null,
+      window.PortfolioContent?.collectionId(renderedIndex),
+      `collection_${renderedIndex}`,
+    ].filter(Boolean))];
+  }
+
+  function collectionIsHidden(contentOverrides, collection, renderedIndex, presentationIds) {
+    const visibility = contentOverrides?.visibility?.collections || {};
+    return collectionVisibilityIds(collection, renderedIndex).some((collectionId) => {
+      const hiddenIn = visibility[collectionId]?.hiddenIn || [];
+      return presentationIds.some((presentationId) => hiddenIn.includes(presentationId));
+    });
+  }
+
   async function mount({ root, layoutKey, models, previewState }) {
     const resolvedModels = models || await window.PortfolioModels.load(layoutKey, previewState || {});
     const versionKey = previewState?.versionKey || layoutKey;
@@ -503,11 +523,19 @@ window.GeneratedRuntime = (() => {
       fetchSvgAssets(layoutKey),
       fetchDecorations(layoutKey),
     ]);
-    const collections = allCollections(resolvedModels.manifest).filter((collection) => {
-      const id = window.PortfolioContent?.collectionId(collection.originalIndex) ?? `collection.${collection.originalIndex}`;
-      const hiddenIn = resolvedModels.contentOverrides?.visibility?.collections?.[id]?.hiddenIn || [];
-      return !hiddenIn.includes(layoutKey);
-    });
+    const presentationIds = [...new Set([
+      layoutKey,
+      versionKey,
+      resolvedModels.presentation?.id,
+    ].filter(Boolean))];
+    const collections = allCollections(resolvedModels.manifest).filter(
+      (collection, renderedIndex) => !collectionIsHidden(
+        resolvedModels.contentOverrides,
+        collection,
+        renderedIndex,
+        presentationIds,
+      )
+    );
     const helpers = buildHelpers(resolvedModels, versionKey);
 
     root.innerHTML = '';

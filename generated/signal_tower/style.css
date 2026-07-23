@@ -3,7 +3,7 @@ body.view-signal_tower {
   background:
     radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--color-secondary) 16%, transparent) 0 10rem, transparent 24rem),
     radial-gradient(circle at 84% 4%, color-mix(in srgb, var(--color-accent) 18%, transparent) 0 8rem, transparent 22rem),
-    linear-gradient(180deg, #03101c 0%, var(--color-background) 46%, #020811 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 72%, var(--color-secondary)) 0%, var(--color-background) 46%, color-mix(in srgb, var(--color-background) 82%, black) 100%);
   color: var(--color-primary);
   font-family: var(--font-body-family);
 }

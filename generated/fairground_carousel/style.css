@@ -18,7 +18,7 @@ body.view-fairground_carousel:has(.fc-panel-overlay.open) #preview-content {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 30%, #2a1505 0%, #1a0f05 40%, #0a0503 100%);
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--color-background) 72%, var(--color-accent)) 0%, var(--color-background) 40%, color-mix(in srgb, var(--color-background) 78%, black) 100%);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -29,9 +29,9 @@ body.view-fairground_carousel:has(.fc-panel-overlay.open) #preview-content {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 40% at 50% 0%, #3d1a00 0%, transparent 70%),
-    radial-gradient(ellipse 40% 20% at 20% 10%, #5c2a00 0%, transparent 50%),
-    radial-gradient(ellipse 40% 20% at 80% 15%, #4a1f00 0%, transparent 50%);
+    radial-gradient(ellipse 80% 40% at 50% 0%, color-mix(in srgb, var(--color-accent) 42%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 20% at 20% 10%, color-mix(in srgb, var(--color-secondary) 34%, transparent) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 20% at 80% 15%, color-mix(in srgb, var(--color-panel) 32%, transparent) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }

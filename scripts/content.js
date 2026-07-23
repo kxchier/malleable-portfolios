@@ -151,8 +151,12 @@ window.PortfolioContent = (() => {
     return content?.text?.[id] || {};
   }
 
-  function getText(content, id, fallback) {
+  function getText(content, id, fallback, versionKey) {
     const override = getTextOverride(content, id);
+    const versionOverride = versionKey ? override.versions?.[versionKey] : null;
+    if (versionOverride && Object.prototype.hasOwnProperty.call(versionOverride, 'content')) {
+      return versionOverride.content;
+    }
     if (Object.prototype.hasOwnProperty.call(override, 'content')) {
       return override.content;
     }
@@ -210,14 +214,18 @@ window.PortfolioContent = (() => {
     if (!entry) return;
     const hasContent = Object.prototype.hasOwnProperty.call(entry, 'content');
     const hasLegacyStyle = TEXT_STYLE_PROPS.some((prop) => entry[prop]);
-    const hasVersionStyle = entry.versions && Object.values(entry.versions).some(
-      (v) => v && TEXT_STYLE_PROPS.some((prop) => v[prop])
+    const hasVersionOverride = entry.versions && Object.values(entry.versions).some(
+      (v) => v && (
+        Object.prototype.hasOwnProperty.call(v, 'content') ||
+        TEXT_STYLE_PROPS.some((prop) => v[prop])
+      )
     );
-    if (!hasContent && !hasLegacyStyle && !hasVersionStyle) delete content.text[id];
+    if (!hasContent && !hasLegacyStyle && !hasVersionOverride) delete content.text[id];
     if (entry.versions) {
       Object.keys(entry.versions).forEach((vk) => {
         const v = entry.versions[vk];
-        if (v && !TEXT_STYLE_PROPS.some((prop) => v[prop])) delete entry.versions[vk];
+        const hasVersionContent = v && Object.prototype.hasOwnProperty.call(v, 'content');
+        if (v && !hasVersionContent && !TEXT_STYLE_PROPS.some((prop) => v[prop])) delete entry.versions[vk];
       });
       if (Object.keys(entry.versions).length === 0) delete entry.versions;
     }
@@ -301,7 +309,7 @@ window.PortfolioContent = (() => {
     const role = el.dataset.textRole;
     if (!id || !role) return;
     const fallback = el.dataset.textFallback || el.textContent;
-    const text = getArrangementTitleForText(content, id, versionKey) || getText(content, id, fallback);
+    const text = getArrangementTitleForText(content, id, versionKey) || getText(content, id, fallback, versionKey);
     el.textContent = text;
     el.hidden = false;
     const style = getElementStyle(theme, content, id, role, versionKey);
@@ -429,7 +437,7 @@ window.PortfolioContent = (() => {
 
     const titleEl = root.querySelector('[data-text-id="portfolio.title"]');
     if (titleEl) {
-      document.title = getText(content, 'portfolio.title', titleEl.textContent) + ' — Art Portfolio';
+      document.title = getText(content, 'portfolio.title', titleEl.textContent, versionKey) + ' — Art Portfolio';
     }
   }
 

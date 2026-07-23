@@ -5,6 +5,10 @@ const corsHeaders = {
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = Deno.env.get('ANTHROPIC_TEXT_MODEL') || 'claude-sonnet-4-6';
+const GENERATE_MAX_TOKENS = Math.max(
+  12_000,
+  Math.min(32_000, Number(Deno.env.get('GENERATE_MAX_TOKENS')) || 20_000),
+);
 
 function json(status: number, value: unknown) {
   return new Response(JSON.stringify(value), {
@@ -80,6 +84,12 @@ async function callAnthropic(apiKey: string, system: string, user: unknown, maxT
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error?.message || `Anthropic request failed (${response.status}).`);
   const content = Array.isArray(data?.content) ? data.content.map((part: any) => part?.text || '').join('\n') : '';
+  if (data?.stop_reason === 'max_tokens') {
+    throw new Error(
+      `The generated interface was too large and was cut off before it finished. ` +
+      `Please try generating again with a slightly simpler design request.`,
+    );
+  }
   return extractJson(content);
 }
 
@@ -99,7 +109,8 @@ const generationSystem = `You generate a complete custom art-portfolio interface
  "assets":{"name.svg":"<svg>...</svg>"}
 }
 The renderScript must register window.GeneratedLayouts[key] with mount(root, ctx). ctx contains collections, helpers, assets, presentation, and theme. Loop through every collection and every image. Create collection wrappers with helpers.collectionFrame(col, col.originalIndex ?? ci, {className:'...'}). Create artwork with helpers.workTile(img,{className:'...',collectionIndex:col.originalIndex ?? ci,workIndex:wi}). If the input says hasReferenceImage is true, its data URL will be available as ctx.assets['reference-image']; use it visibly as a translucent underlay, texture image, or collage layer without obscuring the artist's work.
-CSS must be scoped under body.view-{key}, use only --color-background, --color-primary, --color-secondary, --color-accent, --color-paper, --color-panel, --space-gridGap, --space-artSize, and --space-imagePadding variables. Show full artwork with object-fit:contain unless cropped thumbnails are explicitly requested. Do not use @import, external URLs, network APIs, browser storage, cookies, parent/top/opener, postMessage, eval, Function, dynamic import, or script injection. Interactions may use DOM events, timers, requestAnimationFrame, observers, and CSS animation. Assets must be self-contained SVG using currentColor or theme variables. Make the composition and interaction genuinely custom to the requested metaphor rather than a generic card grid.`;
+CSS must be scoped under body.view-{key}, use only --color-background, --color-primary, --color-secondary, --color-accent, --color-paper, --color-panel, --space-gridGap, --space-artSize, and --space-imagePadding variables. Show full artwork with object-fit:contain unless cropped thumbnails are explicitly requested. Do not use @import, external URLs, network APIs, browser storage, cookies, parent/top/opener, postMessage, eval, Function, dynamic import, or script injection. Interactions may use DOM events, timers, requestAnimationFrame, observers, and CSS animation. Assets must be self-contained SVG using currentColor or theme variables. Make the composition and interaction genuinely custom to the requested metaphor rather than a generic card grid.
+Keep the bundle concise enough to finish reliably: CSS under 12,000 characters, renderScript under 12,000 characters, presentation metadata under 4,000 characters, no more than 4 SVG assets, and each SVG under 3,000 characters. Do not sacrifice rendering every collection and artwork.`;
 
 function normalizeQuestion(parsed: Record<string, any>, answerCount: number) {
   if (parsed.done === true || answerCount >= 3) return { done: true };
@@ -209,7 +220,7 @@ Deno.serve(async (request) => {
       hasReferenceImage: body?.hasReferenceImage === true,
       collections: Array.isArray(body?.collections) ? body.collections.slice(0, 40) : [],
       existingLayouts: Array.isArray(body?.layouts) ? body.layouts.slice(0, 30) : [],
-    }, 12000);
+    }, GENERATE_MAX_TOKENS);
     return json(200, { model: MODEL, ...normalizeLayout(parsed) });
   } catch (error) {
     console.error('[generate-public-layout]', error);

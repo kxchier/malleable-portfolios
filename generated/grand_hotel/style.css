@@ -44,7 +44,12 @@ body.view-grand_hotel > header {
   inset: 0;
   background:
     radial-gradient(circle at 50% 12%, color-mix(in srgb, var(--color-paper) 34%, white) 0 18%, transparent 38%),
-    linear-gradient(175deg, #f0e6d2 0%, #f4c6d0 34%, #f8f6f3 74%);
+    linear-gradient(
+      175deg,
+      color-mix(in srgb, var(--color-background) 72%, white) 0%,
+      color-mix(in srgb, var(--color-paper) 72%, var(--color-background)) 34%,
+      var(--color-background) 74%
+    );
   opacity: 0.78;
 }
 .gh-mountains {
@@ -70,7 +75,8 @@ body.view-grand_hotel > header {
   width: 22px;
   background: repeating-linear-gradient(
     180deg,
-    rgba(180,210,230,0.55) 0px, rgba(180,210,230,0.55) 8px,
+    color-mix(in srgb, var(--color-secondary) 48%, transparent) 0px,
+    color-mix(in srgb, var(--color-secondary) 48%, transparent) 8px,
     transparent 8px, transparent 18px
   );
   animation: gh-waterfall 1.4s linear infinite;
@@ -336,7 +342,6 @@ body.view-grand_hotel > header {
 }
 .gh-floor::before { left: 0.65rem; }
 .gh-floor::after { right: 0.65rem; }
-}
 .gh-floor-header {
   display: flex;
   align-items: center;

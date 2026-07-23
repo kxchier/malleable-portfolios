@@ -35,8 +35,8 @@ body.view-quilt_patch {
     0deg,
     transparent,
     transparent 3px,
-    rgba(139,115,85,0.04) 3px,
-    rgba(139,115,85,0.04) 4px
+    color-mix(in srgb, var(--color-accent) 4%, transparent) 3px,
+    color-mix(in srgb, var(--color-accent) 4%, transparent) 4px
   ),
   repeating-linear-gradient(
     90deg,

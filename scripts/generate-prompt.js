@@ -150,6 +150,7 @@ assets:
 - Generate 0–6 inline SVG strings for decorative chrome and reference motifs (frames, clips, wall patterns, hooks, clouds, stars, creatures, icons, labels, waves, foliage, etc.).
 - SVG should use currentColor or CSS variables where possible for theme integration.
 - Keys are filenames like "frame.svg", "wall-pattern.svg", "cloud.svg", "creature.svg".
+- Keep the complete response compact enough to finish reliably: CSS under 12,000 characters, renderScript under 12,000 characters, presentation metadata under 4,000 characters, no more than 4 SVG assets, and each SVG under 3,000 characters.
 
 Minimal CSS pattern:
 ${EXAMPLE_CSS}
