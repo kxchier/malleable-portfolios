@@ -1,21 +1,20 @@
 {
   "collections": [
     {
-      "name": "Louis Wain",
+      "name": "Mary Cassatt",
       "images": [
-        "Art/example/Louis Wain/a-good-read.jpeg",
-        "Art/example/Louis Wain/all-the-fishes-came-up.jpg",
-        "Art/example/Louis Wain/blue_cat.jpg",
-        "Art/example/Louis Wain/ginger-cat-in-decoration.jpeg",
-        "Art/example/Louis Wain/in-the-vineyard.jpeg",
-        "Art/example/Louis Wain/k-little-kathleen-out-with-her-kite-it-broke-from-the-string-and-flew-out-of-sight.jpeg",
-        "Art/example/Louis Wain/playing-catch.jpg",
-        "Art/example/Louis Wain/priscilla-set-off-in-a-very-grumpy-mood.jpg",
-        "Art/example/Louis Wain/sicilian.jpeg",
-        "Art/example/Louis Wain/snoozems.jpg",
-        "Art/example/Louis Wain/untitled-1.jpeg",
-        "Art/example/Louis Wain/untitled-3.jpg",
-        "Art/example/Louis Wain/untitled.jpeg"
+        "Art/example/Mary Cassatt/bust-of-ellen-with-bows-in-her-hair.jpeg",
+        "Art/example/Mary Cassatt/children-playing-on-the-beach.jpeg",
+        "Art/example/Mary Cassatt/elsie-cassatt-holding-a-big-dog.jpeg",
+        "Art/example/Mary Cassatt/in-the-box.jpeg",
+        "Art/example/Mary Cassatt/red-poppies.jpeg",
+        "Art/example/Mary Cassatt/self-portrait.jpeg",
+        "Art/example/Mary Cassatt/summertime.jpeg",
+        "Art/example/Mary Cassatt/the-bath.jpeg",
+        "Art/example/Mary Cassatt/the-letter.jpeg",
+        "Art/example/Mary Cassatt/the-long-gloves.jpeg",
+        "Art/example/Mary Cassatt/two-women-seated-by-a-woodland-stream.jpeg",
+        "Art/example/Mary Cassatt/young-woman-in-green-outdoors-in-the-sun.jpeg"
       ]
     }
   ]

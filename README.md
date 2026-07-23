@@ -20,7 +20,7 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    `Art/participants/<id>/`, organized by collection. Nested folders that contain images
    become collections:
    ```
-   Art/example/Louis Wain/a-good-read.jpeg
+   Art/example/Mary Cassatt/the-bath.jpeg
    Art/participants/01/VTubers/Kyle.jpg
    Art/participants/01/Comics/Fall Chilly/00.jpg
                                       →  collection "Comics / Fall Chilly"

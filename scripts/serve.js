@@ -113,7 +113,7 @@ function layoutsForRequest(req) {
 function textOverridesForRequest(req, textOverrides) {
   // Collection names belong to the selected artwork source. Feeding the shared
   // content.json collection overrides into a participant model can otherwise
-  // bake the example collection title ("Louis Wain") into their manifest.
+  // bake the example collection title into their manifest.
   // Per-layout/user title edits are applied later through content overrides.
   return { 'portfolio.title': textOverrides['portfolio.title'] };
 }

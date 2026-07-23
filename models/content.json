@@ -16,7 +16,7 @@
   "collections": [
     {
       "id": "collection_0",
-      "title": "Louis Wain",
+      "title": "Mary Cassatt",
       "works": [
         "work_0_0",
         "work_0_1",
@@ -29,102 +29,118 @@
         "work_0_8",
         "work_0_9",
         "work_0_10",
-        "work_0_11",
-        "work_0_12"
+        "work_0_11"
       ]
     }
   ],
   "works": [
     {
       "id": "work_0_0",
-      "title": "a good read",
+      "title": "Bust of Ellen with Bows in Her Hair",
       "images": [
-        "Art/example/Louis Wain/a-good-read.jpeg"
-      ]
+        "Art/example/Mary Cassatt/bust-of-ellen-with-bows-in-her-hair.jpeg"
+      ],
+      "year": "c.1898",
+      "medium": "charcoal, pastel, paper"
     },
     {
       "id": "work_0_1",
-      "title": "all the fishes came up",
+      "title": "Children Playing on the Beach",
       "images": [
-        "Art/example/Louis Wain/all-the-fishes-came-up.jpg"
-      ]
+        "Art/example/Mary Cassatt/children-playing-on-the-beach.jpeg"
+      ],
+      "year": "1884",
+      "medium": "oil, canvas"
     },
     {
       "id": "work_0_2",
-      "title": "blue cat",
+      "title": "Elsie Cassatt Holding a Big Dog",
       "images": [
-        "Art/example/Louis Wain/blue_cat.jpg"
-      ]
+        "Art/example/Mary Cassatt/elsie-cassatt-holding-a-big-dog.jpeg"
+      ],
+      "year": "c.1880",
+      "medium": "pastel, paper"
     },
     {
       "id": "work_0_3",
-      "title": "ginger cat in decoration",
+      "title": "In the Box",
       "images": [
-        "Art/example/Louis Wain/ginger-cat-in-decoration.jpeg"
-      ]
+        "Art/example/Mary Cassatt/in-the-box.jpeg"
+      ],
+      "year": "c.1879",
+      "medium": "oil, canvas"
     },
     {
       "id": "work_0_4",
-      "title": "in the vineyard",
+      "title": "Red Poppies",
       "images": [
-        "Art/example/Louis Wain/in-the-vineyard.jpeg"
-      ]
+        "Art/example/Mary Cassatt/red-poppies.jpeg"
+      ],
+      "year": "1874 - 1880",
+      "medium": "oil"
     },
     {
       "id": "work_0_5",
-      "title": "k little kathleen out with her kite it broke from the string and flew out of sight",
+      "title": "Self-Portrait",
       "images": [
-        "Art/example/Louis Wain/k-little-kathleen-out-with-her-kite-it-broke-from-the-string-and-flew-out-of-sight.jpeg"
-      ]
+        "Art/example/Mary Cassatt/self-portrait.jpeg"
+      ],
+      "year": "c.1880",
+      "medium": "watercolor, paper"
     },
     {
       "id": "work_0_6",
-      "title": "playing catch",
+      "title": "Summertime",
       "images": [
-        "Art/example/Louis Wain/playing-catch.jpg"
-      ]
+        "Art/example/Mary Cassatt/summertime.jpeg"
+      ],
+      "year": "1894",
+      "medium": "oil, canvas"
     },
     {
       "id": "work_0_7",
-      "title": "priscilla set off in a very grumpy mood",
+      "title": "The Bath",
       "images": [
-        "Art/example/Louis Wain/priscilla-set-off-in-a-very-grumpy-mood.jpg"
-      ]
+        "Art/example/Mary Cassatt/the-bath.jpeg"
+      ],
+      "year": "1890 - 1891",
+      "medium": "color aquatint, drypoint, soft-ground etching, paper"
     },
     {
       "id": "work_0_8",
-      "title": "sicilian",
+      "title": "The Letter",
       "images": [
-        "Art/example/Louis Wain/sicilian.jpeg"
-      ]
+        "Art/example/Mary Cassatt/the-letter.jpeg"
+      ],
+      "year": "1890 - 1891",
+      "medium": "drypoint, etching, paper"
     },
     {
       "id": "work_0_9",
-      "title": "snoozems",
+      "title": "The Long Gloves",
       "images": [
-        "Art/example/Louis Wain/snoozems.jpg"
-      ]
+        "Art/example/Mary Cassatt/the-long-gloves.jpeg"
+      ],
+      "year": "1889",
+      "medium": "pastel, paper"
     },
     {
       "id": "work_0_10",
-      "title": "untitled 1",
+      "title": "Two Women Seated by a Woodland Stream",
       "images": [
-        "Art/example/Louis Wain/untitled-1.jpeg"
-      ]
+        "Art/example/Mary Cassatt/two-women-seated-by-a-woodland-stream.jpeg"
+      ],
+      "year": "1869",
+      "medium": "oil, canvas"
     },
     {
       "id": "work_0_11",
-      "title": "untitled 3",
+      "title": "Young Woman in Green Outdoors in the Sun",
       "images": [
-        "Art/example/Louis Wain/untitled-3.jpg"
-      ]
-    },
-    {
-      "id": "work_0_12",
-      "title": "untitled",
-      "images": [
-        "Art/example/Louis Wain/untitled.jpeg"
-      ]
+        "Art/example/Mary Cassatt/young-woman-in-green-outdoors-in-the-sun.jpeg"
+      ],
+      "year": "c.1914",
+      "medium": "oil, canvas"
     }
   ]
 }

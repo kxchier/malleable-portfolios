@@ -74,7 +74,8 @@ function contentForSelectedArt(rawContent, manifest) {
   const filtered = { ...(rawContent || {}) };
 
   if (artSource === 'participant') {
-    const exampleTitles = new Set(['louis wain']);
+    // Keep current and legacy example titles from leaking into participant portfolios.
+    const exampleTitles = new Set(['mary cassatt', 'louis wain']);
     filtered.text = { ...(filtered.text || {}) };
 
     (manifest?.collections || []).forEach((collection, index) => {
