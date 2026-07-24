@@ -131,14 +131,14 @@
           </svg>
         </button>
       </div>
-      <form class="cursor-assistant-form" hidden>
+      <div class="cursor-assistant-form" hidden>
         <textarea rows="2" placeholder="What should change here?"></textarea>
         <div class="cursor-assistant-scope"></div>
         <div class="cursor-assistant-actions">
           <button type="button" class="cursor-assistant-cancel">Cancel</button>
-          <button type="submit">Propose</button>
+          <button type="button" class="cursor-assistant-propose">Propose</button>
         </div>
-      </form>
+      </div>
       <div class="cursor-assistant-proposal" hidden>
         <p></p>
         <div class="cursor-assistant-actions">
@@ -176,9 +176,7 @@
       hideBubble();
     });
 
-    bubble.querySelector('form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    const requestProposal = () => {
       const prompt = bubble.querySelector('textarea').value.trim();
       if (!prompt || !activeTarget) return;
       const scope = bubble.querySelector('input[name="cursor-scope"]:checked')?.value || 'this';
@@ -190,6 +188,19 @@
         scope,
         presentationId: window.__PREVIEW_PRESENTATION_ID__ || window.__EDIT_STATE__?.versionKey,
       });
+    };
+
+    bubble.querySelector('.cursor-assistant-propose').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      requestProposal();
+    });
+
+    bubble.querySelector('textarea').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || (!e.metaKey && !e.ctrlKey)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      requestProposal();
     });
 
     bubble.addEventListener('pointerdown', (e) => e.stopPropagation());

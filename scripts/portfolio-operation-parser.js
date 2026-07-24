@@ -63,7 +63,17 @@ Allowed operation types:
    Use when the user asks to add visible background/interface art, motifs, doodles, stickers, icons, ornaments, or decorative objects.
    { "type": "decorativeAssets", "prompt": "add colorful hand-drawn flowers, stars, and ribbon doodles around the background" }
 
-7. noop
+7. contentBlock
+   Use for ordinary page copy that should become part of the site, including introductions, artist statements, explanatory blurbs, notes, and closing text.
+   Add: { "type": "contentBlock", "action": "add", "kind": "text", "content": "Welcome to my portfolio...", "placement": "after-title" | "after-content", "align": "left" | "center" | "right", "width": "36rem" }
+   Update or move an existing block: { "type": "contentBlock", "action": "update", "blockId": "ID from current content summary", "content": "New copy", "placement": "after-title" | "after-content" }
+   Remove: { "type": "contentBlock", "action": "remove", "blockId": "ID from current content summary" }
+
+8. interactionPatch
+   Use to change how existing page elements respond to user input.
+   { "type": "interactionPatch", "scope": "all-images", "draggable": false }
+
+9. noop
    Use only when nothing can be represented safely.
    { "type": "noop", "message": "..." }
 
@@ -72,6 +82,8 @@ Rules:
 - Prefer colorPatch for "more colorful", "brighter", "darker", "pastel", "neon", "warmer", "cooler".
 - For requests that are only about colors, palette, mood, style, aesthetic, vibe, or art-direction words like "Wes Anderson" or "vintage colors", return colorPatch and optionally typographyPatch. Do NOT return decorativeAssets unless the user explicitly asks for visible objects, motifs, drawings, stickers, icons, ornaments, doodles, or background art.
 - Prefer decorativeAssets for background art/motifs. Do not invent SVG yourself here; summarize what the asset generator should draw.
+- Prefer contentBlock whenever the request adds, rewrites, moves, or removes page-level prose. Write useful concise copy when the user describes its purpose without supplying exact wording.
+- Prefer interactionPatch for behavioral requests about existing interface elements, such as enabling or disabling image dragging.
 - Prefer layoutOverride for scrolling/layout requests. Horizontal means side-scrolling/carousel/row. Vertical means stacked/list. Grid means tile/masonry/quilt-like overview.
 - Prefer layoutOverride.metadataDisplay for requests to show/hide artwork captions, blurbs, image context, names, or links from metadata text files. Use below, side, overlay, or none.
 - Prefer layoutOverride.socialPrototype for requests to show/hide prototype social features. Use likes for only like buttons, comments for per-work comments, likes-comments for both, notes for page sticky notes only, all for everything, and none/off for no social prototype.
@@ -84,16 +96,19 @@ Rules:
 - Use only hex colors in colorPatch.
 - Keep CSS values simple and safe. Use px/rem/em sizes, font weights normal/bold/100-900, and supported style values.
 - Do not return arbitrary HTML, CSS selectors, JavaScript, files, or template generation requests.
+- Try to satisfy normal website-editing requests by composing the allowed operations. Use noop only when the request is unsafe or cannot be expressed by any operation.
 - Scope every change to the current presentation.`;
 }
 
 function buildPortfolioOperationRepairPrompt() {
   return `${buildPortfolioOperationSystemPrompt()}
 
-The previous response may have mapped a section/container request to the global spacing sliders. Repair the operation if needed:
+The previous response did not fully satisfy an ordinary website-editing request. Make a second, concrete attempt by composing the allowed operations. In particular:
+- Use contentBlock for adding, rewriting, moving, or removing page prose such as an introduction or artist statement.
 - If the request is about collection/section side margins, outside spacing, or breathing room around collection containers, return elementStylePatch with scope "all-sections" using marginLeft/marginRight.
 - If the request is about moving collection contents inward, use paddingLeft/paddingRight.
 - Use spacing.gridGap only when the request is explicitly about the gap/space between images/items/works.
+- Do not return noop merely because the exact request was not given as an example. Infer the closest safe composition of operations.
 - Return only JSON in the same shape.`;
 }
 
@@ -223,6 +238,7 @@ function portfolioOperationNeedsRepair(prompt, parsed) {
   const operations = Array.isArray(parsed?.operations)
     ? parsed.operations
     : parsed?.operation ? [parsed.operation] : [];
+  if (!operations.length || operations.every((operation) => operation?.type === 'noop')) return true;
   return operations.some((operation) => (
     operation?.type === 'spacing' && (operation.gridGap || operation.gap)
   ));

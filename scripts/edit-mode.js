@@ -744,8 +744,22 @@ function validateCursorOperation(rawOperation, fallback) {
       };
     }
     const patch = sanitizeStylePatch(operation.patch);
-    if (!Object.keys(patch).length) {
+    const elementPatch = sanitizeElementStylePatch(operation.patch);
+    if (!Object.keys(patch).length && !Object.keys(elementPatch).length) {
       throw new Error('The operation parser did not return any safe style properties to apply.');
+    }
+    if (Object.keys(elementPatch).length) {
+      const styleId = targetStyleId(target);
+      return {
+        type: Object.keys(patch).length ? 'compoundStylePatch' : 'elementStylePatch',
+        target,
+        styleId,
+        scope: normalizeCursorScope(operation.scope || fallback.scope),
+        versionKey: fallback.versionKey,
+        patch: elementPatch,
+        textPatch: patch,
+        imagePatch: {},
+      };
     }
     return {
       type: 'stylePatch',
@@ -771,20 +785,22 @@ function validateCursorOperation(rawOperation, fallback) {
       throw new Error('The operation parser did not identify a specific clicked element to style.');
     }
     const rawPatch = sanitizeElementStylePatch(operation.patch);
+    const textPatch = target.kind === 'text' ? sanitizeStylePatch(operation.patch) : {};
     const patch = target?.kind === 'collection'
       ? normalizeCollectionSectionSpacingPatch(rawPatch)
       : rawPatch;
     const imagePatch = target?.kind === 'collection' ? {} : sanitizeElementStylePatch(operation.imagePatch);
-    if (!Object.keys(patch).length && !Object.keys(imagePatch).length) {
+    if (!Object.keys(patch).length && !Object.keys(imagePatch).length && !Object.keys(textPatch).length) {
       throw new Error('The operation parser did not return any safe element style properties to apply.');
     }
     return {
-      type: 'elementStylePatch',
+      type: Object.keys(textPatch).length ? 'compoundStylePatch' : 'elementStylePatch',
       target,
       styleId,
       scope: normalizeCursorScope(operation.scope || fallback.scope),
       versionKey: fallback.versionKey,
       patch,
+      textPatch,
       imagePatch,
     };
   }
@@ -961,6 +977,46 @@ function validatePortfolioOperations(rawOperations, fallback) {
       if (requestIsPaletteOnly(fallback.prompt)) return;
       const prompt = String(operation.prompt || '').trim();
       if (prompt) operations.push({ type: 'decorativeAssets', prompt: prompt.slice(0, 600) });
+      return;
+    }
+
+    if (operation.type === 'contentBlock') {
+      const action = ['add', 'update', 'remove'].includes(operation.action) ? operation.action : 'add';
+      const blockId = String(operation.blockId || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
+      const content = String(operation.content || '').replace(/<[^>]*>/g, '').trim().slice(0, 2000);
+      if (action !== 'add' && !blockId) return;
+      if (action !== 'remove' && !content && !operation.placement && !operation.align && !operation.width) return;
+      const placement = operation.placement === 'after-content'
+        ? 'after-content'
+        : operation.placement === 'after-title' || action === 'add' ? 'after-title' : '';
+      const align = ['left', 'center', 'right'].includes(operation.align)
+        ? operation.align
+        : action === 'add' ? 'left' : '';
+      const width = /^(\d{1,3}(\.\d+)?)(px|rem|em|%)$/.test(String(operation.width || '').trim())
+        ? String(operation.width).trim()
+        : action === 'add' ? '52rem' : '';
+      operations.push({
+        type: 'contentBlock',
+        versionKey: fallback.versionKey,
+        action,
+        blockId,
+        kind: 'text',
+        content,
+        placement,
+        align,
+        width,
+      });
+      return;
+    }
+
+    if (operation.type === 'interactionPatch') {
+      if (operation.scope !== 'all-images' || typeof operation.draggable !== 'boolean') return;
+      operations.push({
+        type: 'interactionPatch',
+        versionKey: fallback.versionKey,
+        scope: 'all-images',
+        draggable: operation.draggable,
+      });
     }
   });
 
@@ -1051,6 +1107,19 @@ function applyCursorOperation(operation) {
     return;
   }
 
+  if (operation.type === 'compoundStylePatch' && operation.target?.kind === 'text') {
+    const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'body');
+    Object.entries(operation.textPatch || {}).forEach(([property, value]) => {
+      handleTextEditChange({
+        id: operation.target.id,
+        role,
+        scope: ['role', 'all-headings'].includes(operation.scope) ? operation.scope : 'this',
+        property,
+        value,
+      });
+    });
+  }
+
   if (operation.type === 'collectionVisibility') {
     const collectionTextId = collectionTextIdFromTarget(operation.target);
     if (!collectionTextId) return;
@@ -1070,7 +1139,7 @@ function applyCursorOperation(operation) {
     return;
   }
 
-  if (operation.type === 'elementStylePatch') {
+  if (operation.type === 'elementStylePatch' || operation.type === 'compoundStylePatch') {
     ensureElementStyles();
     const bucket = (editedContent.elementStyles.versions[operation.versionKey] ||= {});
     const styleId = operation.scope === 'all-images'
@@ -1130,6 +1199,15 @@ function ensureDecorations(versionKey) {
   return editedContent.decorations.versions[versionKey];
 }
 
+function ensurePageBlocks(versionKey) {
+  if (!editedContent.pageBlocks) editedContent.pageBlocks = {};
+  if (!editedContent.pageBlocks.versions) editedContent.pageBlocks.versions = {};
+  if (!Array.isArray(editedContent.pageBlocks.versions[versionKey])) {
+    editedContent.pageBlocks.versions[versionKey] = [];
+  }
+  return editedContent.pageBlocks.versions[versionKey];
+}
+
 function applyPortfolioOperation(operation) {
   if (!operation) return false;
   const versionKey = operation.versionKey || getCurrentVersionKey();
@@ -1174,6 +1252,12 @@ function applyPortfolioOperation(operation) {
     return true;
   }
 
+  if (operation.type === 'interactionPatch') {
+    const overrides = ensureLayoutOverrides(versionKey);
+    overrides.imageDraggable = operation.draggable !== false;
+    return true;
+  }
+
   if (operation.type === 'elementStylePatch') {
     ensureElementStyles();
     const bucket = (editedContent.elementStyles.versions[versionKey] ||= {});
@@ -1183,6 +1267,37 @@ function applyPortfolioOperation(operation) {
       patch: { ...(current.patch || {}), ...(operation.patch || {}) },
       imagePatch: { ...(current.imagePatch || {}), ...(operation.imagePatch || {}) },
     };
+    return true;
+  }
+
+  if (operation.type === 'contentBlock') {
+    const blocks = ensurePageBlocks(versionKey);
+    if (operation.action === 'add') {
+      blocks.push({
+        id: `text-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        kind: 'text',
+        content: operation.content,
+        placement: operation.placement,
+        align: operation.align,
+        width: operation.width,
+      });
+      return true;
+    }
+    const index = blocks.findIndex((block) => block.id === operation.blockId);
+    if (index < 0) return false;
+    if (operation.action === 'remove') {
+      const [removed] = blocks.splice(index, 1);
+      if (removed?.id && editedContent.text) delete editedContent.text[`page-block.${removed.id}`];
+      return true;
+    }
+    blocks[index] = {
+      ...blocks[index],
+      ...(operation.content ? { content: operation.content } : {}),
+      placement: operation.placement || blocks[index].placement,
+      align: operation.align || blocks[index].align,
+      width: operation.width || blocks[index].width,
+    };
+    if (operation.content && editedContent.text) delete editedContent.text[`page-block.${operation.blockId}`];
     return true;
   }
 
@@ -2214,17 +2329,21 @@ function renderCustomDesignAxes() {
     row.className = 'custom-axis';
     row.innerHTML = `
       <div class="custom-axis-toolbar">
-        <select class="custom-axis-mode" data-axis-mode aria-label="Endpoint type">
-          <option value="concept"${endpointMode === 'concept' ? ' selected' : ''}>Concepts</option>
-          <option value="image"${endpointMode === 'image' ? ' selected' : ''}>Images</option>
-        </select>
+        <div class="custom-axis-map-controls" aria-label="Map axis role">
+          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'x' ? 'active' : ''}" type="button" data-map-role="x" title="Use as horizontal map axis">X</button>
+          <button class="ghost-btn custom-axis-map ${axis.mapRole === 'y' ? 'active' : ''}" type="button" data-map-role="y" title="Use as vertical map axis">Y</button>
+        </div>
         <div class="custom-axis-actions">
-          <div class="custom-axis-map-controls" aria-label="Map axis role">
-            <button class="ghost-btn custom-axis-map ${axis.mapRole === 'x' ? 'active' : ''}" type="button" data-map-role="x" title="Use as horizontal map axis">X</button>
-            <button class="ghost-btn custom-axis-map ${axis.mapRole === 'y' ? 'active' : ''}" type="button" data-map-role="y" title="Use as vertical map axis">Y</button>
-          </div>
+          <select class="custom-axis-mode" data-axis-mode aria-label="Endpoint type">
+            <option value="concept"${endpointMode === 'concept' ? ' selected' : ''}>Concepts</option>
+            <option value="image"${endpointMode === 'image' ? ' selected' : ''}>Images</option>
+          </select>
           <button class="ghost-btn custom-axis-rank" type="button" title="Rank websites on this axis">Rank</button>
-          <button class="ghost-btn custom-axis-remove" type="button" aria-label="Remove axis">x</button>
+          <button class="ghost-btn custom-axis-remove" type="button" aria-label="Delete axis" title="Delete axis">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/>
+            </svg>
+          </button>
         </div>
       </div>
       <div class="custom-axis-endpoints" aria-label="Axis endpoints">
@@ -2937,6 +3056,7 @@ function setupAssetAssistant() {
       const portfolioPayload = {
         layoutKey: layout.key, presentationId: getCurrentPresentationId(), prompt,
         theme: currentTheme, spacing: getVersionSpacingForKey(versionKey),
+        pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
       };
       const result = isLocalPortfolioHost()
         ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
@@ -2948,7 +3068,10 @@ function setupAssetAssistant() {
           presentation: layout.publicBundle?.presentation || null,
           theme: currentTheme,
           spacing: getVersionSpacingForKey(versionKey),
-          contentSummary: { collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })) },
+          contentSummary: {
+            collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
+            pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
+          },
         });
 
       const operations = validatePortfolioOperations(result.operations || result.operation, {
@@ -3154,6 +3277,22 @@ function setupAI() {
       <span>${PortfolioContent.escapeHtml(selectedImageFile.name || 'Reference image')}</span>
     `;
     imagePreview.querySelector('img')?.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+  };
+
+  const clearImageVibe = () => {
+    selectedImageFile = null;
+    analyzedReferenceImage = null;
+    pendingImageTokenPrompt = '';
+    if (imageInput) imageInput.value = '';
+    if (imageAnalyzeBtn) imageAnalyzeBtn.disabled = true;
+    if (imagePreview) {
+      imagePreview.hidden = true;
+      imagePreview.innerHTML = '';
+    }
+    if (imageTokensEl) {
+      imageTokensEl.hidden = true;
+      imageTokensEl.innerHTML = '';
+    }
   };
 
   const colorChipHtml = (color) => `
@@ -3592,6 +3731,7 @@ function setupAI() {
         generateStatus.textContent = `Created and saved “${publicLayout.name}”.`;
         generateStatus.className = 'generate-status generate-status--ok';
         resetQuestions();
+        clearImageVibe();
         return;
       }
 
@@ -3619,6 +3759,7 @@ function setupAI() {
       renderDesignSpace();
       selectVersion(layout.id);
       resetQuestions();
+      clearImageVibe();
     } catch (e) {
       generateStatus.textContent = e.message;
       generateStatus.className = 'generate-status generate-status--err';
@@ -4710,7 +4851,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const editScripts = editMode
     ? `
   <script src="./scripts/text-edit.js"><\/script>
-  ${enableAssistant ? '<script src="./scripts/cursor-assistant.js?v=glasses-no-eyes-20260719"><\\/script>' : ''}
+  ${enableAssistant ? '<script src="./scripts/cursor-assistant.js?v=sandbox-safe-20260724"><\\/script>' : ''}
   <script>
     requestAnimationFrame(() => {
       if (document.body.dataset.editMode && !document.querySelector('.text-edit-toolbar')) {
@@ -4720,7 +4861,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       }
       if (document.body.dataset.editMode && !document.querySelector('.cursor-assistant')) {
         const assistantScript = document.createElement('script');
-        assistantScript.src = './scripts/cursor-assistant.js?v=glasses-no-eyes-20260719';
+        assistantScript.src = './scripts/cursor-assistant.js?v=sandbox-safe-20260724';
         document.body.appendChild(assistantScript);
       }
     });
@@ -4867,7 +5008,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     : '';
 
   const deskScripts = layout.key === 'desk'
-    ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js"><\/script>`
+    ? `<script src="./scripts/layouts.js"><\/script><script src="./scripts/desk-drag.js?v=interaction-patches-20260724"><\/script>`
     : '';
 
   const publicBundleCss = String(layout.publicBundle?.css || '').replace(/<\/style/gi, '<\\/style');
@@ -4883,23 +5024,23 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
   const generatedScripts = layout.publicBundle
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
-  <script src="./scripts/generated-runtime.js?v=public-artwork-repair-20260723"><\/script>
+  <script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script>${publicRenderScript}<\/script>`
     : layout.publicGenerated
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
-  <script src="./scripts/generated-runtime.js?v=public-artwork-repair-20260723"><\/script>
+  <script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
     : layout.generated
-    ? `<script src="./scripts/generated-runtime.js"><\/script>
+    ? `<script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
   <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${deskScripts}
   <script src="./scripts/decorations-runtime.js"><\/script>
-  <script src="./scripts/render.js"><\/script>`;
+  <script src="./scripts/render.js?v=editable-custom-collections-20260724"><\/script>`;
 
   const mountScript = layout.generated
     ? `(async () => {
@@ -4922,6 +5063,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
         versionKey: window.__EDIT_STATE__.versionKey,
       },
     });
+    PortfolioPageBlocks.mount(previewRoot, window.__EDIT_STATE__.content, window.__EDIT_STATE__.versionKey);
   })();`
     : `(async () => {
     const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
@@ -4945,6 +5087,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     if (window.__PREVIEW_PRESENTATION_ID__ === 'directory') {
       PortfolioRender.layoutDirectoryViewport();
     }
+    PortfolioPageBlocks.mount(previewRoot, window.__EDIT_STATE__.content, window.__EDIT_STATE__.versionKey);
   })();`;
 
   const remountScript = layout.generated
@@ -4966,6 +5109,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
         versionKey: window.__EDIT_STATE__.versionKey,
       },
     });
+    PortfolioPageBlocks.mount(previewRoot, window.__EDIT_STATE__.content, window.__EDIT_STATE__.versionKey);
   };`
     : `window.__PORTFOLIO_REMOUNT_PREVIEW__ = async function() {
     const contentModel = PortfolioModels.manifestToContentStub(window.__PREVIEW_MANIFEST__);
@@ -4987,6 +5131,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
     if (window.__PREVIEW_PRESENTATION_ID__ === 'directory') {
       PortfolioRender.layoutDirectoryViewport();
     }
+    PortfolioPageBlocks.mount(previewRoot, window.__EDIT_STATE__.content, window.__EDIT_STATE__.versionKey);
   };`;
 
   const sandboxOrigin = options.baseHref ? new URL(options.baseHref).origin : window.location.origin;
@@ -5080,6 +5225,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
   <script src="./scripts/content.js"><\/script>
+  <script src="./scripts/page-blocks-runtime.js?v=assistant-content-blocks-20260724"><\/script>
   <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${generatedScripts}
   <script>

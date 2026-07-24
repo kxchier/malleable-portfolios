@@ -36,12 +36,12 @@ async function callAnthropic(apiKey: string, system: string, user: unknown, maxT
 
 const cursorSystem = `Convert a situated art-portfolio editing request into one safe JSON operation. Return only {"message":"brief proposal","operation":{...}}.
 Allowed operations:
-- stylePatch for text: {"type":"stylePatch","target":TARGET,"scope":"this|role|all-headings","patch":{"fontFamily":"...","fontSize":"32px","fontWeight":"700","fontStyle":"italic","textAlign":"left|center|right","letterSpacing":"0.04em","lineHeight":"1.2","textDecoration":"underline","transform":"rotate(-4deg)","opacity":"0.8"}}
+- stylePatch for text and its visible box: {"type":"stylePatch","target":TARGET,"scope":"this|role|all-headings","patch":{"fontFamily":"...","fontSize":"32px","fontWeight":"700","textAlign":"left|center|right","width":"36rem","maxWidth":"90%","padding":"16px","marginLeft":"auto","marginRight":"auto","border":"1px solid var(--color-accent)","transform":"rotate(-4deg)","opacity":"0.8"}}
 - elementStylePatch for images/tiles/sections: {"type":"elementStylePatch","target":TARGET,"scope":"this|all-images|all-sections","patch":{"borderRadius":"24px","overflow":"hidden","border":"2px solid var(--color-accent)","boxShadow":"0 8px 24px rgba(0,0,0,.2)","filter":"grayscale(100%)","marginLeft":"24px","marginRight":"24px","padding":"12px","gap":"24px","transform":"rotate(-4deg)","opacity":"0.8"},"imagePatch":{"borderRadius":"24px","objectFit":"cover","objectPosition":"center"}}
 - collectionVisibility: {"type":"collectionVisibility","target":TARGET,"visible":false}
 - spacing: {"type":"spacing","target":TARGET,"gridGap":"32px","artSize":"220px","imagePadding":"12px"}
 - noop.
-Reuse the provided target. Use only the listed CSS properties and simple CSS values. Never return HTML, selectors, JavaScript, URLs, or arbitrary CSS.`;
+Reuse the provided target. Treat text as both typography and a visible box; compose typography and safe box properties in one stylePatch when needed. Use simple CSS values. Never return HTML, selectors, JavaScript, URLs, or arbitrary CSS.`;
 
 const portfolioSystem = `Convert a whole art-portfolio editing request into safe JSON: {"message":"brief proposal","operations":[...]}.
 Allowed operations:
@@ -51,6 +51,8 @@ Allowed operations:
 - layoutOverride {"type":"layoutOverride","collectionDisplay":"grid|horizontal|vertical","materialTexture":"textured|wood|paper|fabric|metal|glass","metadataDisplay":"none|below|side|overlay","socialPrototype":"none|likes|comments|likes-comments|notes|all"}
 - elementStylePatch {"type":"elementStylePatch","scope":"all-images|all-sections","patch":{"borderRadius":"24px","boxShadow":"0 8px 24px rgba(0,0,0,.2)","marginLeft":"32px","marginRight":"32px","padding":"16px","gap":"24px"},"imagePatch":{"objectFit":"cover"}}
 - decorativeAssets {"type":"decorativeAssets","prompt":"what to draw"}
+- contentBlock {"type":"contentBlock","action":"add|update|remove","kind":"text","blockId":"existing ID for update/remove","content":"safe plain text","placement":"after-title|after-content","align":"left|center|right","width":"36rem"}
+- interactionPatch {"type":"interactionPatch","scope":"all-images","draggable":false}
 - noop.
 Return multiple operations for broad mood/style changes. Use decorativeAssets only when visible objects, doodles, motifs, stickers, icons, ornaments, or background art are explicitly requested. Use only hex colors and simple safe CSS values. Never return HTML, JavaScript, selectors, files, or URLs.`;
 
@@ -98,12 +100,22 @@ Deno.serve(async (request) => {
       return json(200, { model: MODEL, message: text(parsed.message, 240), operation: parsed.operation });
     }
     if (mode === 'portfolio') {
-      const parsed = await callAnthropic(apiKey, portfolioSystem, {
+      const portfolioInput = {
         request: text(body.prompt, 1600), layout: body.layout || null, presentation: body.presentation || null,
         theme: body.theme || null, spacing: body.spacing || null, contentSummary: body.contentSummary || null,
-      }, 2800);
-      const source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
-      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'noop'];
+      };
+      let parsed = await callAnthropic(apiKey, portfolioSystem, portfolioInput, 2800);
+      let source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
+      if (!source.length || source.every((operation: any) => operation?.type === 'noop')) {
+        parsed = await callAnthropic(
+          apiKey,
+          `${portfolioSystem}\nMake a second concrete attempt using the allowed operations. Use contentBlock for page prose. Infer the closest safe edit and reserve noop for unsafe or genuinely impossible requests.`,
+          { ...portfolioInput, previousResponse: parsed },
+          2800,
+        );
+        source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
+      }
+      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'contentBlock', 'interactionPatch', 'noop'];
       const operations = source.filter((operation: any) => allowed.includes(operation?.type)).slice(0, 8);
       if (!operations.length) throw new Error('Anthropic returned no supported portfolio operations.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operations });

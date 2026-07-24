@@ -106,12 +106,9 @@ window.PortfolioRender = (() => {
     const titleClass = PortfolioComponents.titleClassForPresentation(presentationId);
     if (titleClass) h2.className = titleClass;
 
-    if (collection.originalIndex == null) {
-      h2.textContent = collection.name;
-      return h2;
-    }
-
-    const cid = PortfolioContent.collectionId(collection.originalIndex);
+    const cid = collection.originalIndex != null
+      ? PortfolioContent.collectionId(collection.originalIndex)
+      : `collection.${String(collection.arrangementCollectionId || collection.id || 'custom').replace(/[^a-zA-Z0-9._-]/g, '-')}`;
     h2.dataset.textId = cid;
     h2.dataset.textRole = 'collection.title';
     h2.dataset.textFallback = collection.name;

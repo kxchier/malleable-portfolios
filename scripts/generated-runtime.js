@@ -337,8 +337,10 @@ window.GeneratedRuntime = (() => {
     const PC = window.PortfolioContent;
     if (!el || !collection || !PC || el.dataset.textId) return;
     const originalIndex = collection.originalIndex;
-    if (originalIndex == null) return;
-    const cid = PC.collectionId(originalIndex);
+    const collectionKey = collection.arrangementCollectionId || collection.id;
+    const cid = originalIndex != null
+      ? PC.collectionId(originalIndex)
+      : `collection.${String(collectionKey || 'custom').replace(/[^a-zA-Z0-9._-]/g, '-')}`;
     el.dataset.textId = cid;
     el.dataset.textRole = 'collection.title';
     el.dataset.textFallback = collection.name;
@@ -370,20 +372,27 @@ window.GeneratedRuntime = (() => {
       });
     });
 
-    const textCandidates = Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,p,figcaption,blockquote,li,span,small,strong,em'))
+    const textCandidates = Array.from(root.querySelectorAll(
+      'h1,h2,h3,h4,h5,h6,p,figcaption,blockquote,li,span,small,strong,em,a,label,dt,dd,time,div'
+    ))
       .filter((el) => {
         if (el.dataset.textId || el.closest('[data-text-id]')) return false;
         if (el.closest('svg')) return false;
-        if (el.querySelector('img,svg,video,canvas,input,textarea,select,button')) return false;
+        if (el.closest('button,input,textarea,select')) return false;
+        if (el.matches('[aria-hidden="true"]')) return false;
+        if (el.children.length) return false;
+        if (el.querySelector('img,svg,video,canvas,input,textarea,select')) return false;
         return (el.textContent || '').trim().length > 0;
       });
 
-    textCandidates.forEach((el, index) => {
+    let nextTextIndex = Number(root.__generatedTextNextIndex) || 0;
+    textCandidates.forEach((el) => {
       const fallback = (el.textContent || '').trim();
       const role = el.matches('h1') ? 'portfolio.title'
         : el.matches('h2,h3,h4,h5,h6') ? 'collection.title'
           : 'body';
-      const id = `generated.${versionKey}.${el.tagName.toLowerCase()}.${index}`;
+      const id = `generated.${versionKey}.${el.tagName.toLowerCase()}.${nextTextIndex}`;
+      nextTextIndex += 1;
       el.dataset.textId = id;
       el.dataset.textRole = role;
       el.dataset.textFallback = fallback;
@@ -394,6 +403,7 @@ window.GeneratedRuntime = (() => {
       const style = PC.styleToCss(PC.getElementStyle(models.theme, models.contentOverrides, id, role, versionKey));
       if (style) el.setAttribute('style', `${el.getAttribute('style') || ''};${style}`);
     });
+    root.__generatedTextNextIndex = nextTextIndex;
   }
 
   function bindGeneratedModelTargets(root) {
@@ -469,8 +479,12 @@ window.GeneratedRuntime = (() => {
     });
   }
 
-  function bindCanvasDrag(root) {
+  function bindCanvasDrag(root, enabled = true) {
     root.querySelectorAll('[data-canvas-draggable="true"]').forEach((item) => {
+      if (!enabled) {
+        item.style.cursor = '';
+        return;
+      }
       if (item.dataset.canvasBound === '1') return;
       item.dataset.canvasBound = '1';
 
@@ -592,7 +606,7 @@ window.GeneratedRuntime = (() => {
     ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'].forEach((texture) => {
       root.classList.toggle(`layout-material-${texture}`, materialOverride === texture);
     });
-    layout.mount(root, {
+    await layout.mount(root, {
       collections,
       theme: resolvedModels.theme,
       contentOverrides: resolvedModels.contentOverrides,
@@ -607,7 +621,20 @@ window.GeneratedRuntime = (() => {
 
     bindGeneratedModelTargets(root);
     promoteCollectionTargetsToVisibleWrappers(root);
+    root.__generatedTextNextIndex = 0;
     bindGeneratedText(root, collections, resolvedModels, versionKey);
+
+    root.__generatedTextObserver?.disconnect();
+    let textBindQueued = false;
+    root.__generatedTextObserver = new MutationObserver((mutations) => {
+      if (textBindQueued || !mutations.some((mutation) => mutation.addedNodes.length)) return;
+      textBindQueued = true;
+      requestAnimationFrame(() => {
+        textBindQueued = false;
+        bindGeneratedText(root, collections, resolvedModels, versionKey);
+      });
+    });
+    root.__generatedTextObserver.observe(root, { childList: true, subtree: true });
 
     root.querySelectorAll('.generated-collection[data-model-kind="collection"]').forEach((section) => {
       const ci = Number(section.dataset.collectionIndex || section.dataset.modelPath?.split('.')[1] || 0);
@@ -644,7 +671,7 @@ window.GeneratedRuntime = (() => {
     }
 
     if (document.body.dataset.editMode) {
-      bindCanvasDrag(root);
+      bindCanvasDrag(root, layoutOverrides.imageDraggable !== false);
     }
 
     return resolvedModels;

@@ -46,7 +46,12 @@ Allowed operation types:
        "textDecoration": "underline",
        "transform": "rotate(-4deg)",
        "transformOrigin": "left center",
-       "opacity": "0.8"
+       "opacity": "0.8",
+       "width": "36rem",
+       "maxWidth": "90%",
+       "padding": "16px",
+       "marginLeft": "auto",
+       "marginRight": "auto"
      }
    }
 
@@ -102,6 +107,7 @@ Allowed operation types:
 
 Rules:
 - Prefer stylePatch for text requests such as rotate, tilt, align, make italic, space letters, underline, fade, enlarge.
+- A text target is also a visible box. For requests about its box, position, or dimensions, include safe element properties such as width, maxWidth, height, padding, margin, border, background, or boxShadow in the same stylePatch. The editor will separate typography from box styling.
 - For font change requests, prefer these always-loaded web fonts, matched to the requested mood:
   serif/elegant: 'Playfair Display', 'Fraunces', 'DM Serif Display', 'Cinzel', 'Zilla Slab', 'Cormorant Garamond';
   sans/modern: 'Space Grotesk', 'Outfit', 'Archivo', 'Oswald', 'DM Sans';

@@ -15,6 +15,14 @@ window.saveDeskPositions = (surface) => {
 };
 
 window.bindDeskDragging = (surface) => {
+  const versionKey = window.__EDIT_STATE__?.versionKey;
+  const imageDraggable = window.__EDIT_STATE__?.content?.layoutOverrides?.[versionKey]?.imageDraggable;
+  if (imageDraggable === false) {
+    surface.querySelectorAll('.desk-item').forEach((item) => {
+      item.style.cursor = '';
+    });
+    return;
+  }
   surface.querySelectorAll('.desk-item').forEach((item) => {
     item.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;

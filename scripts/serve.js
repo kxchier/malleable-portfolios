@@ -243,6 +243,7 @@ const server = http.createServer(async (req, res) => {
         context: {
           contentSummary: {
             collections: collections.map((col) => ({ name: col.name, count: col.images.length })),
+            pageBlocks: Array.isArray(body.pageBlocks) ? body.pageBlocks : [],
           },
           theme: theme.colors || {},
         },
