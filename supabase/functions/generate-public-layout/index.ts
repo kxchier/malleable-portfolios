@@ -66,31 +66,42 @@ function repairJsonStringLiterals(value: string) {
 }
 
 async function callAnthropic(apiKey: string, system: string, user: unknown, maxTokens: number) {
-  const response = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      temperature: 0.3,
-      system,
-      messages: [{ role: 'user', content: JSON.stringify(user) }],
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error?.message || `Anthropic request failed (${response.status}).`);
-  const content = Array.isArray(data?.content) ? data.content.map((part: any) => part?.text || '').join('\n') : '';
-  if (data?.stop_reason === 'max_tokens') {
-    throw new Error(
-      `The generated interface was too large and was cut off before it finished. ` +
-      `Please try generating again with a slightly simpler design request.`,
-    );
+  let parseError: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: maxTokens,
+        temperature: attempt ? 0.1 : 0.3,
+        system: attempt
+          ? `${system}\nYour previous response contained malformed JSON. Regenerate the complete response, carefully escaping every quote, backslash, newline, and control character inside string values. Return one complete JSON object only.`
+          : system,
+        messages: [{ role: 'user', content: JSON.stringify(user) }],
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data?.error?.message || `Anthropic request failed (${response.status}).`);
+    const content = Array.isArray(data?.content) ? data.content.map((part: any) => part?.text || '').join('\n') : '';
+    if (data?.stop_reason === 'max_tokens') {
+      throw new Error(
+        `The generated interface was too large and was cut off before it finished. ` +
+        `Please try generating again with a slightly simpler design request.`,
+      );
+    }
+    try {
+      return extractJson(content);
+    } catch (error) {
+      parseError = error;
+    }
   }
-  return extractJson(content);
+  console.error('[generate-public-layout] malformed model JSON after retry', parseError);
+  throw new Error('The generated interface was malformed. Please try generating again.');
 }
 
 const questionSystem = `You help an artist clarify a portfolio-interface request. Return only JSON:

@@ -339,30 +339,38 @@ function seedLayoutTheme(layoutKey, themeColors, colorKeys, typography, spacing)
 
 async function callProvider(apiKey, userPrompt, context = {}) {
   const provider = normalizeProvider(context.provider);
-  const result = await callTextModel({
-    provider,
-    apiKey,
-    system: buildSystemPrompt(),
-    user: buildUserPrompt(userPrompt, context),
-    maxTokens: GENERATE_MAX_TOKENS,
-    temperature: 0.7,
-    responseFormat: provider === 'cerebras' ? { type: 'json_object' } : null,
-  });
+  let parseError = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const system = buildSystemPrompt();
+    const result = await callTextModel({
+      provider,
+      apiKey,
+      system: attempt
+        ? `${system}\nYour previous response contained malformed JSON. Regenerate the complete response and carefully escape all string contents. Return one complete JSON object only.`
+        : system,
+      user: buildUserPrompt(userPrompt, context),
+      maxTokens: GENERATE_MAX_TOKENS,
+      temperature: attempt ? 0.2 : 0.7,
+      responseFormat: provider === 'cerebras' ? { type: 'json_object' } : null,
+    });
 
-  const text = result.text;
-  if (!text) throw new Error(`${providerLabel(provider)} returned no content`);
-  try {
-    return extractJson(text);
-  } catch (error) {
-    const stoppedForLength = ['max_tokens', 'length'].includes(String(result.stopReason || '').toLowerCase());
-    if (stoppedForLength) {
-      throw new Error(
-        `${providerLabel(provider)} response was cut off before the JSON finished. ` +
-        `Try generating again, or set GENERATE_MAX_TOKENS higher than ${GENERATE_MAX_TOKENS} in .env.`
-      );
+    const text = result.text;
+    if (!text) throw new Error(`${providerLabel(provider)} returned no content`);
+    try {
+      return extractJson(text);
+    } catch (error) {
+      const stoppedForLength = ['max_tokens', 'length'].includes(String(result.stopReason || '').toLowerCase());
+      if (stoppedForLength) {
+        throw new Error(
+          `${providerLabel(provider)} response was cut off before the JSON finished. ` +
+          `Try generating again, or set GENERATE_MAX_TOKENS higher than ${GENERATE_MAX_TOKENS} in .env.`
+        );
+      }
+      parseError = error;
     }
-    throw error;
   }
+  console.error(`[generate] ${providerLabel(provider)} returned malformed JSON after retry:`, parseError?.message);
+  throw new Error(`${providerLabel(provider)} returned malformed generation data. Please try generating again.`);
 }
 
 function escapeHtml(text) {

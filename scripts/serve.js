@@ -35,7 +35,6 @@ const { exec } = require('child_process');
 const { ART_DIR, EXAMPLE_ART_DIR, buildCollections, ROOT } = require('./build-manifest.js');
 const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
-const { generateTemplate } = require('./generate-template.js');
 const { parseCursorOperation } = require('./operation-parser.js');
 const { parsePortfolioOperation } = require('./portfolio-operation-parser.js');
 const { scoreDesignAxis } = require('./design-axis-parser.js');
@@ -369,6 +368,10 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/generate' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
+      // Reload so generation parsing and prompt fixes apply without restarting
+      // the local authoring server.
+      delete require.cache[require.resolve('./generate-template.js')];
+      const { generateTemplate } = require('./generate-template.js');
       const { buildContentModel } = require('./build-content.js');
       let textOverrides = {};
       try {
