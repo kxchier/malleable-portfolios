@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Portfolio — French Country Parlor</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./generated/french_country_parlor/style.css">
+  <script src="./scripts/content.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./scripts/supabase-config.js"></script>
+  <script src="./scripts/supabase-client.js"></script>
+  <script src="./scripts/loader.js"></script>
+  <script src="./scripts/model-loader.js"></script>
+  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/decorations-runtime.js"></script>
+  <script src="./generated/french_country_parlor/render.js"></script>
+</head>
+<body class="view-french_country_parlor">
+  <header>
+    <h1 data-text-id="portfolio.title" data-text-role="portfolio.title" data-text-fallback="My Art Portfolio">My Art Portfolio</h1>
+  </header>
+  <main class="container generated-layout-container"><div id="content"></div></main>
+  <script>
+    window.appData.then(async (data) => {
+      const models = await PortfolioModels.load('french_country_parlor', {
+        theme: data.theme,
+        contentOverrides: data.content,
+        contentModel: data.contentModel,
+      });
+      if (window.PortfolioContent) {
+        PortfolioContent.applyColorVars(data.theme, 'french_country_parlor');
+        PortfolioContent.applyTypographyVars(data.theme, 'french_country_parlor');
+      }
+      const spacing = data.theme?.versions?.french_country_parlor?.spacing || {};
+      Object.entries(spacing).forEach(([key, value]) => document.documentElement.style.setProperty(`--space-${key}`, value));
+      await GeneratedRuntime.mount({ root: document.getElementById('content'), layoutKey: 'french_country_parlor', models });
+    });
+  </script>
+</body>
+</html>

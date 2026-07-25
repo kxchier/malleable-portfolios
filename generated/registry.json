@@ -306,6 +306,23 @@
         ]
       },
       "createdAt": "2026-07-20T17:21:24.762Z"
+    },
+    {
+      "id": 16,
+      "key": "french_country_parlor",
+      "presentationId": "french_country_parlor",
+      "name": "French Country Parlor",
+      "metaphor": "late_1800s_french_country_parlor",
+      "file": "ver16.html",
+      "generated": true,
+      "prompt": "Use Studio Room as a starting point. Create a pastel colored living room reminiscent of the late 1800s French countryside, with a chair, vanity, rocking chair, and window. Furniture represents collections and opens a side panel of artwork.",
+      "examplePrompt": "A pastel colored living room reminiscent of the late 1800s French countryside, with a chair, vanity, rocking chair, and window.",
+      "colorKeys": ["background", "primary", "accent", "paper", "panel", "secondary"],
+      "designSpace": {
+        "x": 0.42,
+        "y": 0.9
+      },
+      "createdAt": "2026-07-25T00:00:00.000Z"
     }
   ]
 }

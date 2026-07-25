@@ -1,0 +1,28 @@
+{
+  "id": "french_country_parlor",
+  "layout_family": "spatial_environment",
+  "metaphor": "late_1800s_french_country_parlor",
+  "visual_language": "pastel isometric French countryside parlor with floral wallpaper, painted wainscoting, soft upholstery, and antique furniture",
+  "encounter": "The visitor enters a gentle nineteenth-century parlor. Click the chair, vanity, rocking chair, or window to browse a collection in a side panel.",
+  "intent": "Make browsing feel like discovering artworks throughout a quiet, lived-in French country home.",
+  "components": [
+    { "id": "parlor-scene", "role": "background", "description": "Isometric pastel parlor with two wallpapered walls and a rug" },
+    { "id": "parlor-object", "role": "collection_entry", "description": "Clickable chair, vanity, rocking chair, or window" },
+    { "id": "side-panel", "role": "collection_container", "description": "Sliding panel containing the selected collection" },
+    { "id": "work-tile", "role": "work_display", "description": "Artwork tile inside the open side panel" }
+  ],
+  "ui_spec": {
+    "editable": [
+      { "entity": "PORTFOLIO", "field": "title", "selector": "[data-text-role='portfolio.title']" },
+      { "entity": "COLLECTION", "field": "title", "selector": "[data-text-role='collection.title']" },
+      { "entity": "COLLECTION", "field": "works", "selector": ".room-work" },
+      { "entity": "WORK", "field": "images", "selector": ".room-work img" }
+    ]
+  },
+  "layout_engine": {
+    "type": "spatial_hotspots",
+    "collection_layout": "parlor_objects",
+    "work_display": "side_panel_grid",
+    "scroll": "room is fixed; panel scrolls its works"
+  }
+}
