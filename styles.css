@@ -295,6 +295,85 @@ h2 {
   backdrop-filter: blur(10px);
 }
 
+/*
+ * Generated themes load after this stylesheet and often give their artwork
+ * shapes fixed aspect ratios or overflow:hidden. Use the runtime state on the
+ * preview root to make metadata layout authoritative across custom renderers.
+ */
+[data-metadata-display="below"] .generated-work-tile.metadata-below {
+  display: block !important;
+  aspect-ratio: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+[data-metadata-display="below"] .generated-work-tile.metadata-below > img.generated-artwork-image {
+  display: block;
+  width: 100% !important;
+  aspect-ratio: 1;
+  height: auto !important;
+}
+
+[data-metadata-display="side"] .generated-work-tile.metadata-side {
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 0.75rem;
+  width: min(calc(var(--space-artSize) * 1.75), 92vw) !important;
+  min-width: min(calc(var(--space-artSize) * 1.75), 92vw) !important;
+  aspect-ratio: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+[data-metadata-display="side"] .generated-work-tile.metadata-side > img.generated-artwork-image {
+  flex: 0 0 var(--space-artSize);
+  width: var(--space-artSize) !important;
+  min-width: var(--space-artSize);
+  aspect-ratio: 1;
+  height: auto !important;
+}
+
+[data-metadata-display="overlay"] .generated-work-tile.metadata-overlay {
+  position: relative !important;
+}
+
+[data-metadata-display="overlay"] .generated-work-tile.metadata-overlay > .work-metadata {
+  z-index: 20;
+}
+
+[data-metadata-display="below"] .generated-work-tile.metadata-below,
+[data-metadata-display="side"] .generated-work-tile.metadata-side {
+  box-sizing: border-box;
+}
+
+.museum-metadata-frame {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: min(92vw, calc(var(--space-artSize) * 2.25));
+}
+
+.museum-metadata-frame.metadata-below {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.museum-metadata-frame.metadata-side {
+  flex-direction: row;
+  gap: 0.85rem;
+}
+
+.museum-metadata-frame > .frame-outer {
+  flex: 0 0 auto;
+}
+
+.museum-metadata-frame > .work-metadata {
+  width: min(16rem, calc(var(--space-artSize) * 0.9));
+  padding: 0.65rem;
+  box-sizing: border-box;
+}
+
 /* ---- Prototype social layer: visual demo only, no storage ---- */
 .has-social-prototype {
   position: relative;

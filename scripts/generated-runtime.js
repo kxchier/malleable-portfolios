@@ -143,13 +143,39 @@ window.GeneratedRuntime = (() => {
       : 'none';
     const workByKey = new Map();
     const workByImage = new Map();
+    const imageKeys = (value) => {
+      const raw = String(value || '').trim();
+      if (!raw) return [];
+      const keys = new Set([raw, raw.replace(/^\.\//, '')]);
+      try {
+        const decoded = decodeURIComponent(raw);
+        keys.add(decoded);
+        keys.add(decoded.replace(/^\.\//, ''));
+      } catch {
+        // Keep the original path when it contains malformed URL escapes.
+      }
+      try {
+        const pathname = new URL(raw, document.baseURI).pathname.replace(/^\/+/, '');
+        keys.add(pathname);
+        keys.add(decodeURIComponent(pathname));
+      } catch {
+        // Relative/raw keys above are enough.
+      }
+      return [...keys];
+    };
+    const indexWorkImages = (work) => {
+      (work?.images || [work?.image]).filter(Boolean).forEach((imagePath) => {
+        imageKeys(imagePath).forEach((key) => workByImage.set(key, work));
+      });
+    };
+    (models.content?.works || []).forEach(indexWorkImages);
     (models.manifest?.collections || []).forEach((collection, fallbackCollectionIndex) => {
       const collectionIndex = collection.originalIndex ?? fallbackCollectionIndex;
       (collection.workItems || []).forEach((work, fallbackWorkIndex) => {
         const sourceCollectionIndex = work?.sourceCollectionIndex ?? collectionIndex;
         const sourceWorkIndex = work?.sourceWorkIndex ?? fallbackWorkIndex;
         workByKey.set(`${sourceCollectionIndex}:${sourceWorkIndex}`, work);
-        (work?.images || []).forEach((imagePath) => workByImage.set(imagePath, work));
+        indexWorkImages(work);
       });
     });
 
@@ -170,13 +196,26 @@ window.GeneratedRuntime = (() => {
       return /^(https?:\/\/|mailto:)/i.test(String(link || '')) ? link : '';
     }
 
+    function placeOutsidePictureFrame(tile, caption) {
+      if (!['below', 'side'].includes(metadataDisplay)) return;
+      const frameInner = tile.closest('.frame-inner');
+      const frameOuter = frameInner?.parentElement;
+      const station = frameOuter?.parentElement;
+      if (!frameInner || !frameOuter || !station || frameOuter.classList.contains('museum-metadata-frame')) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `museum-metadata-frame metadata-${metadataDisplay}`;
+      station.insertBefore(wrapper, frameOuter);
+      wrapper.append(frameOuter, caption);
+      tile.classList.remove(`metadata-${metadataDisplay}`);
+      tile.classList.remove('has-work-metadata');
+    }
+
     function appendWorkMetadata(tile, metadata) {
-      if (!metadata || metadataDisplay === 'none') return;
+      if (!metadata || metadataDisplay === 'none' || tile.querySelector(':scope > .work-metadata')) return;
       const caption = document.createElement('figcaption');
       caption.className = `work-metadata work-metadata--${metadataDisplay}`;
-      const hasBodyText = Boolean(metadata.description || metadata.medium || metadata.year || metadata.link);
-
-      if (metadata.title && hasBodyText) {
+      if (metadata.title) {
         const title = document.createElement('strong');
         title.className = 'work-metadata-title';
         title.textContent = metadata.title;
@@ -210,7 +249,45 @@ window.GeneratedRuntime = (() => {
       if (caption.children.length) {
         tile.classList.add('has-work-metadata', `metadata-${metadataDisplay}`);
         tile.appendChild(caption);
+        placeOutsidePictureFrame(tile, caption);
       }
+    }
+
+    function applyWorkMetadata(root) {
+      if (metadataDisplay === 'none') return;
+      const handledWorks = new Set();
+      root.querySelectorAll('[data-model-kind="work"]').forEach((tile) => {
+        const existingCaption = tile.querySelector(':scope > .work-metadata');
+        if (existingCaption) {
+          placeOutsidePictureFrame(tile, existingCaption);
+        }
+        const collectionIndex = Number(tile.dataset.collectionIndex);
+        const workIndex = Number(tile.dataset.workIndex);
+        const indexedWork = Number.isFinite(collectionIndex) && Number.isFinite(workIndex)
+          ? workByKey.get(`${collectionIndex}:${workIndex}`)
+          : null;
+        const imagePath = tile.querySelector('img')?.getAttribute('src') || '';
+        const imageWork = imageKeys(imagePath).map((key) => workByImage.get(key)).find(Boolean);
+        const work = indexedWork || imageWork;
+        if (!existingCaption) appendWorkMetadata(tile, workMetadata(work, tile.dataset.modelLabel));
+        if (work) handledWorks.add(work);
+      });
+
+      // Older generated bundles sometimes clone the helper-created image into
+      // their own frame and discard the helper tile (and its model markers).
+      // Recover those frames by matching the rendered image path directly.
+      root.querySelectorAll('img').forEach((image) => {
+        const imagePath = image.getAttribute('src') || '';
+        const work = imageKeys(imagePath).map((key) => workByImage.get(key)).find(Boolean);
+        if (!work || handledWorks.has(work) || image.closest('[data-model-kind="work"]')) return;
+        const tile = image.parentElement;
+        if (!tile || tile === root) return;
+        tile.dataset.modelKind = 'work';
+        tile.dataset.modelLabel = work.title || imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+        tile.classList.add('generated-work-tile');
+        appendWorkMetadata(tile, workMetadata(work, tile.dataset.modelLabel));
+        handledWorks.add(work);
+      });
     }
 
     function portfolioTitle() {
@@ -322,7 +399,7 @@ window.GeneratedRuntime = (() => {
       };
       tile.appendChild(image);
       const inferredWork = opts.work
-        || workByImage.get(resolvedPath)
+        || imageKeys(resolvedPath).map((key) => workByImage.get(key)).find(Boolean)
         || indexedWork;
       appendWorkMetadata(tile, workMetadata(inferredWork, opts.label || opts.alt));
       return tile;
@@ -332,7 +409,7 @@ window.GeneratedRuntime = (() => {
       return assets[name] || '';
     }
 
-    return { collectionSection, collectionFrame, workTile, inlineAsset, portfolioTitle };
+    return { collectionSection, collectionFrame, workTile, inlineAsset, portfolioTitle, applyWorkMetadata };
   }
 
   function bindCollectionHeading(el, collection, models, versionKey) {
@@ -619,6 +696,7 @@ window.GeneratedRuntime = (() => {
       versionKey,
     });
     repairMissingArtworkImages(root, collections);
+    helpers.applyWorkMetadata(root);
     mountDecorations(root, assets, decorations);
 
     bindGeneratedModelTargets(root);

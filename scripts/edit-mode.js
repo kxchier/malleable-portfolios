@@ -51,10 +51,20 @@ function requireLocalPortfolioApi(feature) {
 function hydratePublicLayouts() {
   const stored = Array.isArray(editedContent.publicLayouts) ? editedContent.publicLayouts : [];
   if (!stored.length) return;
-  const byKey = new Map((window.PORTFOLIO_LAYOUTS || []).map((layout) => [layout.key, layout]));
+  const baseLayouts = window.PORTFOLIO_LAYOUTS || [];
+  const byKey = new Map(baseLayouts.map((layout) => [layout.key, layout]));
+  const idOwners = new Map(baseLayouts.map((layout) => [Number(layout.id), layout.key]));
+  let nextId = Math.max(0, ...baseLayouts.map((layout) => Number(layout.id)).filter(Number.isFinite)) + 1;
   stored.forEach((layout) => {
     if (!layout?.key || (!layout?.publicSpec && !layout?.publicBundle)) return;
-    byKey.set(layout.key, { ...layout, generated: true, publicGenerated: true });
+    let id = Number(layout.id);
+    if (!Number.isFinite(id) || (idOwners.has(id) && idOwners.get(id) !== layout.key)) {
+      while (idOwners.has(nextId)) nextId += 1;
+      id = nextId;
+      nextId += 1;
+    }
+    idOwners.set(id, layout.key);
+    byKey.set(layout.key, { ...layout, id, generated: true, publicGenerated: true });
   });
   window.PORTFOLIO_LAYOUTS = [...byKey.values()].sort((a, b) => Number(a.id) - Number(b.id));
 }
@@ -142,7 +152,9 @@ async function initEditMode() {
   editedContent = JSON.parse(JSON.stringify(content));
   hydratePublicLayouts();
 
-  const firstLayout = (window.PORTFOLIO_LAYOUTS || [])[0];
+  const firstLayout = (window.PORTFOLIO_LAYOUTS || []).find(
+    (layout) => layout.key === editedContent.selectedLayoutKey
+  ) || (window.PORTFOLIO_LAYOUTS || [])[0];
   if (firstLayout) currentVersion = firstLayout.id;
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
@@ -4046,7 +4058,11 @@ function setupMetadataDisplayListener() {
     const overrides = ensureLayoutOverrides(getCurrentVersionKey());
     if (value === 'none') delete overrides.metadataDisplay;
     else overrides.metadataDisplay = value;
-    patchPreview({ remount: true });
+    // Public generated layouts run in an opaque-origin sandbox. Rebuild their
+    // srcdoc so the new override is present at boot; cross-origin live patches
+    // are not reliable for these frames.
+    if (getLayout(currentVersion)?.publicBundle) updatePreview();
+    else patchPreview({ remount: true });
     refreshInspectModel();
   });
 }
@@ -4059,7 +4075,8 @@ function setupSocialPrototypeListener() {
     const overrides = ensureLayoutOverrides(getCurrentVersionKey());
     if (value === 'none') delete overrides.socialPrototype;
     else overrides.socialPrototype = value;
-    patchPreview({ remount: true });
+    if (getLayout(currentVersion)?.publicBundle) updatePreview();
+    else patchPreview({ remount: true });
     refreshInspectModel();
   });
 }
@@ -5026,23 +5043,23 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
   const generatedScripts = layout.publicBundle
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
-  <script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
+  <script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script>${publicRenderScript}<\/script>`
     : layout.publicGenerated
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
-  <script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
+  <script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
     : layout.generated
-    ? `<script src="./scripts/generated-runtime.js?v=editable-generated-text-20260724"><\/script>
+    ? `<script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
   <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${deskScripts}
   <script src="./scripts/decorations-runtime.js"><\/script>
-  <script src="./scripts/render.js?v=editable-custom-collections-20260724"><\/script>`;
+  <script src="./scripts/render.js?v=clothesline-metadata-20260725"><\/script>`;
 
   const mountScript = layout.generated
     ? `(async () => {
@@ -5147,7 +5164,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   <meta charset="UTF-8">
   ${publicBundleCsp}
   ${options.baseHref ? `<base href="${PortfolioContent.escapeHtml(options.baseHref)}">` : ''}
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=museum-frame-preserved2-20260725">
   ${generatedHead}
   <style>
     :root {

@@ -42,9 +42,7 @@ window.PortfolioRender = (() => {
     if (!metadata || display === 'none') return;
     const caption = document.createElement('figcaption');
     caption.className = `work-metadata work-metadata--${display}`;
-    const hasBodyText = Boolean(metadata.description || metadata.medium || metadata.year || metadata.link);
-
-    if (metadata.title && hasBodyText) {
+    if (metadata.title) {
       const title = document.createElement('strong');
       title.className = 'work-metadata-title';
       title.textContent = metadata.title;
@@ -454,7 +452,7 @@ window.PortfolioRender = (() => {
     wire.style.width = `${width}px`;
   }
 
-  function renderClotheslineContainer(section, collection) {
+  function renderClotheslineContainer(section, collection, presentation) {
     const scroll = document.createElement('div');
     scroll.className = 'images-scroll clothesline-scroll';
 
@@ -486,6 +484,12 @@ window.PortfolioRender = (() => {
         workId: work?.id || `work_${sourceCollectionIndex}_${sourceWorkIndex}`,
         modelLabel: work?.title || imageBasename(img),
       });
+      const tile = piece.querySelector('.scroll-item');
+      appendWorkMetadata(
+        tile,
+        workMetadata(work, imageBasename(img)),
+        metadataDisplayFor(presentation, window.__PORTFOLIO_CONTENT_OVERRIDES__ || {})
+      );
     });
 
     rig.append(wire, items);
@@ -597,7 +601,7 @@ window.PortfolioRender = (() => {
     }
 
     if (presentation.id === 'clothesline' || presentation.metaphor === 'clothesline') {
-      renderClotheslineContainer(section, collection);
+      renderClotheslineContainer(section, collection, presentation);
       return;
     }
 
