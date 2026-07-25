@@ -1,0 +1,134 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "sketches",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9",
+        "work_0_10",
+        "work_0_11"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3330_3.jpg"
+      ],
+      "description": "location: West 81st Street, New York City\nSketching decor ideas for our first post-grad apartment. At the time, Poppi was our drink of choice, and we would often stop by Westside Market to grab a few discounted cans."
+    },
+    {
+      "id": "work_0_1",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3331_3.jpg"
+      ],
+      "description": "location: West Village, New York City\nI always imagined the Cellar Dog as a kind, relaxed dog. I've spent friends' birthdays, office outings, and late-night pit stops here, in addition to walking past it hundreds of times after exiting the Christopher Street station."
+    },
+    {
+      "id": "work_0_2",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3332_3.jpg"
+      ],
+      "description": "location: West Village, New York City\nLong walks in the West Village during lunch are a dream—you have room to see the shape of the neighborhood: trees, people, and cats."
+    },
+    {
+      "id": "work_0_3",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3333_3.jpg"
+      ],
+      "description": "location: Mayfield Road, Ohio\nSome practice while watching Bollywood movies at home."
+    },
+    {
+      "id": "work_0_4",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3334_3.jpg"
+      ],
+      "description": "location: Murray Hill, New York City\nTaking the bus down to the Morgan Library. A friend from high school was in town; he told us that he had walked from LaGuardia to our friend's place in Williamsburg."
+    },
+    {
+      "id": "work_0_5",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3335_4.jpg"
+      ],
+      "description": "location: American Museum of Natural History, New York City\nPotentially my favorite place in the world. This was from an afternoon in the Hall of North American Mammals."
+    },
+    {
+      "id": "work_0_6",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3336_3.jpg"
+      ],
+      "description": "location: Central Park, New York City\nAud sitting in Central Park, alongside a sketch of my grandmother when she was younger."
+    },
+    {
+      "id": "work_0_7",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3337_3.jpg"
+      ],
+      "description": "location: East Village, New York City\nDrawn sitting at Coffee Project in the East Village, after getting a haircut with Lyudmilla by Tompkins Square Park."
+    },
+    {
+      "id": "work_0_8",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3338_3.jpg"
+      ],
+      "description": "location: Bushwick, Brooklyn\nOne of my best friends was visiting New York City from San Francisco, and she had scheduled a tattoo appointment with her favorite artist. It turned out beautifully."
+    },
+    {
+      "id": "work_0_9",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3339_3.jpg"
+      ],
+      "description": "location: American Museum of Natural History, New York City\nDrawn after a visit to the insect section of the Gilder Center."
+    },
+    {
+      "id": "work_0_10",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3340_4.jpg"
+      ],
+      "description": "location: Moynihan Train Hall, New York City\nI have spent many hours people-watching in Moynihan, waiting for the Northeast Regional to whisk me down to Charm City."
+    },
+    {
+      "id": "work_0_11",
+      "title": "",
+      "images": [
+        "Art/participants/02/sketches/IMG_3423_4.jpg"
+      ],
+      "description": "location: Bed Stuy, Brooklyn\nA woman with an embroidered shirt on the subway to Brooklyn."
+    }
+  ]
+}

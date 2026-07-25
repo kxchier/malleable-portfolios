@@ -187,7 +187,9 @@ if (require.main === module) {
       .filter((entry) => entry.isDirectory() && /^[a-z0-9_-]{1,40}$/i.test(entry.name))
       .forEach((entry) => {
         const participantCollections = buildCollections(path.join(participantsDir, entry.name));
-        writeContent(participantCollections, storedText, {
+        writeContent(participantCollections, {
+          'portfolio.title': storedText['portfolio.title'],
+        }, {
           contentFile: path.join(MODELS_DIR, 'participants', `${entry.name.toLowerCase()}.json`),
           writeManifest: false,
         });
