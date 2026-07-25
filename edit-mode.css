@@ -2117,6 +2117,7 @@
 
 .design-space-node:hover,
 .design-space-node.active {
+  z-index: 6;
   opacity: 1;
   box-shadow:
     0 0 0 2px #2f3437,

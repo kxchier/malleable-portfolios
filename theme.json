@@ -32,12 +32,12 @@
   "versions": {
     "french_country_parlor": {
       "colors": {
-        "background": "#f4e8ef",
-        "primary": "#5f5362",
-        "accent": "#c9a58d",
-        "paper": "#fffaf2",
-        "panel": "#e8e1f2",
-        "secondary": "#b9cdb4"
+        "background": "#ebe3dc",
+        "primary": "#5c534c",
+        "accent": "#b89a82",
+        "paper": "#f7f2ec",
+        "panel": "#e2d8d0",
+        "secondary": "#aeb6a6"
       },
       "typography": {
         "heading1": {

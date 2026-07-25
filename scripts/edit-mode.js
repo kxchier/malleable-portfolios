@@ -2634,9 +2634,11 @@ function getLayoutMapPoint(layout, mode = getDesignSpaceMode()) {
 
 function designSpaceClusterOffsets(layouts, mode, preview = false) {
   const groups = new Map();
+  // Coarser buckets so near-neighbors (like Studio Room + French Parlor) separate
+  const quantize = preview ? 40 : 25;
   layouts.forEach((layout) => {
     const point = getLayoutMapPoint(layout, mode);
-    const key = `${Math.round(point.x * 1000)}:${Math.round(point.y * 1000)}`;
+    const key = `${Math.round(point.x * quantize)}:${Math.round(point.y * quantize)}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(layout.key || String(layout.id));
   });

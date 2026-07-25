@@ -19,7 +19,10 @@ async function loadStaticLayoutRegistry() {
   const layouts = [
     ...(Array.isArray(builtins) ? builtins : []),
     ...(Array.isArray(generatedRegistry?.layouts) ? generatedRegistry.layouts : []),
-  ].filter((layout) => !participantId || !layout.ownerParticipantId || layout.ownerParticipantId === participantId);
+  ].filter((layout) => {
+    if (!layout.ownerParticipantId) return true;
+    return participantId === layout.ownerParticipantId;
+  });
   const byId = new Map();
   layouts.forEach((layout) => byId.set(layout.id, layout));
   return [...byId.values()].sort((a, b) => a.id - b.id);

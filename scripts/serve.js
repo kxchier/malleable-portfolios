@@ -104,10 +104,10 @@ function participantIdForRequest(req) {
 
 function layoutsForRequest(req) {
   const participantId = participantIdForRequest(req);
-  if (!participantId) return listAllLayouts();
-  return listAllLayouts().filter((layout) => (
-    !layout.ownerParticipantId || layout.ownerParticipantId === participantId
-  ));
+  return listAllLayouts().filter((layout) => {
+    if (!layout.ownerParticipantId) return true;
+    return participantId === layout.ownerParticipantId;
+  });
 }
 
 function textOverridesForRequest(req, textOverrides) {

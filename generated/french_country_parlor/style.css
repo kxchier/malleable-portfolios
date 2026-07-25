@@ -2,52 +2,36 @@
 
 @keyframes parlor-curtain-sway {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(1.2deg); }
-}
-
-@keyframes parlor-rock {
-  0%, 100% { transform: rotate(-0.8deg); }
-  50% { transform: rotate(1.1deg); }
-}
-
-@keyframes parlor-lamp-pulse {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1; }
-}
-
-@keyframes parlor-cloud-drift {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(6px); }
-}
-
-@keyframes parlor-hotspot-breathe {
-  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
-  50% { filter: drop-shadow(0 0 8px rgba(183, 134, 164, 0.35)); }
+  50% { transform: rotate(0.6deg); }
 }
 
 @keyframes parlor-enter {
-  from { opacity: 0; transform: translateY(12px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
+/* Cassatt-muted: dusty rose, soft blue-gray, warm ivory, quiet sage */
 body.view-french_country_parlor {
-  --room-ink: #5a4e5c;
-  --room-wall: #f7ebf0;
-  --room-wall-shade: #ebe3f2;
-  --room-floor: #dcc7ae;
-  --room-floor-deep: #b99b80;
-  --room-rug: #cddfcf;
-  --room-wood: #c9a58d;
-  --room-wood-mid: #dfc5ad;
-  --room-wood-deep: #9f7d72;
-  --room-paper: #fffaf2;
-  --room-accent: #a8c9d6;
+  --room-ink: #5c534c;
+  --room-wall: #efe6df;
+  --room-wall-shade: #e6ddd6;
+  --room-floor: #cbb8a4;
+  --room-floor-deep: #a8927c;
+  --room-rug: #b7bdae;
+  --room-wood: #b89a82;
+  --room-wood-mid: #cbb09a;
+  --room-wood-deep: #8f7664;
+  --room-paper: #f7f2ec;
+  --room-accent: #9aadb5;
   --room-panel-w: min(26rem, 40vw);
+  --parlor-rose: #c4a8a6;
+  --parlor-blush: #d8c4bc;
+  --parlor-sage: #aeb6a6;
+  --parlor-sky: #b4c2c8;
+  --parlor-cream: #f3ece4;
   background:
-    radial-gradient(ellipse 70% 55% at 52% 28%, #fff9f0 0%, transparent 58%),
-    radial-gradient(ellipse 50% 40% at 18% 80%, rgba(185, 205, 180, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 35% at 88% 70%, rgba(232, 196, 212, 0.3) 0%, transparent 50%),
-    linear-gradient(165deg, #faf4f7 0%, #f0e6ef 48%, #e4dce8 100%);
+    radial-gradient(ellipse 65% 50% at 50% 30%, #f7f2ec 0%, transparent 62%),
+    linear-gradient(168deg, #f3ece4 0%, #ebe3dc 52%, #e2d8d0 100%);
   overflow-x: hidden;
 }
 
@@ -55,43 +39,34 @@ body.view-french_country_parlor > header {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 1rem 1.5rem 0.15rem;
+  padding: 1rem 1.5rem 0.1rem;
   position: relative;
   z-index: 20;
   text-align: center;
 }
 
 body.view-french_country_parlor > header h1 {
-  margin: 0 auto 0.15rem;
+  margin: 0 auto;
   color: var(--room-ink);
   font-family: var(--font-heading1-family, 'Cormorant Garamond', Georgia, serif);
-  font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
   font-weight: 500;
   font-style: italic;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   line-height: 1.15;
-}
-
-body.view-french_country_parlor > header h1::after {
-  content: '';
-  display: block;
-  width: 3.2rem;
-  height: 1px;
-  margin: 0.45rem auto 0;
-  background: linear-gradient(90deg, transparent, #c9a58d, transparent);
 }
 
 body.view-french_country_parlor .generated-layout-container {
   width: 100%;
   max-width: none;
-  min-height: calc(100vh - 4rem);
+  min-height: calc(100vh - 3.8rem);
   padding: 0;
 }
 
 body.view-french_country_parlor #content {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - 4rem);
+  min-height: calc(100vh - 3.8rem);
 }
 
 body.view-french_country_parlor:has(.room-panel.is-open) #content,
@@ -100,13 +75,13 @@ body.view-french_country_parlor:has(.room-panel.is-open) #preview-content {
 }
 
 .parlor-scene {
-  animation: parlor-enter 0.7s ease-out both;
+  animation: parlor-enter 0.55s ease-out both;
 }
 
 .parlor-wall {
   fill: url("#parlorWallpaper");
   stroke: var(--room-ink);
-  stroke-width: 2.4;
+  stroke-width: 2;
   stroke-linejoin: round;
 }
 
@@ -118,48 +93,40 @@ body.view-french_country_parlor:has(.room-panel.is-open) #preview-content {
 .parlor-floor {
   fill: url(#parlorFloorShade);
   stroke: var(--room-ink);
-  stroke-width: 2.4;
+  stroke-width: 2;
   stroke-linejoin: round;
 }
 
 .parlor-wainscot {
-  fill: #d5e4d0;
+  fill: #d6d0c6;
   stroke: none;
-  opacity: 0.88;
+  opacity: 0.92;
 }
 
 .parlor-wainscot--right {
-  fill: #c9d9c4;
-  opacity: 0.9;
+  fill: #ccc6bc;
 }
 
 .parlor-trim {
   fill: none;
-  stroke: #9f7d72;
-  stroke-width: 2.8;
+  stroke: #8f7664;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.parlor-trim--rail {
-  stroke-width: 2.2;
-  opacity: 0.85;
-}
-
-.parlor-trim--cornice {
-  stroke-width: 3.2;
-}
+.parlor-trim--rail { stroke-width: 1.8; opacity: 0.8; }
+.parlor-trim--cornice { stroke-width: 2.6; }
 
 .parlor-rug {
-  fill: #c5d8c2;
+  fill: #b7bdae;
   stroke: var(--room-ink);
-  stroke-width: 2;
+  stroke-width: 1.8;
 }
 
 .parlor-rug-inner {
-  fill: url(#parlorRugFloral);
+  fill: #c4c8bc;
   stroke: none;
-  opacity: 0.9;
 }
 
 .parlor-light-ray {
@@ -167,41 +134,43 @@ body.view-french_country_parlor:has(.room-panel.is-open) #preview-content {
   pointer-events: none;
 }
 
-.parlor-window-frame {
-  fill: #dfc5ad;
-}
-
-.parlor-window-view {
-  fill: #a8c49a;
-}
-
+.parlor-window-frame { fill: #cbb09a; }
+.parlor-window-view { fill: #a8b5a0; }
 .parlor-curtain-fill {
-  fill: #e8cbd6;
+  fill: #d4c0ba;
   stroke: var(--room-ink);
-  stroke-width: 1.6;
+  stroke-width: 1.4;
 }
 
 .parlor-curtain--left {
   transform-origin: 500px 70px;
-  animation: parlor-curtain-sway 5.5s ease-in-out infinite;
+  animation: parlor-curtain-sway 7s ease-in-out infinite;
 }
 
 .parlor-curtain--right {
   transform-origin: 595px 140px;
-  animation: parlor-curtain-sway 6.2s ease-in-out infinite reverse;
+  animation: parlor-curtain-sway 8s ease-in-out infinite reverse;
 }
 
-.parlor-cloud {
-  animation: parlor-cloud-drift 8s ease-in-out infinite;
+.parlor-upholstery {
+  fill: color-mix(in srgb, var(--color-secondary, #aeb6a6) 68%, white);
+  fill-opacity: 0.92;
 }
-
-.parlor-upholstery { fill: #c5d6c4; }
-.parlor-upholstery-rose { fill: #dfbcc8; }
-.parlor-mirror { fill: #d4e4e8; }
-.parlor-gold { fill: #d3b77b; }
-.parlor-porcelain { fill: #edf1df; }
-.parlor-floral { fill: #b786a4; stroke: none; }
-.parlor-leaf { fill: #b9cdb4; stroke: #5f5362; stroke-width: 1; }
+.parlor-upholstery-rose {
+  fill: color-mix(in srgb, var(--color-panel, #e2d8d0) 40%, #c4a8a6);
+  fill-opacity: 0.92;
+}
+.parlor-mirror {
+  fill: color-mix(in srgb, var(--color-paper, #f7f2ec) 55%, #b4c2c8);
+  fill-opacity: 0.9;
+}
+.parlor-gold {
+  fill: color-mix(in srgb, var(--room-wood, #b89a82) 70%, #d4c4a0);
+  fill-opacity: 0.92;
+}
+.parlor-porcelain { fill: #e8e4dc; }
+.parlor-floral { fill: #b89896; stroke: none; }
+.parlor-leaf { fill: #aeb6a6; stroke: var(--room-ink); stroke-width: 1; }
 
 .parlor-object path,
 .parlor-object polygon,
@@ -212,92 +181,72 @@ body.view-french_country_parlor:has(.room-panel.is-open) #preview-content {
   stroke-linecap: round;
 }
 
-.parlor-rocker-body {
-  transform-origin: 540px 400px;
-  animation: parlor-rock 4.8s ease-in-out infinite;
-}
-
-.parlor-lamp-glow {
-  animation: parlor-lamp-pulse 3.2s ease-in-out infinite;
-}
-
 .parlor-hotspot {
   cursor: pointer;
-  animation: parlor-hotspot-breathe 3.6s ease-in-out infinite;
+  transition: filter 0.2s ease;
 }
 
 .parlor-hotspot:hover,
 .parlor-hotspot:focus-visible {
-  animation: none;
-  filter: drop-shadow(0 6px 0 rgba(95, 83, 98, 0.1)) drop-shadow(0 0 10px rgba(183, 134, 164, 0.4));
+  filter: drop-shadow(0 5px 0 rgba(92, 83, 76, 0.08));
 }
 
 .parlor-hotspot.is-active {
-  animation: none;
-  filter: drop-shadow(0 0 12px rgba(183, 134, 164, 0.55));
+  filter: drop-shadow(0 0 8px rgba(184, 152, 150, 0.4));
 }
 
 .parlor-ambient {
   pointer-events: none;
-  opacity: 0.78;
-}
-
-.parlor-hotspot.parlor-object {
-  opacity: 1;
 }
 
 .parlor-hint {
-  background: rgba(255, 250, 242, 0.96);
-  border-color: rgba(95, 83, 98, 0.2);
-  color: #5a4e5c;
+  background: rgba(247, 242, 236, 0.94);
+  border-color: rgba(92, 83, 76, 0.16);
+  color: #6a6158;
   font-style: italic;
-  letter-spacing: 0.03em;
-  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  font-size: 0.76rem;
 }
 
 .parlor-caption-bg {
-  fill: #fffaf2;
-  stroke: #9f7d72;
+  fill: #f7f2ec;
+  stroke: #8f7664;
 }
 
 .parlor-panel {
-  background: #fffaf2;
-  border-left-color: #c9a58d;
-  box-shadow: -18px 0 48px rgba(95, 83, 98, 0.12);
+  background: #f7f2ec;
+  border-left-color: #b89a82;
+  box-shadow: -14px 0 36px rgba(92, 83, 76, 0.1);
 }
 
 .parlor-panel__head {
-  background: linear-gradient(180deg, #f3e6ef 0%, #eee2eb 100%);
-  border-bottom-color: #c9a58d;
+  background: #ebe3dc;
+  border-bottom-color: #c4a8a6;
 }
 
 body.view-french_country_parlor .room-panel__title {
   font-family: var(--font-heading1-family, 'Cormorant Garamond', Georgia, serif);
   font-style: italic;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
+  color: var(--room-ink);
 }
 
 body.view-french_country_parlor .room-work img,
 body.view-french_country_parlor .room-work .work-image,
 body.view-french_country_parlor .room-work picture img {
-  border-radius: 3px;
-  border-color: rgba(159, 125, 114, 0.35);
-  box-shadow: 0 2px 8px rgba(95, 83, 98, 0.08);
+  border-radius: 2px;
+  border-color: rgba(143, 118, 100, 0.28);
+  box-shadow: 0 1px 6px rgba(92, 83, 76, 0.06);
 }
 
 @media (max-width: 700px) {
   body.view-french_country_parlor { --room-panel-w: min(92vw, 25rem); }
   body.view-french_country_parlor > header { text-align: left; padding-left: 1.1rem; }
-  body.view-french_country_parlor > header h1::after { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .parlor-curtain--left,
   .parlor-curtain--right,
-  .parlor-rocker-body,
-  .parlor-cloud,
-  .parlor-lamp-glow,
-  .parlor-hotspot,
   .parlor-scene {
     animation: none;
   }
