@@ -155,7 +155,9 @@ window.GeneratedRuntime = (() => {
 
     function workMetadata(work, fallbackTitle) {
       if (!work) return null;
-      const title = String(work.title || fallbackTitle || '').trim();
+      const title = String(
+        Object.prototype.hasOwnProperty.call(work, 'title') ? work.title : (fallbackTitle || '')
+      ).trim();
       const description = String(work.description || '').trim();
       const medium = String(work.medium || '').trim();
       const year = String(work.year || '').trim();

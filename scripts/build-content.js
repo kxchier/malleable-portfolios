@@ -49,7 +49,7 @@ function parseWorkMetadata(raw) {
       return;
     }
 
-    const match = trimmed.match(/^([A-Za-z][A-Za-z0-9 _-]{0,32})\s*:\s*(.+)$/);
+    const match = trimmed.match(/^([A-Za-z][A-Za-z0-9 _-]{0,32})\s*:\s*(.*)$/);
     if (!match) {
       descriptionLines.push(line);
       return;
@@ -57,7 +57,11 @@ function parseWorkMetadata(raw) {
 
     const key = normalizeMetadataKey(match[1]);
     const value = match[2].trim();
-    if (!value) return;
+    if (!value) {
+      // An explicitly blank title suppresses filename-based title fallbacks.
+      if (key === 'title') metadata.title = '';
+      return;
+    }
     if (key === 'tags') {
       metadata.tags = value.split(',').map((tag) => tag.trim()).filter(Boolean);
     } else if (key === 'description') {
@@ -110,7 +114,9 @@ function buildContentModel(collections, textOverrides = {}) {
       const metadata = readWorkMetadata(imagePath);
       works.push({
         id: workId,
-        title: metadata.title || titleFromFilename(imagePath),
+        title: Object.prototype.hasOwnProperty.call(metadata, 'title')
+          ? metadata.title
+          : titleFromFilename(imagePath),
         images: [imagePath],
         ...metadata,
       });

@@ -124,7 +124,9 @@ window.PortfolioModels = (() => {
         const workId = sourceWork.id || `work_${colIndex}_${workIndex}`;
         works.push({
           id: workId,
-          title: sourceWork.title || imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || workId,
+          title: Object.prototype.hasOwnProperty.call(sourceWork, 'title')
+            ? sourceWork.title
+            : (imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || workId),
           images: [imagePath],
           ...(sourceWork.description ? { description: sourceWork.description } : {}),
           ...(sourceWork.medium ? { medium: sourceWork.medium } : {}),

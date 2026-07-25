@@ -476,7 +476,9 @@ window.PortfolioContent = (() => {
         works.set(id, {
           ...sourceWork,
           id,
-          title: sourceWork.title || imageBasename(image),
+          title: Object.prototype.hasOwnProperty.call(sourceWork, 'title')
+            ? sourceWork.title
+            : imageBasename(image),
           image,
           images: sourceWork.images || [image],
           sourceCollectionId: sourceWork.sourceCollectionId || collection.id || collectionId(collectionIndex),
