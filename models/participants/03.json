@@ -1,0 +1,162 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Digital Painting Decal - Art Portfolio ",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9",
+        "work_0_10",
+        "work_0_11",
+        "work_0_12",
+        "work_0_13",
+        "work_0_14",
+        "work_0_15",
+        "work_0_16"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "30.12.2019",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /30.12.2019.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "IMG 1146",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_1146.jpg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "IMG 1147",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_1147.jpg"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "IMG 1280",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_1280.jpg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "IMG 1283",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_1283.jpg"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "IMG 1313",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_1313.jpg"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "IMG 3122",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_3122.jpg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "IMG 3134",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_3134.jpg"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "IMG 9420",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_9420.jpg"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "IMG 9422",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_9422.jpg"
+      ]
+    },
+    {
+      "id": "work_0_10",
+      "title": "IMG 9990",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_9990.jpg"
+      ]
+    },
+    {
+      "id": "work_0_11",
+      "title": "IMG 9991",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /IMG_9991.jpg"
+      ]
+    },
+    {
+      "id": "work_0_12",
+      "title": "K 19 08 13 damncat",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /K-19_08_13_damncat.PNG"
+      ]
+    },
+    {
+      "id": "work_0_13",
+      "title": "Screen Shot 2023 09 01 at 9.44.38 PM",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /Screen Shot 2023-09-01 at 9.44.38 PM.png"
+      ]
+    },
+    {
+      "id": "work_0_14",
+      "title": "Shadows N Light 1",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /Shadows_N_Light_1.jpg"
+      ]
+    },
+    {
+      "id": "work_0_15",
+      "title": "Untitled Artwork 4",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /Untitled_Artwork 4.jpg"
+      ]
+    },
+    {
+      "id": "work_0_16",
+      "title": "Untitled Artwork 5",
+      "images": [
+        "Art/participants/03/Digital Painting Decal - Art Portfolio /Untitled_Artwork 5.jpg"
+      ]
+    }
+  ]
+}
