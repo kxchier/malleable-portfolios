@@ -21,7 +21,11 @@ const {
   THEME_COLOR_KEYS,
 } = require('./color-keys.js');
 
-const GENERATE_MAX_TOKENS = Number(process.env.GENERATE_MAX_TOKENS || 20000);
+const DEFAULT_GENERATE_MAX_TOKENS = 32000;
+const GENERATE_MAX_TOKENS = Math.max(
+  12000,
+  Number(process.env.GENERATE_MAX_TOKENS) || DEFAULT_GENERATE_MAX_TOKENS,
+);
 
 function extractJson(text) {
   const trimmed = String(text || '').trim();

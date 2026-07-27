@@ -7,7 +7,7 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = Deno.env.get('ANTHROPIC_TEXT_MODEL') || 'claude-sonnet-4-6';
 const GENERATE_MAX_TOKENS = Math.max(
   12_000,
-  Math.min(32_000, Number(Deno.env.get('GENERATE_MAX_TOKENS')) || 20_000),
+  Math.min(64_000, Number(Deno.env.get('GENERATE_MAX_TOKENS')) || 32_000),
 );
 
 function json(status: number, value: unknown) {
