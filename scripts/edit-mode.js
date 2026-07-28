@@ -57,6 +57,9 @@ function hydratePublicLayouts() {
   let nextId = Math.max(0, ...baseLayouts.map((layout) => Number(layout.id)).filter(Number.isFinite)) + 1;
   stored.forEach((layout) => {
     if (!layout?.key || (!layout?.publicSpec && !layout?.publicBundle)) return;
+    const savedReferenceImage = layout.referenceImage
+      || layout.publicBundle?.assets?.['reference-image']
+      || null;
     let id = Number(layout.id);
     if (!Number.isFinite(id) || (idOwners.has(id) && idOwners.get(id) !== layout.key)) {
       while (idOwners.has(nextId)) nextId += 1;
@@ -64,7 +67,13 @@ function hydratePublicLayouts() {
       nextId += 1;
     }
     idOwners.set(id, layout.key);
-    byKey.set(layout.key, { ...layout, id, generated: true, publicGenerated: true });
+    byKey.set(layout.key, {
+      ...layout,
+      id,
+      generated: true,
+      publicGenerated: true,
+      referenceImage: savedReferenceImage,
+    });
   });
   window.PORTFOLIO_LAYOUTS = [...byKey.values()].sort((a, b) => Number(a.id) - Number(b.id));
 }
@@ -86,8 +95,11 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
       `$1${key}$2`
     ),
   };
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))) {
-    bundle.assets = { ...(bundle.assets || {}), 'reference-image': referenceImage.image };
+  const savedReferenceImage = /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))
+    ? referenceImage.image
+    : null;
+  if (savedReferenceImage) {
+    bundle.assets = { ...(bundle.assets || {}), 'reference-image': savedReferenceImage };
   }
   return {
     id: (ids.length ? Math.max(...ids) : 0) + 1,
@@ -102,6 +114,7 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
     colorKeys: ['background', 'primary', 'accent', 'paper', 'panel', 'secondary'],
     designSpace: designSpace || null,
     publicBundle: bundle,
+    referenceImage: savedReferenceImage,
     createdAt: new Date().toISOString(),
   };
 }

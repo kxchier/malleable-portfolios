@@ -188,7 +188,6 @@ function motifNeedles(motif) {
 function validateReferenceFidelityBundle(bundle, prompt, context = {}) {
   if (!isHighFidelityReferencePrompt(prompt)) return;
   const errors = [];
-  const reference = context.referenceImageAssetName;
   const searchable = [
     bundle.css,
     bundle.renderScript,
@@ -196,10 +195,6 @@ function validateReferenceFidelityBundle(bundle, prompt, context = {}) {
     Object.keys(bundle.assets || {}).join(' '),
     Object.values(bundle.assets || {}).join(' '),
   ].join('\n').toLowerCase();
-
-  if (reference && !searchable.includes(reference.toLowerCase()) && !searchable.includes('reference-image')) {
-    errors.push(`must use uploaded reference asset via assets/${reference} as a visible underlay or texture`);
-  }
 
   const motifs = extractPromptList(prompt, ['Required motifs', 'Motif vocabulary'], 14);
   if (motifs.length) {

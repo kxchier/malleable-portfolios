@@ -412,14 +412,14 @@ window.GeneratedRuntime = (() => {
     return { collectionSection, collectionFrame, workTile, inlineAsset, portfolioTitle, applyWorkMetadata };
   }
 
-  function bindCollectionHeading(el, collection, models, versionKey) {
+  function bindCollectionHeading(el, collection, models, versionKey, renderedIndex, headingIndex) {
     const PC = window.PortfolioContent;
     if (!el || !collection || !PC || el.dataset.textId) return;
     const originalIndex = collection.originalIndex;
     const collectionKey = collection.arrangementCollectionId || collection.id;
     const cid = originalIndex != null
       ? PC.collectionId(originalIndex)
-      : `collection.${String(collectionKey || 'custom').replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+      : `collection.${String(collectionKey || 'custom').replace(/[^a-zA-Z0-9._-]/g, '-')}.${renderedIndex}.${headingIndex}`;
     el.dataset.textId = cid;
     el.dataset.textRole = 'collection.title';
     el.dataset.textFallback = collection.name;
@@ -443,11 +443,11 @@ window.GeneratedRuntime = (() => {
         `[data-collection-index="${collection.originalIndex}"]`,
       ];
       const containers = Array.from(root.querySelectorAll(selectors.join(',')));
-      containers.forEach((container) => {
+      containers.forEach((container, headingIndex) => {
         const heading = container.matches('h1,h2,h3,h4,h5,h6')
           ? container
           : container.querySelector('h1,h2,h3,h4,h5,h6');
-        bindCollectionHeading(heading, collection, models, versionKey);
+        bindCollectionHeading(heading, collection, models, versionKey, renderedIndex, headingIndex);
       });
     });
 
@@ -648,6 +648,33 @@ window.GeneratedRuntime = (() => {
     document.body.classList.remove('view-grid', 'view-clothesline', 'view-desk', 'view-directory');
     document.querySelectorAll('[class^="view-"]').forEach(() => {});
     document.body.classList.add(`view-${layoutKey}`);
+
+    if (/zine_folk/i.test(layoutKey) && !document.getElementById('zine-folk-runtime-repairs')) {
+      const repairStyle = document.createElement('style');
+      repairStyle.id = 'zine-folk-runtime-repairs';
+      repairStyle.textContent = `
+        .zf-reference-underlay {
+          display: none !important;
+        }
+
+        .zf-tile-badge {
+          top: 8px !important;
+          right: 8px !important;
+          bottom: auto !important;
+          left: auto !important;
+          width: 24px !important;
+          height: 24px !important;
+          min-width: 24px;
+          min-height: 24px;
+          line-height: 1 !important;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+        }
+      `;
+      document.head.appendChild(repairStyle);
+    }
 
     const [assets, decorations] = await Promise.all([
       fetchSvgAssets(layoutKey),

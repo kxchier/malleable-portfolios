@@ -181,7 +181,7 @@ Extraction rules:
 - If the image is a collage, do not reduce it to "diary", "scrapbook", or "paper" alone. Name the actual collage mechanics: translucent overlaps, sticker-like motifs, doodle marks, washes, soft bloom, etc.
 - motifVocabulary must list concrete motifs a generator can draw in CSS/SVG/DOM, such as butterflies, flowers, stars, bows, mushrooms, little windows, clouds, vines, sparkles, lace, stickers, or sketch marks when present.
 - requiredMotifs must be an implementation checklist, not aesthetic tags. Include concrete drawable things with rough scale or placement when visible.
-- requiredMaterials must name concrete rendering techniques: image underlay, translucent overlays, watercolor wash, paper grain, pencil lines, soft glow, sticker edges, etc.
+- requiredMaterials must name concrete rendering techniques derived from the image: translucent overlays, watercolor wash, paper grain, pencil lines, soft glow, sticker edges, etc. Do not require the source image itself as a material.
 - forbiddenSimplifications must name generic metaphors that would lose the image.
 - layoutContract must say how the website should be constructed, not how it should "feel".
 - layout.mustPreserve must list non-negotiable visual traits that should be apparent in the first viewport.

@@ -249,7 +249,7 @@ Use this coordinate as a research/prototyping constraint. It should shape the pr
     ? `
 High-fidelity image reference constraint:
 - The uploaded image is the primary art direction, not a loose mood board.
-- A reference image asset is available to generated CSS/renderScript as ${context.referenceImageAssetName ? `url("assets/${context.referenceImageAssetName}")` : 'a generated reference image asset when provided'}. Use it as a translucent underlay, texture, traced backdrop, or collage layer unless the user explicitly says not to.
+- Use the uploaded image only as design direction. Do not render, embed, trace, or place the actual reference image anywhere in the generated website unless the user explicitly asks for it to appear.
 - Preserve the reference's visible visual language: palette, line quality, texture, material system, softness, composition density, component metaphors, and interaction mood.
 - Treat "Layout contract", "Required motifs", "Required materials", "Must preserve", "Material system", and "Motif vocabulary" lines as implementation requirements. They should show up in CSS class names, DOM structures, SVG assets, background layers, or visible generated chrome.
 - Do not satisfy the image by choosing a generic adjacent metaphor like diary, scrapbook, notebook, zine, gallery, or card grid unless the prompt explicitly asks for that exact object. Build a new interface surface from the reference's actual mechanics instead.
