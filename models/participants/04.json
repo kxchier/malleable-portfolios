@@ -1,0 +1,146 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Daniel Kim - Art Portfolio Study",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9",
+        "work_0_10",
+        "work_0_11",
+        "work_0_12",
+        "work_0_13",
+        "work_0_14"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "3D Modeling",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/3D Modeling.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "Animal",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Animal.jpg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "Car",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Car.jpg"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "Figure 1",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Figure-1.jpg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "Figure 2",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Figure-2.jpg"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "Graphic 1",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Graphic-1.jpg"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "Graphic 2",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Graphic-2.jpg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "Illustration 1",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Illustration-1.jpg"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "Illustration 2",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Illustration-2.jpg"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "Perspective 1",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Perspective-1.jpg"
+      ]
+    },
+    {
+      "id": "work_0_10",
+      "title": "Perspective 2",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Perspective-2.jpg"
+      ]
+    },
+    {
+      "id": "work_0_11",
+      "title": "Perspective 3",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Perspective-3.jpg"
+      ]
+    },
+    {
+      "id": "work_0_12",
+      "title": "Perspective 4",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Perspective-4.jpg"
+      ]
+    },
+    {
+      "id": "work_0_13",
+      "title": "Portrait",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Portrait.jpg"
+      ]
+    },
+    {
+      "id": "work_0_14",
+      "title": "Trees",
+      "images": [
+        "Art/participants/04/Daniel Kim - Art Portfolio Study/Trees.jpg"
+      ]
+    }
+  ]
+}
