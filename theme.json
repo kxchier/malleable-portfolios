@@ -1,392 +1,317 @@
 {
   "colors": {
-    "panel": "#f0ede8",
-    "paper": "#ffffff",
-    "accent": "#8b7355",
     "primary": "#1a1816",
     "secondary": "#e8e4de",
-    "background": "#f8f6f3"
+    "accent": "#8b7355",
+    "background": "#f8f6f3",
+    "paper": "#ffffff",
+    "panel": "#f0ede8"
+  },
+  "typography": {
+    "heading1": {
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
+      "fontSize": "2.75rem",
+      "fontWeight": "400"
+    },
+    "heading2": {
+      "fontFamily": "DM Sans, system-ui, sans-serif",
+      "fontSize": "0.72rem",
+      "fontWeight": "500"
+    },
+    "body": {
+      "fontFamily": "DM Sans, system-ui, sans-serif",
+      "fontSize": "1rem",
+      "fontWeight": "400"
+    }
   },
   "spacing": {
-    "artSize": "220px",
     "gridGap": "32px",
+    "artSize": "220px",
     "imagePadding": "0.75rem"
   },
   "versions": {
-    "desk": {
-      "spacing": {
-        "artSize": "120px",
-        "gridGap": "8px"
-      }
-    },
-    "room": {
-      "spacing": {
-        "gridGap": "40px"
-      }
-    },
-    "aqua_city": {
+    "french_country_parlor": {
       "colors": {
-        "panel": "#0277bd",
-        "paper": "#e0f7fa",
-        "accent": "#4caf50",
-        "primary": "#ff7043",
-        "background": "#6ec1e4"
-      },
-      "spacing": {
-        "artSize": "200px",
-        "gridGap": "24px",
-        "imagePadding": "10px"
+        "background": "#ebe3dc",
+        "primary": "#5c534c",
+        "accent": "#b89a82",
+        "paper": "#f7f2ec",
+        "panel": "#e2d8d0",
+        "secondary": "#aeb6a6"
       },
       "typography": {
-        "body": {
-          "fontSize": "1rem",
-          "fontFamily": "'Fredoka', 'Comic Sans MS', 'Chalkboard SE', sans-serif",
-          "fontWeight": "400"
-        },
         "heading1": {
-          "fontSize": "2.8rem",
-          "fontFamily": "'Baloo 2', 'Cooper Black', 'Arial Rounded MT Bold', sans-serif",
-          "fontWeight": "700"
+          "fontFamily": "'Cormorant Garamond', Georgia, serif",
+          "fontSize": "2.1rem",
+          "fontWeight": "500"
         },
         "heading2": {
-          "fontSize": "1.5rem",
-          "fontFamily": "'Fredoka', 'Arial Rounded MT Bold', 'Comic Sans MS', sans-serif",
+          "fontFamily": "'Cormorant Garamond', Georgia, serif",
+          "fontSize": "1.35rem",
           "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "'DM Sans', system-ui, sans-serif",
+          "fontSize": "0.95rem",
+          "fontWeight": "400"
         }
+      },
+      "spacing": {
+        "gridGap": "24px",
+        "artSize": "210px",
+        "imagePadding": "12px"
       }
     },
     "zine_rack": {
       "colors": {
-        "panel": "#d6cfc4",
+        "background": "#f8f6f3",
+        "primary": "#1a1816",
+        "accent": "#8b7355",
         "paper": "#ede9e2",
-        "accent": "#8b7355",
-        "primary": "#1a1816",
-        "background": "#f8f6f3"
-      },
-      "spacing": {
-        "artSize": "11rem",
-        "gridGap": "18px",
-        "imagePadding": "0.6rem"
+        "panel": "#d6cfc4"
       },
       "typography": {
-        "body": {
-          "fontSize": "0.9rem",
-          "fontFamily": "'Zilla Slab', Georgia, serif",
-          "fontWeight": "400"
-        },
         "heading1": {
+          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "2rem",
-          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
           "fontWeight": "400"
         },
         "heading2": {
+          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
           "fontSize": "1.1rem",
-          "fontFamily": "'Special Elite', 'American Typewriter', 'Courier New', monospace",
-          "fontWeight": "400"
-        }
-      }
-    },
-    "dream_pages": {
-      "colors": {
-        "panel": "#f4c7b8",
-        "paper": "#fdf0f5",
-        "accent": "#cbb8d8",
-        "primary": "#1a1816",
-        "secondary": "#c6e2d7",
-        "background": "#f7d7db"
-      },
-      "spacing": {
-        "artSize": "220px",
-        "gridGap": "28px",
-        "imagePadding": "14px"
-      },
-      "typography": {
-        "body": {
-          "fontSize": "0.95rem",
-          "fontFamily": "'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive",
           "fontWeight": "400"
         },
-        "heading1": {
-          "fontSize": "2.6rem",
-          "fontFamily": "'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', cursive",
-          "fontWeight": "400"
-        },
-        "heading2": {
-          "fontSize": "1.4rem",
-          "fontFamily": "'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', cursive",
-          "fontWeight": "600"
-        }
-      }
-    },
-    "grand_hotel": {
-      "colors": {
-        "panel": "#d4af37",
-        "paper": "#f4c6d0",
-        "accent": "#8b7355",
-        "primary": "#1a1816",
-        "background": "#f8f6f3"
-      },
-      "spacing": {
-        "artSize": "220px",
-        "gridGap": "20px",
-        "imagePadding": "14px"
-      },
-      "typography": {
         "body": {
+          "fontFamily": "'Zilla Slab', Georgia, serif",
           "fontSize": "0.9rem",
-          "fontFamily": "'Outfit', 'Gill Sans', 'Optima', sans-serif",
-          "fontWeight": "400"
-        },
-        "heading1": {
-          "fontSize": "2.4rem",
-          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
-          "fontWeight": "400"
-        },
-        "heading2": {
-          "fontSize": "1.1rem",
-          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
           "fontWeight": "400"
         }
-      }
-    },
-    "quilt_patch": {
-      "colors": {
-        "paper": "#f0e8d8",
-        "accent": "#8b7355",
-        "primary": "#1a1816",
-        "secondary": "#c88c8c",
-        "background": "#f5f0e6"
       },
       "spacing": {
-        "artSize": "220px",
         "gridGap": "18px",
-        "imagePadding": "14px"
+        "artSize": "11rem",
+        "imagePadding": "0.6rem"
+      }
+    },
+    "aqua_city": {
+      "colors": {
+        "background": "#6ec1e4",
+        "primary": "#ff7043",
+        "accent": "#4caf50",
+        "paper": "#e0f7fa",
+        "panel": "#0277bd"
       },
       "typography": {
-        "body": {
-          "fontSize": "0.95rem",
-          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
-          "fontWeight": "400"
-        },
         "heading1": {
-          "fontSize": "2.2rem",
-          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
-          "fontWeight": "400"
+          "fontFamily": "'Baloo 2', 'Cooper Black', 'Arial Rounded MT Bold', sans-serif",
+          "fontSize": "2.8rem",
+          "fontWeight": "700"
         },
         "heading2": {
-          "fontSize": "1.2rem",
-          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
+          "fontFamily": "'Fredoka', 'Arial Rounded MT Bold', 'Comic Sans MS', sans-serif",
+          "fontSize": "1.5rem",
           "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "'Fredoka', 'Comic Sans MS', 'Chalkboard SE', sans-serif",
+          "fontSize": "1rem",
+          "fontWeight": "400"
         }
+      },
+      "spacing": {
+        "gridGap": "24px",
+        "artSize": "200px",
+        "imagePadding": "10px"
       }
     },
     "card_catalog": {
       "colors": {
-        "panel": "#c8b89a",
-        "paper": "#f0ead8",
-        "accent": "#8b7355",
+        "background": "#f8f6f3",
         "primary": "#1a1816",
-        "background": "#f8f6f3"
-      },
-      "spacing": {
-        "artSize": "260px",
-        "gridGap": "18px",
-        "imagePadding": "12px"
+        "accent": "#8b7355",
+        "paper": "#f0ead8",
+        "panel": "#c8b89a"
       },
       "typography": {
-        "body": {
-          "fontSize": "0.9rem",
-          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
-          "fontWeight": "400"
-        },
         "heading1": {
-          "fontSize": "2rem",
           "fontFamily": "'Courier Prime', 'American Typewriter', 'Courier New', monospace",
+          "fontSize": "2rem",
           "fontWeight": "700"
         },
         "heading2": {
-          "fontSize": "1.1rem",
           "fontFamily": "'Courier Prime', 'American Typewriter', 'Courier New', monospace",
+          "fontSize": "1.1rem",
           "fontWeight": "700"
+        },
+        "body": {
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
+          "fontSize": "0.9rem",
+          "fontWeight": "400"
         }
+      },
+      "spacing": {
+        "gridGap": "18px",
+        "artSize": "260px",
+        "imagePadding": "12px"
+      }
+    },
+    "dream_pages": {
+      "colors": {
+        "background": "#f7d7db",
+        "primary": "#1a1816",
+        "accent": "#cbb8d8",
+        "paper": "#fdf0f5",
+        "panel": "#f4c7b8",
+        "secondary": "#c6e2d7"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', cursive",
+          "fontSize": "2.6rem",
+          "fontWeight": "400"
+        },
+        "heading2": {
+          "fontFamily": "'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', cursive",
+          "fontSize": "1.4rem",
+          "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive",
+          "fontSize": "0.95rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "28px",
+        "artSize": "220px",
+        "imagePadding": "14px"
+      }
+    },
+    "quilt_patch": {
+      "colors": {
+        "background": "#f5f0e6",
+        "primary": "#1a1816",
+        "accent": "#8b7355",
+        "paper": "#f0e8d8",
+        "secondary": "#c88c8c"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
+          "fontSize": "2.2rem",
+          "fontWeight": "400"
+        },
+        "heading2": {
+          "fontFamily": "'Fraunces', 'Palatino Linotype', Palatino, Georgia, serif",
+          "fontSize": "1.2rem",
+          "fontWeight": "600"
+        },
+        "body": {
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
+          "fontSize": "0.95rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "18px",
+        "artSize": "220px",
+        "imagePadding": "14px"
+      }
+    },
+    "grand_hotel": {
+      "colors": {
+        "background": "#f8f6f3",
+        "primary": "#1a1816",
+        "accent": "#8b7355",
+        "paper": "#f4c6d0",
+        "panel": "#d4af37"
+      },
+      "typography": {
+        "heading1": {
+          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
+          "fontSize": "2.4rem",
+          "fontWeight": "400"
+        },
+        "heading2": {
+          "fontFamily": "'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
+          "fontSize": "1.1rem",
+          "fontWeight": "400"
+        },
+        "body": {
+          "fontFamily": "'Outfit', 'Gill Sans', 'Optima', sans-serif",
+          "fontSize": "0.9rem",
+          "fontWeight": "400"
+        }
+      },
+      "spacing": {
+        "gridGap": "20px",
+        "artSize": "220px",
+        "imagePadding": "14px"
       }
     },
     "signal_tower": {
       "colors": {
-        "panel": "#071827",
-        "paper": "#10283a",
-        "accent": "#ff4d5d",
+        "background": "#06111f",
         "primary": "#e4f7ff",
-        "secondary": "#70ffc4",
-        "background": "#06111f"
-      },
-      "spacing": {
-        "artSize": "220px",
-        "gridGap": "20px",
-        "imagePadding": "10px"
+        "accent": "#ff4d5d",
+        "paper": "#10283a",
+        "panel": "#071827",
+        "secondary": "#70ffc4"
       },
       "typography": {
-        "body": {
-          "fontSize": "0.85rem",
-          "fontFamily": "'Space Mono', 'Courier New', Courier, monospace",
-          "fontWeight": "400"
-        },
         "heading1": {
-          "fontSize": "2.2rem",
           "fontFamily": "'Oswald', 'DIN Alternate', 'Arial Narrow', sans-serif",
+          "fontSize": "2.2rem",
           "fontWeight": "700"
         },
         "heading2": {
-          "fontSize": "1.1rem",
           "fontFamily": "'Space Grotesk', 'DIN Alternate', 'Arial Narrow', sans-serif",
+          "fontSize": "1.1rem",
           "fontWeight": "700"
+        },
+        "body": {
+          "fontFamily": "'Space Mono', 'Courier New', Courier, monospace",
+          "fontSize": "0.85rem",
+          "fontWeight": "400"
         }
+      },
+      "spacing": {
+        "gridGap": "20px",
+        "artSize": "220px",
+        "imagePadding": "10px"
       }
     },
     "fairground_carousel": {
       "colors": {
-        "panel": "#3d2410",
-        "paper": "#2d1a08",
-        "accent": "#c8860a",
+        "background": "#1a0f05",
         "primary": "#f5e6c8",
-        "secondary": "#7a3b1e",
-        "background": "#1a0f05"
-      },
-      "spacing": {
-        "artSize": "320px",
-        "gridGap": "24px",
-        "imagePadding": "16px"
+        "accent": "#c8860a",
+        "paper": "#2d1a08",
+        "panel": "#3d2410",
+        "secondary": "#7a3b1e"
       },
       "typography": {
-        "body": {
-          "fontSize": "0.9rem",
-          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
-          "fontWeight": "400"
-        },
         "heading1": {
-          "fontSize": "2rem",
           "fontFamily": "'Bungee', 'Cooper Black', 'American Typewriter', sans-serif",
+          "fontSize": "2rem",
           "fontWeight": "400"
         },
         "heading2": {
-          "fontSize": "1.1rem",
           "fontFamily": "'Cinzel', 'American Typewriter', Georgia, serif",
-          "fontWeight": "700"
-        }
-      }
-    },
-    "french_country_parlor": {
-      "colors": {
-        "panel": "#e2d8d0",
-        "paper": "#f7f2ec",
-        "accent": "#b89a82",
-        "primary": "#5c534c",
-        "secondary": "#aeb6a6",
-        "background": "#ebe3dc"
-      },
-      "spacing": {
-        "artSize": "210px",
-        "gridGap": "24px",
-        "imagePadding": "12px"
-      },
-      "typography": {
-        "body": {
-          "fontSize": "0.95rem",
-          "fontFamily": "'DM Sans', system-ui, sans-serif",
-          "fontWeight": "400"
-        },
-        "heading1": {
-          "fontSize": "2.1rem",
-          "fontFamily": "'Cormorant Garamond', Georgia, serif",
-          "fontWeight": "500"
-        },
-        "heading2": {
-          "fontSize": "1.35rem",
-          "fontFamily": "'Cormorant Garamond', Georgia, serif",
-          "fontWeight": "600"
-        }
-      }
-    },
-    "public_vitrine_9eed8c9105": {
-      "colors": {
-        "panel": "#e8e0cc",
-        "paper": "#faf7f0",
-        "accent": "#8b6914",
-        "primary": "#2c1a0e",
-        "secondary": "#6b5a3e",
-        "background": "#f5f0e8"
-      },
-      "spacing": {
-        "artSize": "320px",
-        "gridGap": "8px",
-        "imagePadding": "10px"
-      },
-      "typography": {
-        "body": {
-          "fontSize": "0.85rem",
-          "fontFamily": "'Palatino Linotype', Palatino, Georgia, serif",
-          "fontWeight": "400"
-        },
-        "heading1": {
-          "fontSize": "2.2rem",
-          "fontFamily": "Georgia, 'Times New Roman', serif",
-          "fontWeight": "700"
-        },
-        "heading2": {
           "fontSize": "1.1rem",
-          "fontFamily": "Georgia, 'Times New Roman', serif",
-          "fontWeight": "600"
-        }
-      }
-    },
-    "public_zine_folk_b2563381bd": {
-      "colors": {
-        "panel": "#d4e8c2",
-        "paper": "#fce8e8",
-        "accent": "#e8a0b4",
-        "primary": "#1a1a1a",
-        "secondary": "#b8d4e8",
-        "background": "#f5f0e8"
-      },
-      "spacing": {
-        "artSize": "210px",
-        "gridGap": "24px",
-        "imagePadding": "12px"
-      },
-      "typography": {
-        "body": {
-          "fontSize": "1rem",
-          "fontFamily": "Georgia, serif",
-          "fontWeight": "400"
-        },
-        "heading1": {
-          "fontSize": "3rem",
-          "fontFamily": "Georgia, 'Times New Roman', serif",
           "fontWeight": "700"
         },
-        "heading2": {
-          "fontSize": "1.4rem",
-          "fontFamily": "'Arial Rounded MT Bold', Arial, sans-serif",
-          "fontWeight": "600"
+        "body": {
+          "fontFamily": "'Zilla Slab', Georgia, 'Times New Roman', serif",
+          "fontSize": "0.9rem",
+          "fontWeight": "400"
         }
+      },
+      "spacing": {
+        "gridGap": "24px",
+        "artSize": "320px",
+        "imagePadding": "16px"
       }
-    }
-  },
-  "typography": {
-    "body": {
-      "fontSize": "1rem",
-      "fontFamily": "DM Sans, system-ui, sans-serif",
-      "fontWeight": "400"
-    },
-    "heading1": {
-      "fontSize": "2.75rem",
-      "fontFamily": "Cormorant Garamond, Georgia, serif",
-      "fontWeight": "400"
-    },
-    "heading2": {
-      "fontSize": "0.72rem",
-      "fontFamily": "DM Sans, system-ui, sans-serif",
-      "fontWeight": "500"
     }
   }
 }

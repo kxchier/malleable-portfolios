@@ -8,5 +8,5 @@
 // Leaving these blank disables Supabase and keeps the portfolio fully local/static.
 window.PORTFOLIO_SUPABASE = {
   url: 'https://ctrnnagikuguqaunoptm.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0cm5uYWdpa3VndXFhdW5vcHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MjY4NTYsImV4cCI6MjA5OTQwMjg1Nn0.vsP1YxmmlT07CBSqlEB-MkaPTeY9amrvxTFhxxoirbc',
+  anonKey: 'sb_publishable_ce7LKXlLv_PjfzcS9BTIKw_xubRIHfk',
 };

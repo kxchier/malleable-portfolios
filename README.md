@@ -175,7 +175,7 @@ Supabase lets study participants save edited portfolio settings under an anonymo
 3. Enable anonymous sign-ins in Supabase Auth settings.
 4. Copy your Supabase project URL and anon public key into `scripts/supabase-config.js`.
 5. Give the participant an anonymous ID, then have them enter it in the editor and click **Begin session**.
-6. Click **Save Changes**. The editor saves locally when the local server is running, and also saves the current `theme` + `content` JSON to Supabase for that participant ID.
+6. Click **Save Changes**. Participant sessions save the current `theme` + `content` JSON only to that participant's Supabase record, including on localhost. The participant-free local editor is the only view that writes the shared repository defaults.
 
 If the project was previously configured with the legacy `username` schema and
 Supabase reports that `participant_id` is missing from its schema cache, run
@@ -213,7 +213,7 @@ Cursor-assisted edits, whole-page sparkle edits, and decorative SVG generation a
 
 Generated layouts are tagged with the participant ID active at creation time and
 only appear in that participant's editor. Built-in and older unowned layouts remain shared.
-The participant-free `edit.html` researcher view shows every generated layout.
+The participant-free `edit.html` view hides participant-owned generated layouts.
 
 To permanently remove legacy username-based records and start the study with an empty participant-ID table, run `supabase/reset-study-data.sql` once in the Supabase SQL editor. This reset is destructive and cannot be undone.
 

@@ -22,6 +22,7 @@ const DESIGN_SCAFFOLD_MARKER = 'Design-space scaffold:';
 const DESIGN_DIRECTION_MARKER = 'Design direction:';
 const DESIGN_AXES_STORE = 'portfolio.designAxes';
 const DESIGN_SIDEBAR_HIDDEN_STORE = 'portfolio.designSidebarHidden';
+const SESSION_START_PARTICIPANT_STORE = 'portfolio.sessionStartParticipant';
 const METADATA_DISPLAY_VALUES = ['none', 'below', 'side', 'overlay'];
 const SOCIAL_PROTOTYPE_VALUES = ['none', 'likes', 'comments', 'likes-comments', 'notes', 'all'];
 let selectedDesignSpace = { ...DESIGN_SPACE_DEFAULT };
@@ -48,15 +49,28 @@ function requireLocalPortfolioApi(feature) {
   throw new Error(`${feature} requires the local authoring server. Run node scripts/serve.js and open the localhost editor.`);
 }
 
+function consumeSessionStart(participantId) {
+  if (!participantId) return false;
+  try {
+    const startedParticipant = sessionStorage.getItem(SESSION_START_PARTICIPANT_STORE);
+    sessionStorage.removeItem(SESSION_START_PARTICIPANT_STORE);
+    return startedParticipant === participantId;
+  } catch {
+    return false;
+  }
+}
+
 function hydratePublicLayouts() {
   const stored = Array.isArray(editedContent.publicLayouts) ? editedContent.publicLayouts : [];
   if (!stored.length) return;
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
   const baseLayouts = window.PORTFOLIO_LAYOUTS || [];
   const byKey = new Map(baseLayouts.map((layout) => [layout.key, layout]));
   const idOwners = new Map(baseLayouts.map((layout) => [Number(layout.id), layout.key]));
   let nextId = Math.max(0, ...baseLayouts.map((layout) => Number(layout.id)).filter(Number.isFinite)) + 1;
   stored.forEach((layout) => {
     if (!layout?.key || (!layout?.publicSpec && !layout?.publicBundle)) return;
+    if (layout.ownerParticipantId && layout.ownerParticipantId !== participantId) return;
     const savedReferenceImage = layout.referenceImage
       || layout.publicBundle?.assets?.['reference-image']
       || null;
@@ -109,6 +123,7 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
     metaphor: String(data.metaphor || 'custom portfolio').slice(0, 80),
     generated: true,
     publicGenerated: true,
+    ownerParticipantId: participantIdValue(),
     prompt,
     examplePrompt: prompt,
     colorKeys: ['background', 'primary', 'accent', 'paper', 'panel', 'secondary'],
@@ -165,9 +180,11 @@ async function initEditMode() {
   editedContent = JSON.parse(JSON.stringify(content));
   hydratePublicLayouts();
 
-  const firstLayout = (window.PORTFOLIO_LAYOUTS || []).find(
-    (layout) => layout.key === editedContent.selectedLayoutKey
-  ) || (window.PORTFOLIO_LAYOUTS || [])[0];
+  const availableLayouts = window.PORTFOLIO_LAYOUTS || [];
+  const firstLayout = consumeSessionStart(participantId)
+    ? availableLayouts[0]
+    : availableLayouts.find((layout) => layout.key === editedContent.selectedLayoutKey)
+      || availableLayouts[0];
   if (firstLayout) currentVersion = firstLayout.id;
 
   if (!editedTheme.colors.secondary) editedTheme.colors.secondary = DEFAULT_THEME_COLORS.secondary;
@@ -4584,6 +4601,11 @@ function setupSupabaseControls() {
       await window.PortfolioSupabase.signInAnonymously();
       await refreshSupabaseSessionUI();
       window.PortfolioSupabase.setArtSourceInUrl('participant');
+      try {
+        sessionStorage.setItem(SESSION_START_PARTICIPANT_STORE, participantId);
+      } catch {
+        // The saved selection remains the fallback if session storage is unavailable.
+      }
       window.location.reload();
     } catch (err) {
       setSupabaseStatus(err.message, { error: true, persist: true });
@@ -4661,7 +4683,10 @@ async function saveChanges() {
     const selectedLayout = getLayout(currentVersion);
     if (selectedLayout?.key) editedContent.selectedLayoutKey = selectedLayout.key;
     const themePayload = { ...editedTheme, content: editedContent };
-    if (isLocalPortfolioHost()) try {
+    const participantId = participantIdValue();
+    // Participant sessions are private copies. Even on localhost, never write
+    // their edits into the repository's shared default theme/content files.
+    if (isLocalPortfolioHost() && !participantId) try {
       const [themeRes, rebuildRes] = await Promise.all([
         fetch('/api/theme', {
           method: 'POST',
@@ -4691,9 +4716,8 @@ async function saveChanges() {
       errors.push(err.message || 'local save failed');
     }
 
-    if (window.PortfolioSupabase?.isConfigured?.()) {
+    if (participantId && window.PortfolioSupabase?.isConfigured?.()) {
       try {
-        const participantId = participantIdValue();
         await window.PortfolioSupabase.savePortfolio(participantId, editedTheme, editedContent);
         const input = document.getElementById('participant-id');
         if (input) input.value = participantId;
