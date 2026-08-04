@@ -110,7 +110,7 @@ window.PaletteColors = (() => {
 
   function fromPad(x, y, width, height, saturation) {
     const h = Math.max(0, Math.min(360, (x / width) * 360));
-    const l = Math.max(0.05, Math.min(0.95, 1 - (y / height)));
+    const l = Math.max(0, Math.min(1, 1 - (y / height)));
     return hslToHex(h, saturation, l);
   }
 

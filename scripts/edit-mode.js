@@ -4047,7 +4047,7 @@ function setupPaletteDrag() {
             <span class="palette-slider-val palette-hue-val"></span>
           </label>
           <label class="palette-slider-row">Light
-            <input type="range" class="palette-light" min="5" max="95" step="1">
+            <input type="range" class="palette-light" min="0" max="100" step="1">
             <span class="palette-slider-val palette-light-val"></span>
           </label>
         </div>
