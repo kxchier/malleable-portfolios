@@ -2785,7 +2785,14 @@ async function scoreCustomDesignAxis(axis) {
 }
 
 function layoutPreviewSrc(layout) {
-  return layout?.file || `${layout?.key || 'grid'}.html`;
+  const raw = layout?.file || `${layout?.key || 'grid'}.html`;
+  const url = new URL(raw, window.location.href);
+  const artSource = window.PortfolioSupabase?.artSourceFromLocation?.() || 'example';
+  const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
+  url.searchParams.set('art', artSource);
+  if (artSource === 'participant' && participantId) url.searchParams.set('participant', participantId);
+  else url.searchParams.delete('participant');
+  return url.href;
 }
 
 function getDesignSpaceMode() {
