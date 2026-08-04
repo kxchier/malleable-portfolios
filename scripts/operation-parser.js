@@ -93,15 +93,21 @@ Allowed operation types:
      }
    }
 
-3. collectionVisibility
+3. relativeMove
+   Use for moving the clicked target relative to its current visual position without rebuilding the layout.
+   Negative dy moves up; positive dy moves down; negative dx moves left; positive dx moves right.
+   Use 12 pixels for slightly, 24 normally, and 48 for substantially.
+   { "type": "relativeMove", "target": target, "scope": "this" | "all-images" | "all-sections", "dx": 0, "dy": -24 }
+
+4. collectionVisibility
    Use when the user wants a collection hidden/shown in the current presentation.
    { "type": "collectionVisibility", "target": target, "visible": false }
 
-4. spacing
+5. spacing
    Use for making the current presentation less/more crowded.
    { "type": "spacing", "target": target, "gridGap": "40px", "artSize": "180px", "margin": "24px", "padding": "24px", "gap": "24px" }
 
-5. noop
+6. noop
    Use when the request cannot be safely represented as a local edit to the clicked target/current presentation.
    { "type": "noop", "target": target }
 
@@ -117,6 +123,7 @@ Rules:
 - For text alignment requests such as "center this text" or "align this in the middle", return stylePatch with textAlign "center". The renderer will position block headings consistently across edit and preview surfaces.
 - For relative text size requests, return a concrete fontSize value. If target.currentStyle.fontSize is present, use it as the starting point: "a little bigger" means about +2px, "bigger/larger" means about +4px, "a little smaller" means about -2px, and "smaller" means about -4px. Keep the final fontSize between 10px and 96px.
 - Prefer elementStylePatch for clicked image/work/object requests such as make this image a circle, round this, make this black and white, add a border, fade this, tilt this, make this artwork cropped/contained.
+- Prefer relativeMove for requests such as move this up, shift this section left, nudge this down, or move all sections slightly higher.
 - Scope is about similar objects in the current interface, not different templates/views.
 - For selected text: use "this" for only the clicked text, "role" for all section titles when the target role is collection.title, and "all-headings" for all portfolio/section headings.
 - For selected images/work tiles: use "this" for only the clicked image and "all-images" for all images in the current interface.

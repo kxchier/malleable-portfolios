@@ -119,6 +119,7 @@ window.GeneratedRuntime = (() => {
       if (!svg) return;
       const item = document.createElement('span');
       item.className = 'generated-asset-decoration';
+      item.dataset.visualLabel = `${decoration.file || ''} ${decoration.alt || ''}`.trim();
       item.style.setProperty('--asset-x', `${Number(decoration.x) || 12}%`);
       item.style.setProperty('--asset-y', `${Number(decoration.y) || 12}%`);
       item.style.setProperty('--asset-size', `${Math.max(24, Math.min(220, Number(decoration.size) || 76))}px`);
@@ -132,6 +133,36 @@ window.GeneratedRuntime = (() => {
       if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
       root.appendChild(host);
     }
+  }
+
+  function hideRequestedVisuals(root, content, versionKey) {
+    const queries = Array.isArray(content?.hiddenVisuals?.versions?.[versionKey])
+      ? content.hiddenVisuals.versions[versionKey]
+      : [];
+    queries.forEach((query) => {
+      const normalized = String(query || '').toLowerCase();
+      const removeAllSvg = /\b(?:svg|svgs)\b/.test(normalized)
+        && !/\b(?:watercolor|blotch|wash|doodle|sticker|motif|icon|ornament|illustration)\b/.test(normalized);
+      const tokens = normalized.split(/[^a-z0-9]+/).filter((token) =>
+        token.length > 2 && !['the', 'all', 'from', 'page', 'site', 'website', 'visual', 'visuals', 'decoration', 'decorations', 'asset', 'assets'].includes(token)
+      );
+      root.querySelectorAll('svg, img, [class], [id], [data-visual-label]').forEach((element) => {
+        if (element === root || !element.isConnected) return;
+        if (removeAllSvg && element.matches('svg')) {
+          element.remove();
+          return;
+        }
+        const label = [
+          element.id,
+          typeof element.className === 'string' ? element.className : element.getAttribute('class'),
+          element.getAttribute('aria-label'),
+          element.getAttribute('alt'),
+          element.getAttribute('data-visual-label'),
+          element.getAttribute('data-asset'),
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (tokens.some((token) => label.includes(token))) element.remove();
+      });
+    });
   }
 
   function buildHelpers(models, versionKey) {
@@ -516,20 +547,26 @@ window.GeneratedRuntime = (() => {
 
   function promoteCollectionTargetsToVisibleWrappers(root) {
     root.querySelectorAll('[data-model-kind="collection"]').forEach((section) => {
-      const parent = section.parentElement;
-      if (!parent || parent === root || parent.dataset.modelKind || parent.dataset.textId) return;
-      const directCollectionChildren = Array.from(parent.children)
-        .filter((child) => child.dataset?.modelKind === 'collection');
-      if (directCollectionChildren.length !== 1 || directCollectionChildren[0] !== section) return;
-      const hasVisibleWrapperStyling = parent.classList.length > 0 || parent.dataset.canvasDraggable === 'true';
-      if (!hasVisibleWrapperStyling) return;
+      let target = section;
+      for (let depth = 0; depth < 6; depth += 1) {
+        const parent = target.parentElement;
+        if (!parent || parent === root || parent.dataset.modelKind || parent.dataset.textId) break;
+        const directCollectionChildren = Array.from(parent.children)
+          .filter((child) => child.dataset?.modelKind === 'collection');
+        if (directCollectionChildren.length !== 1 || directCollectionChildren[0] !== target) break;
+        const hasVisibleWrapperStyling = parent.classList.length > 0
+          || parent.dataset.canvasDraggable === 'true'
+          || parent.getAttribute('style');
+        if (!hasVisibleWrapperStyling) break;
 
-      ['collectionIndex', 'modelKind', 'modelPath', 'collectionId', 'modelLabel'].forEach((key) => {
-        if (section.dataset[key] != null) parent.dataset[key] = section.dataset[key];
-        delete section.dataset[key];
-      });
-      parent.classList.add('generated-collection');
-      section.classList.remove('generated-collection');
+        ['collectionIndex', 'modelKind', 'modelPath', 'collectionId', 'modelLabel'].forEach((key) => {
+          if (target.dataset[key] != null) parent.dataset[key] = target.dataset[key];
+          delete target.dataset[key];
+        });
+        parent.classList.add('generated-collection');
+        target.classList.remove('generated-collection');
+        target = parent;
+      }
     });
   }
 
@@ -770,6 +807,7 @@ window.GeneratedRuntime = (() => {
     if (window.PortfolioDecorations) {
       PortfolioDecorations.mount(root, resolvedModels.contentOverrides, layoutKey);
     }
+    hideRequestedVisuals(root, resolvedModels.contentOverrides, layoutKey);
     if (window.PortfolioSocialPrototype) {
       PortfolioSocialPrototype.mount(root, {
         presentationId: layoutKey,

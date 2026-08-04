@@ -38,6 +38,7 @@ const cursorSystem = `Convert a situated art-portfolio editing request into one 
 Allowed operations:
 - stylePatch for text and its visible box: {"type":"stylePatch","target":TARGET,"scope":"this|role|all-headings","patch":{"fontFamily":"...","fontSize":"32px","fontWeight":"700","textAlign":"left|center|right","width":"36rem","maxWidth":"90%","padding":"16px","marginLeft":"auto","marginRight":"auto","border":"1px solid var(--color-accent)","transform":"rotate(-4deg)","opacity":"0.8"}}
 - elementStylePatch for images/tiles/sections: {"type":"elementStylePatch","target":TARGET,"scope":"this|all-images|all-sections","patch":{"borderRadius":"24px","overflow":"hidden","border":"2px solid var(--color-accent)","boxShadow":"0 8px 24px rgba(0,0,0,.2)","filter":"grayscale(100%)","marginLeft":"24px","marginRight":"24px","padding":"12px","gap":"24px","transform":"rotate(-4deg)","opacity":"0.8"},"imagePatch":{"borderRadius":"24px","objectFit":"cover","objectPosition":"center"}}
+- relativeMove for moving the clicked thing: {"type":"relativeMove","target":TARGET,"scope":"this|all-images|all-sections","dx":0,"dy":-24}. Negative dy moves up; positive dy moves down; negative dx moves left; positive dx moves right. Use 12 for slightly, 24 normally, and 48 for substantially.
 - collectionVisibility: {"type":"collectionVisibility","target":TARGET,"visible":false}
 - spacing: {"type":"spacing","target":TARGET,"gridGap":"32px","artSize":"220px","imagePadding":"12px"}
 - noop.
@@ -51,6 +52,7 @@ Allowed operations:
 - layoutOverride {"type":"layoutOverride","collectionDisplay":"grid|horizontal|vertical","materialTexture":"textured|wood|paper|fabric|metal|glass","metadataDisplay":"none|below|side|overlay","socialPrototype":"none|likes|comments|likes-comments|notes|all"}
 - elementStylePatch {"type":"elementStylePatch","scope":"all-images|all-sections","patch":{"borderRadius":"24px","boxShadow":"0 8px 24px rgba(0,0,0,.2)","marginLeft":"32px","marginRight":"32px","padding":"16px","gap":"24px"},"imagePatch":{"objectFit":"cover"}}
 - decorativeAssets {"type":"decorativeAssets","prompt":"what to draw"}
+- visualRemoval {"type":"visualRemoval","query":"watercolor blotches"} for removing existing generated SVGs, background motifs, doodles, ornaments, or decorative visuals by a short human-readable description.
 - contentBlock {"type":"contentBlock","action":"add|update|remove","kind":"text","blockId":"existing ID for update/remove","content":"safe plain text","placement":"after-title|after-content","align":"left|center|right","width":"36rem"}
 - interactionPatch {"type":"interactionPatch","scope":"all-images","draggable":false}
 - noop.
@@ -95,7 +97,7 @@ Deno.serve(async (request) => {
         target: body.target, request: text(body.prompt, 1200), scope: body.scope,
         presentationId: text(body.presentationId, 80), context: body.context || null,
       }, 1400);
-      const allowed = ['stylePatch', 'elementStylePatch', 'collectionVisibility', 'spacing', 'noop'];
+      const allowed = ['stylePatch', 'elementStylePatch', 'relativeMove', 'collectionVisibility', 'spacing', 'noop'];
       if (!allowed.includes(parsed?.operation?.type)) throw new Error('Anthropic returned an unsupported cursor operation.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operation: parsed.operation });
     }
@@ -115,7 +117,7 @@ Deno.serve(async (request) => {
         );
         source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
       }
-      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'contentBlock', 'interactionPatch', 'noop'];
+      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'visualRemoval', 'contentBlock', 'interactionPatch', 'noop'];
       const operations = source.filter((operation: any) => allowed.includes(operation?.type)).slice(0, 8);
       if (!operations.length) throw new Error('Anthropic returned no supported portfolio operations.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operations });

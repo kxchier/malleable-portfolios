@@ -63,17 +63,21 @@ Allowed operation types:
    Use when the user asks to add visible background/interface art, motifs, doodles, stickers, icons, ornaments, or decorative objects.
    { "type": "decorativeAssets", "prompt": "add colorful hand-drawn flowers, stars, and ribbon doodles around the background" }
 
-7. contentBlock
+7. visualRemoval
+   Use to remove existing generated SVGs, background motifs, doodles, ornaments, decorative shapes, or other named visual elements.
+   { "type": "visualRemoval", "query": "watercolor blotches" }
+
+8. contentBlock
    Use for ordinary page copy that should become part of the site, including introductions, artist statements, explanatory blurbs, notes, and closing text.
    Add: { "type": "contentBlock", "action": "add", "kind": "text", "content": "Welcome to my portfolio...", "placement": "after-title" | "after-content", "align": "left" | "center" | "right", "width": "36rem" }
    Update or move an existing block: { "type": "contentBlock", "action": "update", "blockId": "ID from current content summary", "content": "New copy", "placement": "after-title" | "after-content" }
    Remove: { "type": "contentBlock", "action": "remove", "blockId": "ID from current content summary" }
 
-8. interactionPatch
+9. interactionPatch
    Use to change how existing page elements respond to user input.
    { "type": "interactionPatch", "scope": "all-images", "draggable": false }
 
-9. noop
+10. noop
    Use only when nothing can be represented safely.
    { "type": "noop", "message": "..." }
 
@@ -82,6 +86,7 @@ Rules:
 - Prefer colorPatch for "more colorful", "brighter", "darker", "pastel", "neon", "warmer", "cooler".
 - For requests that are only about colors, palette, mood, style, aesthetic, vibe, or art-direction words like "Wes Anderson" or "vintage colors", return colorPatch and optionally typographyPatch. Do NOT return decorativeAssets unless the user explicitly asks for visible objects, motifs, drawings, stickers, icons, ornaments, doodles, or background art.
 - Prefer decorativeAssets for background art/motifs. Do not invent SVG yourself here; summarize what the asset generator should draw.
+- Prefer visualRemoval when the request asks to remove, hide, delete, or get rid of an existing SVG, decoration, blotch, wash, doodle, motif, ornament, or background visual. Put the user's visual description in query; never return a CSS selector.
 - Prefer contentBlock whenever the request adds, rewrites, moves, or removes page-level prose. Write useful concise copy when the user describes its purpose without supplying exact wording.
 - Prefer interactionPatch for behavioral requests about existing interface elements, such as enabling or disabling image dragging.
 - Prefer layoutOverride for scrolling/layout requests. Horizontal means side-scrolling/carousel/row. Vertical means stacked/list. Grid means tile/masonry/quilt-like overview.
@@ -229,16 +234,17 @@ function normalizePortfolioOperationForRequest(prompt, parsed) {
 }
 
 function portfolioOperationNeedsRepair(prompt, parsed) {
+  const operations = Array.isArray(parsed?.operations)
+    ? parsed.operations
+    : parsed?.operation ? [parsed.operation] : [];
+  if (!operations.length || operations.every((operation) => operation?.type === 'noop')) return true;
+
   const text = String(prompt || '').toLowerCase();
   const asksForCollectionContainer = /\b(collection|collections|section|sections|container|containers|panel|panels|frame|frames|quilt|patch)\b/.test(text);
   const asksForOutsideSpacing = /\b(outside|outer|margin|margins|side|sides|left|right|horizontal|breathing room|inward|edge|edges)\b/.test(text);
   const explicitlyBetweenItems = /\bbetween (the )?(images|items|works|artworks)|image gap|item gap|work gap|grid gap\b/.test(text);
   if (!asksForCollectionContainer || !asksForOutsideSpacing || explicitlyBetweenItems) return false;
 
-  const operations = Array.isArray(parsed?.operations)
-    ? parsed.operations
-    : parsed?.operation ? [parsed.operation] : [];
-  if (!operations.length || operations.every((operation) => operation?.type === 'noop')) return true;
   return operations.some((operation) => (
     operation?.type === 'spacing' && (operation.gridGap || operation.gap)
   ));

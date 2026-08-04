@@ -70,6 +70,7 @@ window.PortfolioContent = (() => {
     'lineHeight',
     'textDecoration',
     'transform',
+    'translate',
     'transformOrigin',
     'opacity',
   ];
@@ -99,6 +100,9 @@ window.PortfolioContent = (() => {
     'opacity',
     'outline',
     'overflow',
+    'position',
+    'top',
+    'left',
     'padding',
     'paddingBottom',
     'paddingLeft',
@@ -107,6 +111,7 @@ window.PortfolioContent = (() => {
     'rowGap',
     'columnGap',
     'transform',
+    'translate',
     'transformOrigin',
     'width',
   ];

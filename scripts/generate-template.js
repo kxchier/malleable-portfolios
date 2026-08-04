@@ -427,13 +427,13 @@ function buildShellHtml(key, name, layouts = []) {
       z-index: 1;
     }
   </style>
-  <script src="./scripts/content.js"></script>
+  <script src="./scripts/content.js?v=relative-position-v2-20260804"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./scripts/supabase-config.js"></script>
   <script src="./scripts/supabase-client.js"></script>
   <script src="./scripts/loader.js"></script>
   <script src="./scripts/model-loader.js"></script>
-  <script src="./scripts/generated-runtime.js"></script>
+  <script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"></script>
   <script src="./scripts/decorations-runtime.js"></script>
   <script src="./generated/${key}/render.js"></script>
 </head>

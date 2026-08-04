@@ -540,6 +540,9 @@ async function parseOperationWithAI({ target, prompt, scope, presentationId, ver
   if (!isLocalPortfolioHost() && !participantIdValue()) {
     throw new Error('Begin a participant session before using AI-assisted editing.');
   }
+  const directOperation = directCursorOperationFromPrompt(target, prompt, scope, presentationId, versionKey);
+  if (directOperation) return proposalFor(directOperation, messageForOperation(directOperation));
+
   const payload = { target, prompt, scope, presentationId };
   const result = isLocalPortfolioHost()
     ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/operation') || '/api/operation', {
@@ -554,6 +557,32 @@ async function parseOperationWithAI({ target, prompt, scope, presentationId, ver
   return proposalFor(operation, operation.type === 'noop' ? messageForOperation(operation) : (result.message || messageForOperation(operation)));
 }
 
+function directCursorOperationFromPrompt(target, prompt, scope, presentationId, versionKey) {
+  const request = String(prompt || '').trim().toLowerCase();
+  const distance = /\b(?:slightly|little|a bit|tiny)\b/.test(request) ? 12
+    : /\b(?:far|much|lot|significantly)\b/.test(request) ? 48 : 24;
+  const asksToMove = /\b(?:move|shift|nudge|push|pull|raise|lower)\b/.test(request);
+  if (asksToMove) {
+    let dx = 0;
+    let dy = 0;
+    if (/\b(?:up|upward|upwards|higher|raise)\b/.test(request)) dy -= distance;
+    if (/\b(?:down|downward|downwards|lower)\b/.test(request)) dy += distance;
+    if (/\b(?:left|leftward|leftwards)\b/.test(request)) dx -= distance;
+    if (/\b(?:right|rightward|rightwards)\b/.test(request)) dx += distance;
+    if (dx || dy) {
+      return {
+        type: 'relativeMove', target, styleId: targetStyleId(target),
+        scope: normalizeCursorScope(scope), versionKey, dx, dy,
+      };
+    }
+  }
+
+  if (/\b(?:remove|delete|hide|get rid of)\b/.test(request) && target?.kind === 'collection') {
+    return { type: 'collectionVisibility', target, presentationId, visible: false };
+  }
+  return null;
+}
+
 const TEXT_STYLE_VALUE_PATTERNS = {
   fontFamily: /^[a-zA-Z0-9 ,'"-]{1,80}$/,
   fontSize: /^(\d{1,3}(\.\d+)?)(px|rem|em|%)$/,
@@ -564,6 +593,7 @@ const TEXT_STYLE_VALUE_PATTERNS = {
   lineHeight: /^(\d(\.\d{1,2})?|\d{1,3}%)$/,
   textDecoration: /^(none|underline|line-through|overline)$/,
   transform: /^((rotate\(-?\d{1,3}(\.\d+)?deg\)|scale\(\d(\.\d{1,2})?\)|translate\(-?\d{1,3}px,\s?-?\d{1,3}px\))\s*){1,3}$/,
+  translate: /^-?\d{1,3}(\.\d+)?px\s+-?\d{1,3}(\.\d+)?px$/,
   transformOrigin: /^(left|center|right|top|bottom)( (left|center|right|top|bottom))?$/,
   opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
 };
@@ -596,6 +626,9 @@ const ELEMENT_STYLE_VALUE_PATTERNS = {
   opacity: /^(0(\.\d{1,2})?|1(\.0{1,2})?)$/,
   outline: /^(none|\d{1,2}px\s+(solid|dashed|dotted)\s+(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\)))$/,
   overflow: /^(hidden|visible|clip|auto)$/,
+  position: /^(relative)$/,
+  top: /^-?\d{1,3}(\.\d+)?px$/,
+  left: /^-?\d{1,3}(\.\d+)?px$/,
   padding: /^(\d{1,3}(\.\d+)?(px|rem|em|%)|0|var\(--space-imagePadding\))(\s+(\d{1,3}(\.\d+)?(px|rem|em|%)|0)){0,3}$/,
   paddingBottom: SPACING_VALUE_PATTERN,
   paddingLeft: SPACING_VALUE_PATTERN,
@@ -604,6 +637,7 @@ const ELEMENT_STYLE_VALUE_PATTERNS = {
   rowGap: SPACING_VALUE_PATTERN,
   columnGap: SPACING_VALUE_PATTERN,
   transform: TEXT_STYLE_VALUE_PATTERNS.transform,
+  translate: TEXT_STYLE_VALUE_PATTERNS.translate,
   transformOrigin: TEXT_STYLE_VALUE_PATTERNS.transformOrigin,
   width: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
 };
@@ -737,8 +771,8 @@ function normalizeCollectionSectionSpacingPatch(patch = {}) {
 
 function targetStyleId(target) {
   if (!target) return null;
-  if (target.path) return target.path;
   if (target.kind === 'text' && target.id) return `text.${target.id}`;
+  if (target.path) return target.path;
   return null;
 }
 
@@ -760,6 +794,18 @@ function validateCursorOperation(rawOperation, fallback) {
 
   const operation = normalizeGeneratedOperation(rawOperation, fallback);
   const target = operation.target || fallback.target;
+
+  if (operation.type === 'relativeMove') {
+    if (!target || target.kind === 'presentation') throw new Error('Choose a section, image, or text element to move.');
+    const dx = Math.max(-80, Math.min(80, Number(operation.dx) || 0));
+    const dy = Math.max(-80, Math.min(80, Number(operation.dy) || 0));
+    if (!dx && !dy) throw new Error('Tell the assistant which direction to move the clicked element.');
+    return {
+      type: 'relativeMove', target, styleId: targetStyleId(target),
+      scope: normalizeCursorScope(operation.scope || fallback.scope),
+      versionKey: fallback.versionKey, dx, dy,
+    };
+  }
 
   if (operation.type === 'stylePatch') {
     if (target?.kind !== 'text') {
@@ -894,6 +940,38 @@ const TYPOGRAPHY_TOKENS = ['heading1', 'heading2', 'body'];
 const LAYOUT_DISPLAY_VALUES = ['grid', 'horizontal', 'vertical'];
 const MATERIAL_TEXTURE_VALUES = ['textured', 'wood', 'paper', 'fabric', 'metal', 'glass'];
 
+function interactionOperationFromPrompt(prompt) {
+  const request = String(prompt || '').trim().toLowerCase();
+  if (!/\b(images?|artworks?|pictures?|photos?|works?)\b/.test(request)) return null;
+
+  const mentionsDragging = /\bdrag(?:gable|ging|ged)?\b/.test(request);
+  if (!mentionsDragging) return null;
+
+  const disablesDragging = /\b(?:not|non)[ -]?draggable\b/.test(request)
+    || /\bnot\s+be\s+draggable\b/.test(request)
+    || /\b(?:disable|stop|prevent|remove|turn off)\b[^.]{0,40}\bdrag(?:gable|ging)?\b/.test(request)
+    || /\b(?:can't|cannot|shouldn't|should not|don'?t)\b[^.]{0,40}\bdrag(?:ged|ging)?\b/.test(request);
+  const enablesDragging = /\b(?:make|enable|allow|turn on)\b[^.]{0,40}\bdrag(?:gable|ging)?\b/.test(request);
+
+  if (!disablesDragging && !enablesDragging) return null;
+  return {
+    type: 'interactionPatch',
+    scope: 'all-images',
+    draggable: enablesDragging && !disablesDragging,
+  };
+}
+
+function visualRemovalOperationFromPrompt(prompt) {
+  const request = String(prompt || '').trim();
+  if (!/\b(?:remove|remote|delete|hide|get rid of|take away)\b/i.test(request)) return null;
+  const visual = request.match(/\b(?:remove|remote|delete|hide|get rid of|take away)\b\s+(?:all\s+|the\s+|these\s+|those\s+|any\s+)?(.+?)(?:\s+(?:from|on)\s+(?:the\s+)?(?:page|site|website))?[.!?]*$/i)?.[1] || '';
+  const query = visual.replace(/\b(?:please|can you|could you)\b/gi, '').trim().slice(0, 100);
+  if (!query || /^(?:it|this|that|everything)$/i.test(query)) return null;
+  const looksVisual = /\b(?:svg|svgs|decoration|decorations|asset|assets|blotch|blotches|wash|washes|doodle|doodles|sticker|stickers|motif|motifs|icon|icons|ornament|ornaments|illustration|illustrations|shape|shapes|background art)\b/i.test(query);
+  if (!looksVisual) return null;
+  return { type: 'visualRemoval', query };
+}
+
 function sanitizeColorPatch(colors) {
   const clean = {};
   Object.entries(colors || {}).forEach(([key, value]) => {
@@ -1022,6 +1100,12 @@ function validatePortfolioOperations(rawOperations, fallback) {
       return;
     }
 
+    if (operation.type === 'visualRemoval') {
+      const query = String(operation.query || '').replace(/[^a-zA-Z0-9 _-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+      if (query) operations.push({ type: 'visualRemoval', versionKey: fallback.versionKey, query });
+      return;
+    }
+
     if (operation.type === 'contentBlock') {
       const action = ['add', 'update', 'remove'].includes(operation.action) ? operation.action : 'add';
       const blockId = String(operation.blockId || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
@@ -1070,6 +1154,11 @@ function validatePortfolioOperations(rawOperations, fallback) {
 }
 
 function messageForOperation(operation) {
+  if (operation.type === 'relativeMove') {
+    const vertical = operation.dy < 0 ? 'up' : operation.dy > 0 ? 'down' : '';
+    const horizontal = operation.dx < 0 ? 'left' : operation.dx > 0 ? 'right' : '';
+    return `Move ${operation.target?.label || 'the clicked element'} ${[vertical, horizontal].filter(Boolean).join(' and ')}.`;
+  }
   if (operation.type === 'stylePatch') {
     return `Apply ${Object.keys(operation.patch).join(', ')} to ${operation.target?.label || 'this text'} in this presentation.`;
   }
@@ -1181,6 +1270,32 @@ function applyCursorOperation(operation) {
     return;
   }
 
+  if (operation.type === 'relativeMove') {
+    const styleId = operation.scope === 'all-images'
+      ? '__all_work__'
+      : operation.scope === 'all-sections' ? '__all_collection__' : operation.styleId;
+    if (!styleId) return;
+    ensureElementStyles();
+    const bucket = (editedContent.elementStyles.versions[operation.versionKey] ||= {});
+    const current = bucket[styleId] || {};
+    const oldTranslateValue = String(current.patch?.translate || '');
+    const oldTranslate = oldTranslateValue.match(/^\s*(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s*$/);
+    const legacyTransform = String(current.patch?.transform || '');
+    const legacyTranslate = legacyTransform.match(/translate\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px\s*\)/);
+    const currentLeft = Number.parseFloat(String(current.patch?.left || ''));
+    const currentTop = Number.parseFloat(String(current.patch?.top || ''));
+    const x = Math.max(-240, Math.min(240, (Number.isFinite(currentLeft) ? currentLeft : Number(oldTranslate?.[1] ?? legacyTranslate?.[1]) || 0) + Number(operation.dx || 0)));
+    const y = Math.max(-240, Math.min(240, (Number.isFinite(currentTop) ? currentTop : Number(oldTranslate?.[2] ?? legacyTranslate?.[2]) || 0) + Number(operation.dy || 0)));
+    const remainder = legacyTransform.replace(/translate\([^)]*\)/, '').trim();
+    bucket[styleId] = {
+      patch: { ...(current.patch || {}), position: 'relative', left: `${x}px`, top: `${y}px`, transform: remainder, translate: '0px 0px' },
+      imagePatch: { ...(current.imagePatch || {}) },
+    };
+    patchPreview({ remount: true });
+    syncEditChromeAfterLocalEdit();
+    return;
+  }
+
   if (operation.type === 'elementStylePatch' || operation.type === 'compoundStylePatch') {
     ensureElementStyles();
     const bucket = (editedContent.elementStyles.versions[operation.versionKey] ||= {});
@@ -1261,6 +1376,21 @@ function applyPortfolioOperation(operation) {
       ...(operation.colors || {}),
     };
     syncPaletteSwatches();
+    return true;
+  }
+
+  if (operation.type === 'visualRemoval') {
+    if (!editedContent.hiddenVisuals) editedContent.hiddenVisuals = { versions: {} };
+    if (!editedContent.hiddenVisuals.versions) editedContent.hiddenVisuals.versions = {};
+    const queries = (editedContent.hiddenVisuals.versions[versionKey] ||= []);
+    if (!queries.includes(operation.query)) queries.push(operation.query);
+
+    const decorations = ensureDecorations(versionKey);
+    const tokens = operation.query.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+    editedContent.decorations.versions[versionKey] = decorations.filter((decoration) => {
+      const label = `${decoration.alt || ''} ${decoration.prompt || ''} ${decoration.src || ''}`.toLowerCase();
+      return !tokens.some((token) => label.includes(token));
+    });
     return true;
   }
 
@@ -3102,21 +3232,31 @@ function setupAssetAssistant() {
         theme: currentTheme, spacing: getVersionSpacingForKey(versionKey),
         pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
       };
-      const result = isLocalPortfolioHost()
-        ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
+      const directInteraction = interactionOperationFromPrompt(prompt);
+      const directVisualRemoval = visualRemovalOperationFromPrompt(prompt);
+      const directOperation = directInteraction || directVisualRemoval;
+      const result = directOperation
+        ? {
+          message: directOperation.type === 'visualRemoval'
+            ? `Removed visuals matching “${directOperation.query}”.`
+            : directOperation.draggable ? 'Made the images draggable.' : 'Made the images non-draggable.',
+          operations: [directOperation],
+        }
+        : isLocalPortfolioHost()
+          ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/portfolio-operation') || '/api/portfolio-operation', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(portfolioPayload),
-        })
-        : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
-          mode: 'portfolio', prompt,
-          layout: { key: layout.key, name: layout.name, metaphor: layout.metaphor, prompt: layout.prompt },
-          presentation: layout.publicBundle?.presentation || null,
-          theme: currentTheme,
-          spacing: getVersionSpacingForKey(versionKey),
-          contentSummary: {
-            collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
-            pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
-          },
-        });
+          })
+          : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
+            mode: 'portfolio', prompt,
+            layout: { key: layout.key, name: layout.name, metaphor: layout.metaphor, prompt: layout.prompt },
+            presentation: layout.publicBundle?.presentation || null,
+            theme: currentTheme,
+            spacing: getVersionSpacingForKey(versionKey),
+            contentSummary: {
+              collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
+              pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
+            },
+          });
 
       const operations = validatePortfolioOperations(result.operations || result.operation, {
         versionKey,
@@ -3154,6 +3294,7 @@ function setupAssetAssistant() {
             decorations.push({
               src,
               alt: asset.alt || '',
+              prompt: operation.prompt,
               x: asset.x,
               y: asset.y,
               size: asset.size,
@@ -5080,16 +5221,16 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
   const generatedScripts = layout.publicBundle
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
-  <script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
+  <script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script>${publicRenderScript}<\/script>`
     : layout.publicGenerated
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
-  <script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
+  <script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
     : layout.generated
-    ? `<script src="./scripts/generated-runtime.js?v=museum-frame-preserved2-20260725"><\/script>
+    ? `<script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
@@ -5153,6 +5294,8 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
       theme: window.__EDIT_STATE__.theme,
       contentOverrides: window.__EDIT_STATE__.content,
       contentModel,
+      ${layout.publicGenerated ? 'presentation: window.__PUBLIC_LAYOUT__.publicBundle?.presentation || window.__PUBLIC_LAYOUT__.publicSpec,' : ''}
+      ${layout.publicBundle ? 'schema: null,' : ''}
     });
     const previewRoot = document.getElementById('preview-content');
     await GeneratedRuntime.mount({
@@ -5280,7 +5423,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
-  <script src="./scripts/content.js"><\/script>
+  <script src="./scripts/content.js?v=relative-position-v2-20260804"><\/script>
   <script src="./scripts/page-blocks-runtime.js?v=assistant-content-blocks-20260724"><\/script>
   <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${generatedScripts}
