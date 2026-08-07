@@ -114,13 +114,15 @@ const generationSystem = `You generate a complete custom art-portfolio interface
  "themeColors":{"background":"#ffffff","primary":"#111111","accent":"#ff6699","paper":"#ffffff","panel":"#eeeeee","secondary":"#cccccc"},
  "themeTypography":{"heading1":{"fontFamily":"font stack","fontSize":"3rem","fontWeight":"700"},"heading2":{"fontFamily":"font stack","fontSize":"1.4rem","fontWeight":"600"},"body":{"fontFamily":"font stack","fontSize":"1rem","fontWeight":"400"}},
  "themeSpacing":{"gridGap":"24px","artSize":"210px","imagePadding":"12px"},
+ "editableSettings":{"artworksPerPage":{"type":"integer","default":6,"min":1,"max":12}},
  "presentation":{"id":"snake_case_id","layout_family":"...","metaphor":"...","visual_language":{},"encounter":{},"intent":{},"components":[],"ui_spec":{},"layout_engine":{}},
  "css":"complete CSS string",
  "renderScript":"complete JavaScript string",
  "assets":{"name.svg":"<svg>...</svg>"}
 }
-The renderScript must register window.GeneratedLayouts[key] with mount(root, ctx). ctx contains collections, helpers, assets, presentation, and theme. Loop through every collection and every image. Each col.images item is an IMAGE PATH STRING, not an object: never read img.src, img.path, or img.url. Create collection wrappers with helpers.collectionFrame(col, col.originalIndex ?? ci, {className:'...'}). Create artwork with helpers.workTile(img,{className:'...',collectionIndex:col.originalIndex ?? ci,workIndex:wi}). Keep the img element created by helpers.workTile; do not clear the tile with innerHTML or replace its image. Add decorative wrappers around the returned tile if needed. If the input says hasReferenceImage is true, use the extracted visual direction to shape the site, but do not render, embed, trace, or place the actual reference image in the generated website unless the user explicitly asks for it to appear.
+The renderScript must register window.GeneratedLayouts[key] with mount(root, ctx). ctx contains collections, helpers, assets, presentation, theme, and settings. Loop through every collection and every image. Each col.images item is an IMAGE PATH STRING, not an object: never read img.src, img.path, or img.url. Create collection wrappers with helpers.collectionFrame(col, col.originalIndex ?? ci, {className:'...'}). Create artwork with helpers.workTile(img,{className:'...',collectionIndex:col.originalIndex ?? ci,workIndex:wi}). Keep the img element created by helpers.workTile; do not clear the tile with innerHTML or replace its image. Add decorative wrappers around the returned tile if needed. If the input says hasReferenceImage is true, use the extracted visual direction to shape the site, but do not render, embed, trace, or place the actual reference image in the generated website unless the user explicitly asks for it to appear.
 CSS must be scoped under body.view-{key}, use only --color-background, --color-primary, --color-secondary, --color-accent, --color-paper, --color-panel, --space-gridGap, --space-artSize, and --space-imagePadding variables. Show full artwork with object-fit:contain unless cropped thumbnails are explicitly requested. Do not use @import, external URLs, network APIs, browser storage, cookies, parent/top/opener, postMessage, eval, Function, dynamic import, or script injection. Interactions may use DOM events, timers, requestAnimationFrame, observers, and CSS animation. Assets must be self-contained SVG using currentColor or theme variables. Make the composition and interaction genuinely custom to the requested metaphor rather than a generic card grid.
+Declare 1-8 editableSettings for structural choices unique to the concept, such as artworks per page/spread, columns, visible shelves, panel count, or scene density. Types may be integer, length, boolean, or enum. Read them from ctx.settings with declared defaults. Standardize the controls, not the visual design.
 Keep the bundle concise enough to finish reliably: CSS under 12,000 characters, renderScript under 12,000 characters, presentation metadata under 4,000 characters, no more than 4 SVG assets, and each SVG under 3,000 characters. Do not sacrifice rendering every collection and artwork.`;
 
 function normalizeQuestion(parsed: Record<string, any>, answerCount: number) {
@@ -188,6 +190,29 @@ function normalizeLayout(parsed: Record<string, any>) {
     return /^[0-9.]+(px|rem|em|vw|%)$/.test(result) ? result : fallback;
   };
   const colors = parsed.themeColors || {};
+  const editableSettings: Record<string, any> = {};
+  Object.entries(parsed.editableSettings || {}).slice(0, 8).forEach(([rawKey, rawValue]) => {
+    const rawSpec: any = rawValue || {};
+    const settingKey = cleanText(rawKey, 50).replace(/[^a-z0-9_-]/gi, '');
+    const type = ['integer', 'length', 'boolean', 'enum'].includes(rawSpec.type) ? rawSpec.type : '';
+    if (!settingKey || !type) return;
+    const spec: Record<string, any> = { type };
+    if (type === 'integer') {
+      spec.min = Math.max(0, Math.min(100, Number(rawSpec.min) || 1));
+      spec.max = Math.max(spec.min, Math.min(200, Number(rawSpec.max) || 12));
+      spec.default = Math.max(spec.min, Math.min(spec.max, Number(rawSpec.default) || spec.min));
+    } else if (type === 'boolean') {
+      spec.default = rawSpec.default !== false;
+    } else if (type === 'length') {
+      spec.default = spacingValue(rawSpec.default, '16px');
+    } else {
+      spec.values = (Array.isArray(rawSpec.values) ? rawSpec.values : [])
+        .map((value: unknown) => cleanText(value, 40)).filter(Boolean).slice(0, 12);
+      if (!spec.values.length) return;
+      spec.default = spec.values.includes(rawSpec.default) ? rawSpec.default : spec.values[0];
+    }
+    editableSettings[settingKey] = spec;
+  });
   return {
     name: cleanText(parsed.name || 'Generated Study', 40),
     key,
@@ -208,6 +233,7 @@ function normalizeLayout(parsed: Record<string, any>) {
         artSize: spacingValue(parsed.themeSpacing?.artSize, '210px'),
         imagePadding: spacingValue(parsed.themeSpacing?.imagePadding, '12px'),
       },
+      editableSettings,
     },
   };
 }

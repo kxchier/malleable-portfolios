@@ -119,6 +119,9 @@ function validateBundle(bundle) {
   if (!bundle.themeColors || typeof bundle.themeColors !== 'object') {
     errors.push('missing themeColors (must match editor swatches for this layout)');
   }
+  if (!bundle.editableSettings || typeof bundle.editableSettings !== 'object' || !Object.keys(bundle.editableSettings).length) {
+    errors.push('missing editableSettings (generated layouts must expose structural controls)');
+  }
   const colorKeys = detectColorKeysFromCss(bundle.css || '');
   const requiredColorKeys = [...new Set(['background', 'primary', 'accent', 'paper', ...colorKeys])];
   if (bundle.themeColors) {
@@ -129,6 +132,12 @@ function validateBundle(bundle) {
   if (bundle.css && !bundle.css.includes('var(--color-background)')) {
     errors.push('css must use var(--color-background) not custom color variable names');
   }
+  const requiredEditableSpacing = ['gridGap', 'artSize', 'imagePadding'];
+  requiredEditableSpacing.forEach((token) => {
+    if (bundle.css && !bundle.css.includes(`var(--space-${token})`)) {
+      errors.push(`css must use var(--space-${token}) so the generated site remains editable`);
+    }
+  });
   if (errors.length) throw new Error('invalid generation: ' + errors.join(', '));
   bundle.colorKeys = colorKeys.length ? colorKeys : ['background', 'primary', 'accent', 'paper'];
   return bundle;
@@ -427,7 +436,7 @@ function buildShellHtml(key, name, layouts = []) {
       z-index: 1;
     }
   </style>
-  <script src="./scripts/content.js?v=relative-position-v2-20260804"></script>
+  <script src="./scripts/content.js?v=source-aware-edits-20260806"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./scripts/supabase-config.js"></script>
   <script src="./scripts/supabase-client.js"></script>

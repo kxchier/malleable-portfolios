@@ -37,6 +37,7 @@ const { writeContent } = require('./build-content.js');
 const { listAllLayouts, deleteGeneratedLayout } = require('./layout-registry.js');
 const { parseCursorOperation } = require('./operation-parser.js');
 const { parsePortfolioOperation } = require('./portfolio-operation-parser.js');
+const { reviseGeneratedBundle } = require('./bundle-edit.js');
 const { scoreDesignAxis } = require('./design-axis-parser.js');
 const { analyzeImageDesignTokens } = require('./image-design-tokens.js');
 const { generateDecorativeAssets } = require('./asset-generator.js');
@@ -288,11 +289,35 @@ const server = http.createServer(async (req, res) => {
           },
           theme: body.theme || theme,
           spacing: body.spacing || theme.spacing || {},
+          generatedSource: body.generatedSource || (layout?.generated ? {
+            css: (() => {
+              try { return fs.readFileSync(path.join(ROOT, 'generated', layout.key, 'style.css'), 'utf8').slice(0, 24000); } catch { return ''; }
+            })(),
+            renderScript: (() => {
+              try { return fs.readFileSync(path.join(ROOT, 'generated', layout.key, 'render.js'), 'utf8').slice(0, 16000); } catch { return ''; }
+            })(),
+          } : null),
         },
       });
       return sendJSON(res, 200, result);
     } catch (e) {
       console.error('[portfolio-operation]', e.message);
+      return sendJSON(res, 400, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/bundle-edit' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const result = await reviseGeneratedBundle({
+        prompt: body.prompt,
+        layoutKey: body.layoutKey,
+        bundle: body.bundle,
+        contentSummary: body.contentSummary,
+      });
+      return sendJSON(res, 200, result);
+    } catch (e) {
+      console.error('[bundle-edit]', e.message);
       return sendJSON(res, 400, { error: e.message });
     }
   }

@@ -602,6 +602,7 @@ const SPACING_VALUE_PATTERN = /^(\d{1,4}(\.\d+)?(px|rem|em|%)|0|auto)$/;
 const SPACING_SHORTHAND_PATTERN = /^((\d{1,4}(\.\d+)?(px|rem|em|%)|0|auto)(\s+|$)){1,4}$/;
 
 const ELEMENT_STYLE_VALUE_PATTERNS = {
+  alignContent: /^(start|center|end|stretch|space-between|space-around|space-evenly)$/,
   aspectRatio: /^(\d{1,3}(\.\d+)?\/\d{1,3}(\.\d+)?|auto)$/,
   background: /^(transparent|#[0-9a-fA-F]{3,8}|rgba?\([0-9.,\s%]+\)|color-mix\(in srgb, var\(--color-[a-z-]+\) \d{1,3}%, (black|white|transparent|var\(--color-[a-z-]+\))\))$/,
   border: /^(\d{1,2}px)\s+(solid|dashed|dotted)\s+(#[0-9a-fA-F]{3,8}|currentColor|var\(--color-[a-z-]+\))$/,
@@ -614,6 +615,8 @@ const ELEMENT_STYLE_VALUE_PATTERNS = {
   filter: /^(none|grayscale\(\d{1,3}%\)|sepia\(\d{1,3}%\)|blur\(\d{1,2}px\)|contrast\(\d(\.\d{1,2})?\)|saturate\(\d(\.\d{1,2})?\)|brightness\(\d(\.\d{1,2})?\))$/,
   gap: SPACING_VALUE_PATTERN,
   height: /^(\d{1,4}(\.\d+)?(px|rem|em|%)|auto|var\(--space-artSize\)|calc\(var\(--space-artSize\) \+ \d{1,3}px\))$/,
+  minHeight: /^(\d{1,4}(\.\d+)?(px|rem|em|%|vh)|auto|0)$/,
+  justifyContent: /^(start|center|end|stretch|space-between|space-around|space-evenly)$/,
   margin: SPACING_SHORTHAND_PATTERN,
   marginBottom: SPACING_VALUE_PATTERN,
   marginLeft: SPACING_VALUE_PATTERN,
@@ -1009,12 +1012,105 @@ function sanitizeSpacingPatch(operation) {
   return clean;
 }
 
+function sanitizeLayoutPatch(patch) {
+  const allowed = new Set([
+    'alignContent', 'justifyContent', 'height', 'minHeight',
+    'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'gap', 'rowGap', 'columnGap', 'overflow',
+  ]);
+  const clean = sanitizeElementStylePatch(patch);
+  return Object.fromEntries(Object.entries(clean).filter(([prop]) => allowed.has(prop)));
+}
+
+function sanitizeCssOverride(css, versionKey) {
+  const source = String(css || '').trim().slice(0, 12000);
+  if (!source || /<\/?style|<script|javascript:|@import|@charset|expression\s*\(|url\s*\(/i.test(source)) return '';
+  const scope = `body.view-${String(versionKey || '').replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  if (!scope.endsWith('view-') && !source.includes(scope)) return '';
+  return source;
+}
+
+function requestNeedsBundleRevision(prompt) {
+  return /\b(more|fewer|less)\s+(images|artworks?|works?|items?)\s+(on|per|in)\s+(each|a|the)?\s*(page|spread|panel)|\b(items?|images?|artworks?)\s+per\s+(page|spread)|\b(repaginate|pagination|page capacity|pages? per)\b/i
+    .test(String(prompt || ''));
+}
+
+function validateGeneratedBundleRevision(data, layoutKey) {
+  const css = String(data?.css || '').trim();
+  const renderScript = String(data?.renderScript || '').trim();
+  const safeKey = String(layoutKey || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  if (!css || !renderScript) throw new Error('The assistant returned an incomplete layout revision.');
+  if (css.length > 60000 || renderScript.length > 60000) throw new Error('The layout revision was too large to apply safely.');
+  if (/<\/?style|<script|@import|@charset|url\s*\(/i.test(css)) throw new Error('The revised CSS contained unsupported external or embedded code.');
+  if (!css.includes(`body.view-${safeKey}`)) throw new Error('The revised CSS was not scoped to this portfolio.');
+  if (!renderScript.includes('GeneratedLayouts') || !renderScript.includes(safeKey)) {
+    throw new Error('The revised renderer did not register the current portfolio layout.');
+  }
+  if (/\b(fetch|XMLHttpRequest|WebSocket|eval)\s*\(|\bnew\s+Function\b|\bimport\s*\(|document\.cookie|(?:local|session)Storage|window\.(?:parent|top|opener)|location\s*=|<script/i.test(renderScript)) {
+    throw new Error('The revised renderer requested an unsupported browser capability.');
+  }
+  return { css, renderScript, message: String(data?.message || '').slice(0, 240) };
+}
+
+function applyGeneratedBundleRevision(layout, revision, prompt) {
+  if (!layout?.publicBundle) return false;
+  editedContent.layoutBundleHistory ||= {};
+  const history = (editedContent.layoutBundleHistory[layout.key] ||= []);
+  history.push({
+    css: layout.publicBundle.css,
+    renderScript: layout.publicBundle.renderScript,
+    prompt: String(prompt || '').slice(0, 500),
+    createdAt: new Date().toISOString(),
+  });
+  if (history.length > 10) history.splice(0, history.length - 10);
+  layout.publicBundle = { ...layout.publicBundle, css: revision.css, renderScript: revision.renderScript };
+  if (editedContent.layoutOverrides?.[layout.key]) {
+    delete editedContent.layoutOverrides[layout.key].customCss;
+  }
+  if (editedContent.elementStyles?.versions?.[layout.key]) {
+    delete editedContent.elementStyles.versions[layout.key].__layout_root__;
+  }
+  const savedLayout = (editedContent.publicLayouts || []).find((item) => item.key === layout.key);
+  if (savedLayout) savedLayout.publicBundle = JSON.parse(JSON.stringify(layout.publicBundle));
+  return true;
+}
+
+function applyDeclaredStructuralSetting(layout, prompt) {
+  const settings = layout?.publicBundle?.editableSettings || {};
+  const entry = Object.entries(settings).find(([key, spec]) => (
+    spec?.type === 'integer' && /(art|image|work|item).*(page|spread)|(page|spread).*(art|image|work|item)/i.test(key)
+  ));
+  if (!entry) return null;
+  const [key, spec] = entry;
+  editedContent.layoutSettings ||= {};
+  const values = (editedContent.layoutSettings[layout.key] ||= {});
+  const current = Number(values[key] ?? spec.default ?? spec.min ?? 1);
+  const explicit = String(prompt || '').match(/\b(\d{1,2})\s+(?:images|artworks?|works?|items?)\b/i);
+  const direction = /\b(fewer|less)\b/i.test(prompt) ? -1 : 1;
+  const requested = explicit ? Number(explicit[1]) : current + (2 * direction);
+  values[key] = Math.max(Number(spec.min ?? 1), Math.min(Number(spec.max ?? 12), requested));
+  return { key, value: values[key] };
+}
+
+function syncPublicLayoutBundlesFromContent() {
+  const savedByKey = new Map((editedContent.publicLayouts || []).map((layout) => [layout.key, layout]));
+  (window.PORTFOLIO_LAYOUTS || []).forEach((layout) => {
+    const saved = savedByKey.get(layout.key);
+    if (saved?.publicBundle) layout.publicBundle = JSON.parse(JSON.stringify(saved.publicBundle));
+  });
+}
+
 function requestIsCollectionContainerSpacing(prompt) {
   const text = String(prompt || '').toLowerCase();
   const mentionsCollection = /\b(collection|collections|section|sections|container|containers|panel|panels|frame|frames|quilt|patch)\b/.test(text);
   const mentionsOuterSpacing = /\b(outside|outer|margin|margins|side|sides|left|right|horizontal|breathing room|inward|edge|edges)\b/.test(text);
   const explicitlyBetweenItems = /\bbetween (the )?(images|items|works|artworks)|image gap|item gap|work gap|grid gap\b/.test(text);
   return mentionsCollection && mentionsOuterSpacing && !explicitlyBetweenItems;
+}
+
+function requestIsLayoutWhitespace(prompt) {
+  return /\b(blank|empty|unused|excess|extra|dead)\s+(space|area)|\b(remove|get rid of|reduce|fix|even out|tighten)\b[^.]{0,50}\b(space|spacing|composition|layout)\b/i
+    .test(String(prompt || ''));
 }
 
 function requestIsPaletteOnly(prompt) {
@@ -1059,6 +1155,14 @@ function validatePortfolioOperations(rawOperations, fallback) {
     }
 
     if (operation.type === 'spacing') {
+      if (requestIsLayoutWhitespace(fallback.prompt)) {
+        operations.push({
+          type: 'layoutPatch',
+          versionKey: fallback.versionKey,
+          patch: { height: 'auto', minHeight: 'auto', alignContent: 'start', justifyContent: 'start' },
+        });
+        return;
+      }
       if (requestIsCollectionContainerSpacing(fallback.prompt) && (operation.gridGap || operation.gap)) return;
       const spacing = sanitizeSpacingPatch(operation);
       if (Object.keys(spacing).length) operations.push({ type: 'spacing', versionKey: fallback.versionKey, ...spacing });
@@ -1072,6 +1176,20 @@ function validatePortfolioOperations(rawOperations, fallback) {
       if (METADATA_DISPLAY_VALUES.includes(operation.metadataDisplay)) next.metadataDisplay = operation.metadataDisplay;
       if (SOCIAL_PROTOTYPE_VALUES.includes(operation.socialPrototype)) next.socialPrototype = operation.socialPrototype;
       if (next.collectionDisplay || next.materialTexture || next.metadataDisplay || next.socialPrototype) operations.push(next);
+      return;
+    }
+
+    if (operation.type === 'layoutPatch') {
+      const patch = sanitizeLayoutPatch(operation.patch);
+      if (Object.keys(patch).length) {
+        operations.push({ type: 'layoutPatch', versionKey: fallback.versionKey, patch });
+      }
+      return;
+    }
+
+    if (operation.type === 'cssOverride') {
+      const css = sanitizeCssOverride(operation.css, fallback.versionKey);
+      if (css) operations.push({ type: 'cssOverride', versionKey: fallback.versionKey, css });
       return;
     }
 
@@ -1421,6 +1539,23 @@ function applyPortfolioOperation(operation) {
     if (operation.materialTexture) overrides.materialTexture = operation.materialTexture;
     if (operation.metadataDisplay) overrides.metadataDisplay = operation.metadataDisplay;
     if (operation.socialPrototype) overrides.socialPrototype = operation.socialPrototype;
+    return true;
+  }
+
+  if (operation.type === 'layoutPatch') {
+    ensureElementStyles();
+    const bucket = (editedContent.elementStyles.versions[versionKey] ||= {});
+    const current = bucket.__layout_root__ || {};
+    bucket.__layout_root__ = {
+      patch: { ...(current.patch || {}), ...(operation.patch || {}) },
+      imagePatch: {},
+    };
+    return true;
+  }
+
+  if (operation.type === 'cssOverride') {
+    const overrides = ensureLayoutOverrides(versionKey);
+    overrides.customCss = operation.css;
     return true;
   }
 
@@ -3182,6 +3317,7 @@ function setupAssetAssistant() {
     if (!undoSnapshot) return;
     editedTheme = undoSnapshot.theme;
     editedContent = undoSnapshot.content;
+    syncPublicLayoutBundlesFromContent();
     undoSnapshot = null;
     syncPaletteVisibility();
     syncPaletteSwatches();
@@ -3238,7 +3374,50 @@ function setupAssetAssistant() {
         layoutKey: layout.key, presentationId: getCurrentPresentationId(), prompt,
         theme: currentTheme, spacing: getVersionSpacingForKey(versionKey),
         pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
+        generatedSource: layout.publicBundle ? {
+          css: String(layout.publicBundle.css || '').slice(0, 24000),
+          renderScript: String(layout.publicBundle.renderScript || '').slice(0, 16000),
+        } : null,
       };
+      if (layout.publicBundle && requestNeedsBundleRevision(prompt)) {
+        const settingChange = applyDeclaredStructuralSetting(layout, prompt);
+        if (settingChange) {
+          undoSnapshot = beforeChange;
+          updatePreview();
+          refreshInspectModel();
+          const message = `Set ${settingChange.key} to ${settingChange.value}.`;
+          setStatus(message, 'ok');
+          close();
+          showReviewToast(message);
+          promptEl.value = '';
+          syncUndoButton();
+          return;
+        }
+        setStatus('Reworking this portfolio’s page structure...', 'busy');
+        const bundleResult = isLocalPortfolioHost()
+          ? await fetchJson(window.PortfolioSupabase?.portfolioApiUrl?.('/api/bundle-edit') || '/api/bundle-edit', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layoutKey: layout.key, prompt, bundle: layout.publicBundle, contentSummary: portfolioPayload.pageBlocks }),
+          })
+          : await window.PortfolioSupabase.invoke('ai-assisted-edit', {
+            mode: 'bundle-edit', layoutKey: layout.key, prompt, bundle: layout.publicBundle,
+            contentSummary: {
+              collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
+            },
+          });
+        const revision = validateGeneratedBundleRevision(bundleResult, layout.key);
+        if (!applyGeneratedBundleRevision(layout, revision, prompt)) throw new Error('This portfolio cannot accept a structural bundle revision.');
+        undoSnapshot = beforeChange;
+        updatePreview();
+        refreshInspectModel();
+        const message = revision.message || 'Updated this portfolio’s page structure.';
+        setStatus(message, 'ok');
+        close();
+        showReviewToast(message);
+        promptEl.value = '';
+        syncUndoButton();
+        return;
+      }
       const directInteraction = interactionOperationFromPrompt(prompt);
       const directVisualRemoval = visualRemovalOperationFromPrompt(prompt);
       const directOperation = directInteraction || directVisualRemoval;
@@ -3259,6 +3438,10 @@ function setupAssetAssistant() {
             presentation: layout.publicBundle?.presentation || null,
             theme: currentTheme,
             spacing: getVersionSpacingForKey(versionKey),
+            generatedSource: layout.publicBundle ? {
+              css: String(layout.publicBundle.css || '').slice(0, 24000),
+              renderScript: String(layout.publicBundle.renderScript || '').slice(0, 16000),
+            } : null,
             contentSummary: {
               collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
               pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
@@ -5430,7 +5613,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   </main>
   <script>window.__EDIT_STATE__ = ${editState};<\/script>
   <script>window.__PREVIEW_MANIFEST__ = ${previewManifest}; window.__PREVIEW_PRESENTATION_ID__ = "${presentationId}"; window.__PREVIEW_WIDTH__ = ${previewWidth};<\/script>
-  <script src="./scripts/content.js?v=relative-position-v2-20260804"><\/script>
+  <script src="./scripts/content.js?v=source-aware-edits-20260806"><\/script>
   <script src="./scripts/page-blocks-runtime.js?v=assistant-content-blocks-20260724"><\/script>
   <script src="./scripts/model-loader.js?v=public-full-generation-20260722"><\/script>
   ${generatedScripts}

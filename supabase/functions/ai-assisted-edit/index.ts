@@ -49,6 +49,8 @@ Allowed operations:
 - colorPatch {"type":"colorPatch","colors":{"background":"#ffffff","primary":"#111111","secondary":"#eeeeee","accent":"#ff6699","paper":"#ffffff","panel":"#f6f6f6"}}
 - typographyPatch {"type":"typographyPatch","typography":{"heading1":{"fontFamily":"'Playfair Display', serif","fontSize":"3rem","fontWeight":"700"},"heading2":{},"body":{}}}
 - spacing {"type":"spacing","gridGap":"32px","artSize":"220px","imagePadding":"12px"}
+- layoutPatch {"type":"layoutPatch","patch":{"minHeight":"auto","height":"auto","paddingTop":"16px","paddingBottom":"16px","alignContent":"start","justifyContent":"start"}} for blank/empty space, page padding, or overall composition alignment
+- cssOverride {"type":"cssOverride","css":"body.view-layout-key .existing-class { ... }"} for generated-layout internals that tokens/layoutPatch cannot fix. Use the supplied generatedSource, scope every selector to the current body.view-* class, and never return JavaScript, @import, or URLs.
 - layoutOverride {"type":"layoutOverride","collectionDisplay":"grid|horizontal|vertical","materialTexture":"textured|wood|paper|fabric|metal|glass","metadataDisplay":"none|below|side|overlay","socialPrototype":"none|likes|comments|likes-comments|notes|all"}
 - elementStylePatch {"type":"elementStylePatch","scope":"all-images|all-sections","patch":{"borderRadius":"24px","boxShadow":"0 8px 24px rgba(0,0,0,.2)","marginLeft":"32px","marginRight":"32px","padding":"16px","gap":"24px"},"imagePatch":{"objectFit":"cover"}}
 - decorativeAssets {"type":"decorativeAssets","prompt":"what to draw"}
@@ -60,6 +62,11 @@ Return multiple operations for broad mood/style changes. Use decorativeAssets on
 
 const assetSystem = `Generate decorative SVG interface art. Return only JSON: {"message":"summary","assets":[{"name":"file-safe name","alt":"label","svg":"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>...</svg>","placement":{"x":12,"y":18,"size":90,"rotate":-8,"opacity":0.72}}]}.
 Return 3 compact assets. SVG only, each under 2400 characters. No raster images, external URLs, scripts, foreignObject, embedded fonts, animation elements, or event handlers. Use currentColor and var(--color-accent), var(--color-primary), var(--color-paper), or var(--color-secondary). placement x/y are 0-100 percent, size 36-180px, rotate -28..28, opacity .25-.95.`;
+
+const bundleEditSystem = `Revise an existing generated art-portfolio bundle to satisfy a structural editing request. Preserve its distinctive metaphor and visual character. Return ONLY JSON:
+{"message":"brief summary","css":"complete revised CSS","renderScript":"complete revised JavaScript"}
+
+The render script must continue to register window.GeneratedLayouts[LAYOUT_KEY] with mount(root, ctx), use the provided helpers, render every collection and artwork exactly once, and preserve collectionIndex/workIndex metadata. You may change pagination, grouping, ordering presentation, page capacity, and layout structure. CSS must remain scoped under body.view-LAYOUT_KEY and use the existing --color-*, --font-*, and --space-* variables. Do not use fetch, XMLHttpRequest, WebSocket, eval, Function, dynamic import, external URLs, cookies, storage, parent, top, opener, or navigation APIs. Do not add script tags or CSS @import/url().`;
 
 function safeSvg(value: unknown) {
   const svg = String(value || '').trim().slice(0, 3000);
@@ -104,7 +111,7 @@ Deno.serve(async (request) => {
     if (mode === 'portfolio') {
       const portfolioInput = {
         request: text(body.prompt, 1600), layout: body.layout || null, presentation: body.presentation || null,
-        theme: body.theme || null, spacing: body.spacing || null, contentSummary: body.contentSummary || null,
+        theme: body.theme || null, spacing: body.spacing || null, generatedSource: body.generatedSource || null, contentSummary: body.contentSummary || null,
       };
       let parsed = await callAnthropic(apiKey, portfolioSystem, portfolioInput, 2800);
       let source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
@@ -117,10 +124,30 @@ Deno.serve(async (request) => {
         );
         source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
       }
-      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'visualRemoval', 'contentBlock', 'interactionPatch', 'noop'];
+      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutPatch', 'cssOverride', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'visualRemoval', 'contentBlock', 'interactionPatch', 'noop'];
       const operations = source.filter((operation: any) => allowed.includes(operation?.type)).slice(0, 8);
       if (!operations.length) throw new Error('Anthropic returned no supported portfolio operations.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operations });
+    }
+    if (mode === 'bundle-edit') {
+      const layoutKey = text(body.layoutKey, 80).replace(/[^a-zA-Z0-9_-]/g, '');
+      const bundle = body.bundle || {};
+      if (!layoutKey || !bundle.css || !bundle.renderScript) throw new Error('A generated layout bundle is required.');
+      const parsed = await callAnthropic(apiKey, bundleEditSystem.replaceAll('LAYOUT_KEY', layoutKey), {
+        request: text(body.prompt, 1600),
+        layoutKey,
+        presentation: bundle.presentation || null,
+        editableSettings: bundle.editableSettings || null,
+        css: String(bundle.css).slice(0, 30000),
+        renderScript: String(bundle.renderScript).slice(0, 24000),
+        contentSummary: body.contentSummary || null,
+      }, 20000);
+      return json(200, {
+        model: MODEL,
+        message: text(parsed.message, 240),
+        css: String(parsed.css || ''),
+        renderScript: String(parsed.renderScript || ''),
+      });
     }
     if (mode === 'assets') {
       const parsed = await callAnthropic(apiKey, assetSystem, {

@@ -758,6 +758,10 @@ window.GeneratedRuntime = (() => {
       helpers,
       layoutKey,
       versionKey,
+      settings: {
+        ...Object.fromEntries(Object.entries(window.__PUBLIC_BUNDLE__?.editableSettings || {}).map(([key, spec]) => [key, spec?.default])),
+        ...(resolvedModels.contentOverrides?.layoutSettings?.[layoutKey] || {}),
+      },
     });
     repairMissingArtworkImages(root, collections);
     helpers.applyWorkMetadata(root);

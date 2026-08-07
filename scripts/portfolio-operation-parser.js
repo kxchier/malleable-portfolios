@@ -59,25 +59,33 @@ Allowed operation types:
    Use for broad safe CSS style changes to all artworks/work tiles or all collection sections.
    { "type": "elementStylePatch", "scope": "all-images" | "all-sections", "patch": { "borderRadius": "24px", "boxShadow": "0 10px 30px rgba(0,0,0,0.2)", "overflow": "hidden", "marginLeft": "48px", "marginRight": "48px" }, "imagePatch": { "filter": "saturate(1.3)", "objectFit": "cover" } }
 
-6. decorativeAssets
+6. layoutPatch
+   Use for the generated presentation's outer layout when the request concerns blank/empty space, page padding, overall alignment, or content distribution. This edits the existing site; it does not regenerate it.
+   { "type": "layoutPatch", "patch": { "minHeight": "auto", "height": "auto", "paddingTop": "16px", "paddingBottom": "16px", "alignContent": "start", "justifyContent": "start" } }
+
+7. cssOverride
+   Use for generated presentations when a visual/layout request cannot be expressed by tokens or layoutPatch. You are given the generated CSS and render structure. Return presentation-scoped CSS that overrides the existing rules.
+   { "type": "cssOverride", "css": "body.view-layout-key .layout-class { ... }" }
+
+8. decorativeAssets
    Use when the user asks to add visible background/interface art, motifs, doodles, stickers, icons, ornaments, or decorative objects.
    { "type": "decorativeAssets", "prompt": "add colorful hand-drawn flowers, stars, and ribbon doodles around the background" }
 
-7. visualRemoval
+8. visualRemoval
    Use to remove existing generated SVGs, background motifs, doodles, ornaments, decorative shapes, or other named visual elements.
    { "type": "visualRemoval", "query": "watercolor blotches" }
 
-8. contentBlock
+9. contentBlock
    Use for ordinary page copy that should become part of the site, including introductions, artist statements, explanatory blurbs, notes, and closing text.
    Add: { "type": "contentBlock", "action": "add", "kind": "text", "content": "Welcome to my portfolio...", "placement": "after-title" | "after-content", "align": "left" | "center" | "right", "width": "36rem" }
    Update or move an existing block: { "type": "contentBlock", "action": "update", "blockId": "ID from current content summary", "content": "New copy", "placement": "after-title" | "after-content" }
    Remove: { "type": "contentBlock", "action": "remove", "blockId": "ID from current content summary" }
 
-9. interactionPatch
+10. interactionPatch
    Use to change how existing page elements respond to user input.
    { "type": "interactionPatch", "scope": "all-images", "draggable": false }
 
-10. noop
+11. noop
    Use only when nothing can be represented safely.
    { "type": "noop", "message": "..." }
 
@@ -93,6 +101,7 @@ Rules:
 - Prefer layoutOverride.metadataDisplay for requests to show/hide artwork captions, blurbs, image context, names, or links from metadata text files. Use below, side, overlay, or none.
 - Prefer layoutOverride.socialPrototype for requests to show/hide prototype social features. Use likes for only like buttons, comments for per-work comments, likes-comments for both, notes for page sticky notes only, all for everything, and none/off for no social prototype.
 - Prefer spacing for "larger art", "smaller thumbnails", or explicitly changing the gap/space between images/items/works.
+- Prefer layoutPatch for simple outer-container changes. Use cssOverride when blank space or composition is caused by generated layout internals. Preserve the site's visual concept while changing the relevant geometry. Never return JavaScript, @import, external URLs, or unscoped selectors.
 - Do NOT use spacing.gridGap for collection/section side margins, outside spacing, or breathing room around collection containers; gridGap is the top interface gap slider between images/items.
 - For requests about collection/section side margins, outside spacing, or breathing room around each collection container, return elementStylePatch with scope "all-sections" and marginLeft/marginRight. This changes the visible section's outside spacing.
 - For requests about moving collection contents inward inside the same section surface, return elementStylePatch with scope "all-sections" and paddingLeft/paddingRight.
@@ -136,6 +145,7 @@ function buildPortfolioOperationUserPrompt({ prompt, layout, presentation, conte
     },
     currentTheme: context?.theme || null,
     currentSpacing: context?.spacing || null,
+    generatedSource: context?.generatedSource || null,
     contentSummary: context?.contentSummary || null,
   }, null, 2);
 }
@@ -196,6 +206,11 @@ function requestExplicitlyAsksForAssets(prompt) {
     .test(String(prompt || ''));
 }
 
+function requestAsksToFixLayoutWhitespace(prompt) {
+  return /\b(blank|empty|unused|excess|extra|dead)\s+(space|area)|\b(remove|get rid of|reduce|fix|even out|tighten)\b[^.]{0,50}\b(space|spacing|composition|layout)\b/i
+    .test(String(prompt || ''));
+}
+
 function wesAndersonVintageColorPatch() {
   return {
     type: 'colorPatch',
@@ -218,6 +233,20 @@ function normalizePortfolioOperationForRequest(prompt, parsed) {
 
   const asksForPalette = requestAsksForPalette(prompt);
   const asksForAssets = requestExplicitlyAsksForAssets(prompt);
+  const asksForWhitespaceFix = requestAsksToFixLayoutWhitespace(prompt);
+
+  if (asksForWhitespaceFix && !operations.some((operation) => operation?.type === 'layoutPatch')) {
+    const withoutGenericSpacing = operations.filter((operation) => operation?.type !== 'spacing');
+    return {
+      ...parsed,
+      message: parsed?.message || 'Tightened the overall layout and removed excess page space.',
+      operations: [{
+        type: 'layoutPatch',
+        patch: { height: 'auto', minHeight: 'auto', alignContent: 'start', justifyContent: 'start' },
+      }, ...withoutGenericSpacing],
+    };
+  }
+
   if (!asksForPalette || asksForAssets) return parsed;
 
   const nonAssetOperations = operations.filter((operation) => operation?.type !== 'decorativeAssets');

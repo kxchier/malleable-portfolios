@@ -88,6 +88,9 @@ window.PortfolioContent = (() => {
     'filter',
     'gap',
     'height',
+    'minHeight',
+    'alignContent',
+    'justifyContent',
     'margin',
     'marginBottom',
     'marginLeft',
@@ -390,6 +393,17 @@ window.PortfolioContent = (() => {
 
   function applyElementStyleOverrides(content, versionKey, root = document) {
     const versionStyles = content?.elementStyles?.versions?.[versionKey] || {};
+    const layoutRootStyle = versionStyles.__layout_root__;
+    if (layoutRootStyle) {
+      const layoutRoots = [];
+      if (root.matches?.('[data-model-kind="presentation"]')) layoutRoots.push(root);
+      layoutRoots.push(...root.querySelectorAll('[data-model-kind="presentation"]'));
+      // The editor shell may wrap a generated presentation in another presentation
+      // target. Patch only the innermost layout root so padding is not doubled.
+      layoutRoots
+        .filter((el) => !el.querySelector('[data-model-kind="presentation"]'))
+        .forEach((el) => applyStylePatchToElement(el, layoutRootStyle.patch || {}));
+    }
     const allWorkStyle = versionStyles.__all_work__;
     if (allWorkStyle) {
       root.querySelectorAll('[data-model-kind="work"]').forEach((el) => {
@@ -439,6 +453,20 @@ window.PortfolioContent = (() => {
     });
 
     applyElementStyleOverrides(content, versionKey, root);
+
+    const styleId = 'portfolio-generated-css-override';
+    let overrideStyle = document.getElementById(styleId);
+    const customCss = content?.layoutOverrides?.[versionKey]?.customCss || '';
+    if (customCss) {
+      if (!overrideStyle) {
+        overrideStyle = document.createElement('style');
+        overrideStyle.id = styleId;
+        document.head.appendChild(overrideStyle);
+      }
+      overrideStyle.textContent = customCss;
+    } else if (overrideStyle) {
+      overrideStyle.remove();
+    }
 
     const titleEl = root.querySelector('[data-text-id="portfolio.title"]');
     if (titleEl) {

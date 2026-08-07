@@ -71,6 +71,9 @@ Generate a complete new portfolio interface from the user's prompt. Output ONLY 
     "artSize": "CSS length",
     "imagePadding": "CSS length"
   },
+  "editableSettings": {
+    "settingName": { "type": "integer|length|boolean|enum", "default": 6, "min": 1, "max": 12, "values": [] }
+  },
   "presentation": { ...full Walo presentation spec... },
   "css": "...complete CSS string...",
   "renderScript": "...complete JavaScript string...",
@@ -103,6 +106,11 @@ themeTypography / themeSpacing (OPTIONAL but encouraged):
 - Use heading1 as the most expressive display font; heading2 should harmonize; body can stay more readable.
 - Do NOT add @import, @font-face, or external URLs in generated CSS — the palette above is already loaded by the shell.
 - themeSpacing controls shared spacing variables: gridGap, artSize, imagePadding. Use CSS lengths like "28px", "13rem", "0.8rem".
+
+editableSettings (REQUIRED):
+- Expose the important structural decisions unique to this layout, without changing its metaphor: items/artworks per page or spread, columns, visible shelves, panel count, page gap, scene density, and similar controls.
+- Include 1–8 settings. Use integer, length, boolean, or enum with a default and appropriate bounds/values.
+- In renderScript read values from ctx.settings, falling back to each declared default. The editor can then change structure without rewriting the concept.
 
 css (CRITICAL — editor swatches depend on this):
 - NEVER invent custom color variable names like --color-wall, --color-gold, --color-matting. Use ONLY the standard theme variables:
