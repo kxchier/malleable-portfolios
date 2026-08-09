@@ -114,17 +114,14 @@ window.PortfolioRender = (() => {
     video.defaultMuted = true;
     video.loop = true;
     video.playsInline = true;
-    video.controls = true;
+    video.controls = false;
     video.preload = 'auto';
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    video.autoplay = !reduceMotion;
-    if (!reduceMotion) {
-      video.setAttribute('autoplay', '');
-      video.setAttribute('muted', '');
-      video.setAttribute('loop', '');
-      video.setAttribute('playsinline', '');
-      video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
-    }
+    video.autoplay = true;
+    video.setAttribute('autoplay', '');
+    video.setAttribute('muted', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('playsinline', '');
+    video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
     video.src = filePath;
     video.onerror = () => video.remove();
     return video;

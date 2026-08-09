@@ -436,17 +436,14 @@ window.GeneratedRuntime = (() => {
         media.defaultMuted = true;
         media.loop = true;
         media.playsInline = true;
-        media.controls = true;
+        media.controls = false;
         media.preload = 'auto';
-        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        media.autoplay = !reduceMotion;
-        if (!reduceMotion) {
-          media.setAttribute('autoplay', '');
-          media.setAttribute('muted', '');
-          media.setAttribute('loop', '');
-          media.setAttribute('playsinline', '');
-          media.addEventListener('canplay', () => media.play().catch(() => {}), { once: true });
-        }
+        media.autoplay = true;
+        media.setAttribute('autoplay', '');
+        media.setAttribute('muted', '');
+        media.setAttribute('loop', '');
+        media.setAttribute('playsinline', '');
+        media.addEventListener('canplay', () => media.play().catch(() => {}), { once: true });
         media.src = resolvedPath;
       } else {
         media.alt = opts.alt || 'artwork';
