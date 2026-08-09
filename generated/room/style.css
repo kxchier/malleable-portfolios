@@ -324,7 +324,7 @@ body.view-room:has(.room-panel.is-open) #preview-content {
   min-width: 0;
 }
 
-.room-work img,
+.room-work :is(img, video, iframe),
 .room-work .work-image,
 .room-work picture img {
   width: 100%;

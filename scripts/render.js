@@ -80,6 +80,56 @@ window.PortfolioRender = (() => {
     }
   }
 
+  function isVideoPath(filePath) {
+    return /\.mp4(?:[?#].*)?$/i.test(String(filePath || ''));
+  }
+
+  function isPdfPath(filePath) {
+    return /\.pdf(?:[?#].*)?$/i.test(String(filePath || ''));
+  }
+
+  function createArtworkMedia(filePath, label = 'artwork') {
+    if (isPdfPath(filePath)) {
+      const preview = document.createElement('img');
+      preview.src = filePath.replace(/\.pdf(?:[?#].*)?$/i, '.pdf.preview');
+      preview.alt = label;
+      preview.draggable = false;
+      preview.loading = 'lazy';
+      preview.onerror = () => preview.remove();
+      return preview;
+    }
+
+    if (!isVideoPath(filePath)) {
+      const image = document.createElement('img');
+      image.src = filePath;
+      image.alt = label;
+      image.draggable = false;
+      image.onerror = () => image.remove();
+      return image;
+    }
+
+    const video = document.createElement('video');
+    video.setAttribute('aria-label', label);
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.controls = true;
+    video.preload = 'auto';
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    video.autoplay = !reduceMotion;
+    if (!reduceMotion) {
+      video.setAttribute('autoplay', '');
+      video.setAttribute('muted', '');
+      video.setAttribute('loop', '');
+      video.setAttribute('playsinline', '');
+      video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
+    }
+    video.src = filePath;
+    video.onerror = () => video.remove();
+    return video;
+  }
+
   function appendImage(parent, imgPath, tileClass, draggable, target = {}) {
     const item = document.createElement('div');
     item.className = tileClass;
@@ -91,12 +141,9 @@ window.PortfolioRender = (() => {
       workId: target.workId,
       modelLabel: target.label || imageBasename(imgPath),
     });
-    const image = document.createElement('img');
-    image.src = imgPath;
-    image.alt = 'artwork';
-    image.onerror = () => image.remove();
-    if (draggable === false) image.draggable = false;
-    item.appendChild(image);
+    const media = createArtworkMedia(imgPath, target.label || 'artwork');
+    if (draggable === false) media.draggable = false;
+    item.appendChild(media);
     appendWorkMetadata(item, target.metadata, target.metadataDisplay || 'none');
     parent.appendChild(item);
   }
@@ -157,11 +204,7 @@ window.PortfolioRender = (() => {
 
     const item = document.createElement('div');
     item.className = 'scroll-item';
-    const image = document.createElement('img');
-    image.src = imgPath;
-    image.alt = 'artwork';
-    image.onerror = () => image.remove();
-    item.appendChild(image);
+    item.appendChild(createArtworkMedia(imgPath, 'artwork'));
 
     suspend.append(string, clip, item);
     hanger.appendChild(suspend);
@@ -212,16 +255,18 @@ window.PortfolioRender = (() => {
 
     const viewer = browser.querySelector('.directory-viewer');
     const preview = browser.querySelector('.directory-preview');
-    const previewImg = browser.querySelector('.directory-preview img');
+    const previewMedia = browser.querySelector('.directory-preview .artwork-media');
     const title = browser.querySelector('.directory-file-title');
     const collectionLabel = browser.querySelector('.directory-collection-label');
     const description = browser.querySelector('.directory-file-description');
     const detail = browser.querySelector('.directory-file-detail');
     const link = browser.querySelector('.directory-file-link');
-    [viewer, preview, previewImg, title].forEach((el) => bindModelTarget(el, target));
-    if (previewImg) {
-      previewImg.src = imgPath;
-      previewImg.alt = fileLabel;
+    [viewer, preview, previewMedia, title].forEach((el) => bindModelTarget(el, target));
+    if (previewMedia) {
+      const nextMedia = createArtworkMedia(imgPath, fileLabel);
+      nextMedia.classList.add('artwork-media');
+      bindModelTarget(nextMedia, target);
+      previewMedia.replaceWith(nextMedia);
     }
     if (title) title.textContent = fileLabel;
     if (collectionLabel) collectionLabel.textContent = collectionName;
@@ -346,11 +391,9 @@ window.PortfolioRender = (() => {
 
     const preview = document.createElement('div');
     preview.className = 'directory-preview';
-    const image = document.createElement('img');
-    image.alt = 'artwork';
-    image.draggable = false;
-    image.onerror = () => image.remove();
-    preview.appendChild(image);
+    const media = createArtworkMedia('', 'artwork');
+    media.classList.add('artwork-media');
+    preview.appendChild(media);
 
     const meta = document.createElement('div');
     meta.className = 'directory-meta';

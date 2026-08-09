@@ -177,14 +177,22 @@ h2 {
     0 20px 48px color-mix(in srgb, var(--color-shadow) 10%, transparent);
 }
 
-.grid-item img,
-.scroll-item img {
+.grid-item :is(img, video, iframe),
+.scroll-item :is(img, video, iframe) {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   position: relative;
   z-index: 1;
+}
+
+.generated-artwork-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--color-paper);
 }
 
 .has-work-metadata {
@@ -236,11 +244,11 @@ h2 {
   overflow: visible;
 }
 
-.grid-item.metadata-below img,
-.scroll-item.metadata-below img,
-.desk-item.metadata-below img,
-.layout-override-work.metadata-below img,
-.generated-work-tile.metadata-below img {
+.grid-item.metadata-below :is(img, video, iframe),
+.scroll-item.metadata-below :is(img, video, iframe),
+.desk-item.metadata-below :is(img, video, iframe),
+.layout-override-work.metadata-below :is(img, video, iframe),
+.generated-work-tile.metadata-below :is(img, video, iframe) {
   aspect-ratio: 1;
   height: auto;
 }
@@ -264,11 +272,11 @@ h2 {
   overflow: visible;
 }
 
-.grid-item.metadata-side img,
-.scroll-item.metadata-side img,
-.desk-item.metadata-side img,
-.layout-override-work.metadata-side img,
-.generated-work-tile.metadata-side img {
+.grid-item.metadata-side :is(img, video, iframe),
+.scroll-item.metadata-side :is(img, video, iframe),
+.desk-item.metadata-side :is(img, video, iframe),
+.layout-override-work.metadata-side :is(img, video, iframe),
+.generated-work-tile.metadata-side :is(img, video, iframe) {
   width: var(--space-artSize);
   min-width: var(--space-artSize);
   aspect-ratio: 1;
@@ -307,7 +315,7 @@ h2 {
   overflow: visible !important;
 }
 
-[data-metadata-display="below"] .generated-work-tile.metadata-below > img.generated-artwork-image {
+[data-metadata-display="below"] .generated-work-tile.metadata-below > .generated-artwork-image {
   display: block;
   width: 100% !important;
   aspect-ratio: 1;
@@ -325,7 +333,7 @@ h2 {
   overflow: visible !important;
 }
 
-[data-metadata-display="side"] .generated-work-tile.metadata-side > img.generated-artwork-image {
+[data-metadata-display="side"] .generated-work-tile.metadata-side > .generated-artwork-image {
   flex: 0 0 var(--space-artSize);
   width: var(--space-artSize) !important;
   min-width: var(--space-artSize);
@@ -585,7 +593,7 @@ h2 {
 /* Pin standard grid images inside the mat so all four white edges remain equal.
    Percentage heights on an auto-sized aspect-ratio tile can otherwise consume
    the bottom padding and get clipped by the tile's overflow. */
-.view-grid .grid-item:not(.metadata-below):not(.metadata-side) img {
+.view-grid .grid-item:not(.metadata-below):not(.metadata-side) :is(img, video, iframe) {
   position: absolute;
   inset: var(--space-imagePadding);
   width: calc(100% - var(--space-imagePadding) - var(--space-imagePadding));
@@ -612,7 +620,7 @@ h2 {
     0 8px 28px color-mix(in srgb, var(--color-shadow) 7%, transparent);
 }
 
-.layout-override-work img {
+.layout-override-work :is(img, video, iframe) {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -971,7 +979,7 @@ h2 {
     0 20px 40px color-mix(in srgb, var(--color-shadow) 12%, transparent);
 }
 
-.desk-item img {
+.desk-item :is(img, video, iframe) {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1197,7 +1205,7 @@ body[data-edit-mode="1"].view-directory h1 {
   border: 1px solid color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
-.directory-preview img {
+.directory-preview :is(img, video, iframe) {
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -1289,7 +1297,7 @@ body[data-edit-mode="1"].view-directory h1 {
     min-height: 0;
   }
 
-  .directory-preview img {
+  .directory-preview :is(img, video, iframe) {
     max-height: 100%;
   }
 }

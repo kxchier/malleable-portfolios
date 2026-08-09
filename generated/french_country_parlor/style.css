@@ -231,7 +231,7 @@ body.view-french_country_parlor .room-panel__title {
   color: var(--room-ink);
 }
 
-body.view-french_country_parlor .room-work img,
+body.view-french_country_parlor .room-work :is(img, video, iframe),
 body.view-french_country_parlor .room-work .work-image,
 body.view-french_country_parlor .room-work picture img {
   border-radius: 2px;

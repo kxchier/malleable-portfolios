@@ -357,7 +357,7 @@ body.view-fairground_carousel:has(.fc-panel-overlay.open) #preview-content {
   pointer-events: none;
 }
 
-.fc-work-tile img {
+.fc-work-tile :is(img, video, iframe) {
   width: 100%;
   height: auto;
   object-fit: contain;

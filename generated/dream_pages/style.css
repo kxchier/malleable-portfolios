@@ -367,7 +367,7 @@ body.view-dream_pages {
   z-index: 3;
 }
 
-.dp-work img {
+.dp-work :is(img, video, iframe) {
   display: block;
   width: 100%;
   aspect-ratio: 3/4;

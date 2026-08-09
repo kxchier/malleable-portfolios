@@ -757,7 +757,7 @@ window.PortfolioSocialPrototype = (() => {
 
   function mountWorkControls(root, mode) {
     const tiles = Array.from(root.querySelectorAll('[data-model-kind="work"]'))
-      .filter((tile) => tile.querySelector('img') && !tile.closest('.directory-tree'));
+      .filter((tile) => tile.querySelector('img,video,iframe') && !tile.closest('.directory-tree'));
     const showLikes = modeAllows(mode, 'likes');
     const showComments = modeAllows(mode, 'comments');
     if (!showLikes && !showComments) return;

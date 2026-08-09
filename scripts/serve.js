@@ -59,6 +59,7 @@ const MIME = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript',
   '.json': 'application/json', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp',
+  '.mp4': 'video/mp4', '.pdf': 'application/pdf', '.preview': 'image/jpeg',
   '.svg': 'image/svg+xml', '.ico': 'image/x-icon'
 };
 
@@ -451,14 +452,43 @@ const server = http.createServer(async (req, res) => {
     return sendJSON(res, 403, { error: 'forbidden' });
   }
 
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
+  fs.stat(filePath, (err, stats) => {
+    if (err || !stats.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       return res.end('404 Not Found');
     }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(content);
+    const contentType = MIME[ext] || 'application/octet-stream';
+    const supportsRanges = ext === '.mp4' || ext === '.pdf';
+    const range = supportsRanges ? req.headers.range : '';
+    const match = range && String(range).match(/^bytes=(\d*)-(\d*)$/);
+
+    if (match) {
+      const requestedStart = match[1] ? Number(match[1]) : 0;
+      const requestedEnd = match[2] ? Number(match[2]) : stats.size - 1;
+      const start = Math.max(0, requestedStart);
+      const end = Math.min(stats.size - 1, requestedEnd);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= stats.size) {
+        res.writeHead(416, { 'Content-Range': `bytes */${stats.size}` });
+        return res.end();
+      }
+      res.writeHead(206, {
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+        'Content-Length': end - start + 1,
+        'Content-Type': contentType,
+      });
+      if (req.method === 'HEAD') return res.end();
+      return fs.createReadStream(filePath, { start, end }).pipe(res);
+    }
+
+    res.writeHead(200, {
+      ...(supportsRanges ? { 'Accept-Ranges': 'bytes' } : {}),
+      'Content-Length': stats.size,
+      'Content-Type': contentType,
+    });
+    if (req.method === 'HEAD') return res.end();
+    return fs.createReadStream(filePath).pipe(res);
   });
 });
 

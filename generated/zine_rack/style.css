@@ -132,6 +132,15 @@ body.view-zine_rack {
   filter: saturate(0.85);
 }
 
+.zr-spine-thumb--document {
+  display: grid;
+  place-items: center;
+  font: 700 0.72rem/1 var(--font-body-family, system-ui, sans-serif);
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-paper) 84%, var(--color-accent));
+}
+
 .zr-spine-title {
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -276,7 +285,7 @@ body.view-zine_rack {
   pointer-events: none;
 }
 
-.zr-page-mat img {
+.zr-page-mat :is(img, video, iframe) {
   display: block;
   width: 100%;
   height: auto;

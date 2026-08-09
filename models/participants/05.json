@@ -1,0 +1,175 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Art Portfolio Research Study 2026 / 3D Art",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Art Portfolio Research Study 2026 / Board Game",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "Art Portfolio Research Study 2026 / Paintings",
+      "works": [
+        "work_2_0",
+        "work_2_1",
+        "work_2_2",
+        "work_2_3"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "Art Portfolio Research Study 2026 / Pixel Animation",
+      "works": [
+        "work_3_0",
+        "work_3_1",
+        "work_3_2"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "A4 Final Renders part 3",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/3D Art/A4_Final_Renders-part-3.pdf"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "A4 Final Renders part 5",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/3D Art/A4_Final_Renders-part-5.pdf"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "SAV 2026Spring ITGM VickScarpato 01",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/3D Art/SAV_2026Spring_ITGM_VickScarpato_01.mp4"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "SAV 2026Spring ITGM VickScarpato 02",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/3D Art/SAV_2026Spring_ITGM_VickScarpato_02.png"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "SAV 2026Spring ITGM VickScarpato 04",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/3D Art/SAV_2026Spring_ITGM_VickScarpato_04.png"
+      ]
+    },
+    {
+      "id": "work_1_0",
+      "title": "AssembledGame 1",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Board Game/AssembledGame-1.pdf"
+      ]
+    },
+    {
+      "id": "work_1_1",
+      "title": "AssembledGame 2",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Board Game/AssembledGame-2.pdf"
+      ]
+    },
+    {
+      "id": "work_1_2",
+      "title": "Bi Fold Game Board",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Board Game/Bi-Fold-Game-Board.png"
+      ]
+    },
+    {
+      "id": "work_1_3",
+      "title": "BoxCover",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Board Game/BoxCover.png"
+      ]
+    },
+    {
+      "id": "work_2_0",
+      "title": "3CatsComm",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Paintings/3CatsComm.png"
+      ]
+    },
+    {
+      "id": "work_2_1",
+      "title": "catpainting",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Paintings/catpainting.png"
+      ]
+    },
+    {
+      "id": "work_2_2",
+      "title": "selfportrait",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Paintings/selfportrait.png"
+      ]
+    },
+    {
+      "id": "work_2_3",
+      "title": "trumpet",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Paintings/trumpet.png"
+      ]
+    },
+    {
+      "id": "work_3_0",
+      "title": "AsepriteAnimation1",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Pixel Animation/AsepriteAnimation1.mp4"
+      ]
+    },
+    {
+      "id": "work_3_1",
+      "title": "AsepriteAnimation2",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Pixel Animation/AsepriteAnimation2.mp4"
+      ]
+    },
+    {
+      "id": "work_3_2",
+      "title": "JamesBombMenu",
+      "images": [
+        "Art/participants/05/Art Portfolio Research Study 2026/Pixel Animation/JamesBombMenu.png"
+      ]
+    }
+  ]
+}

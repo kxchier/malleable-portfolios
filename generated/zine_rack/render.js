@@ -55,11 +55,36 @@ window.GeneratedLayouts['zine_rack'] = {
         const spine = document.createElement('div');
         spine.className = 'zr-spine';
 
-        const thumb = document.createElement('img');
-        thumb.src = img;
-        thumb.alt = 'Artwork ' + (wi + 1);
+        const isVideo = /\.mp4(?:[?#].*)?$/i.test(img);
+        const isPdf = /\.pdf(?:[?#].*)?$/i.test(img);
+        const thumb = document.createElement(isVideo ? 'video' : (isPdf ? 'span' : 'img'));
+        if (isVideo) {
+          thumb.muted = true;
+          thumb.defaultMuted = true;
+          thumb.loop = true;
+          thumb.playsInline = true;
+          thumb.preload = 'auto';
+          thumb.setAttribute('muted', '');
+          thumb.setAttribute('loop', '');
+          thumb.setAttribute('playsinline', '');
+          thumb.setAttribute('aria-label', 'Animation ' + (wi + 1));
+          const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          thumb.autoplay = !reduceMotion;
+          if (!reduceMotion) {
+            thumb.setAttribute('autoplay', '');
+            thumb.addEventListener('canplay', () => thumb.play().catch(() => {}), { once: true });
+          }
+          thumb.src = img;
+        } else if (isPdf) {
+          thumb.textContent = 'PDF';
+          thumb.setAttribute('aria-label', 'PDF artwork ' + (wi + 1));
+        } else {
+          thumb.src = img;
+          thumb.alt = 'Artwork ' + (wi + 1);
+          thumb.setAttribute('loading', 'lazy');
+        }
         thumb.className = 'zr-spine-thumb';
-        thumb.setAttribute('loading', 'lazy');
+        if (isPdf) thumb.classList.add('zr-spine-thumb--document');
         spine.appendChild(thumb);
 
         const title = document.createElement('div');

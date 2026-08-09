@@ -190,8 +190,8 @@ window.GeneratedLayouts['dream_pages'] = {
         tile.setAttribute('data-canvas-draggable', 'true');
         tile.style.setProperty('--dp-tilt', `${[-2.4, 1.6, -0.8, 2.7, -1.5][wi % 5]}deg`);
 
-        // Wrap img in vellum mat
-        const imgEl = tile.querySelector('img');
+        // Wrap artwork media in vellum mat
+        const imgEl = tile.querySelector('img,video,iframe');
         if (imgEl) {
           const mat = document.createElement('div');
           mat.className = 'dp-vellum-mat';

@@ -439,7 +439,7 @@ body.view-grand_hotel > header {
   border-radius: 42% 42% 2px 2px / 26px 26px 2px 2px;
   pointer-events: none;
 }
-.gh-work img {
+.gh-work :is(img, video, iframe) {
   width: 100%;
   height: auto;
   object-fit: contain;

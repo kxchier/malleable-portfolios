@@ -261,7 +261,7 @@ body.view-signal_tower {
 .st-work:hover {
   box-shadow: 0 2px 24px color-mix(in srgb, var(--color-secondary) 28%, transparent);
 }
-.st-work img {
+.st-work :is(img, video, iframe) {
   width: 100%;
   height: auto;
   object-fit: contain;

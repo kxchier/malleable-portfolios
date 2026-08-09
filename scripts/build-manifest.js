@@ -5,7 +5,7 @@
  * Exposes the scan logic so the local dev server (scripts/serve.js) can reuse it
  * to rebuild on demand. Run directly (or in GitHub Actions) to write manifest.json.
  *
- * Any folder that directly contains images becomes a collection. Nested folders
+ * Any folder that directly contains supported artwork becomes a collection. Nested folders
  * are supported: Art/Comics/Fall Chilly/ becomes a collection "Comics / Fall Chilly".
  */
 
@@ -22,13 +22,14 @@ const ART_DIR = path.join(ROOT, 'Art');
 const EXAMPLE_ART_DIR = path.join(ART_DIR, 'example');
 const OUTPUT_FILE = path.join(ROOT, 'manifest.json');
 
-const IMAGE_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
+const ARTWORK_RE = /\.(jpg|jpeg|png|gif|webp|mp4|pdf)$/i;
+const PDF_PREVIEW_RE = /\.pdf\.preview\.(jpg|jpeg|png|webp)$/i;
 
 function walk(dir, collections, collectionRoot) {
   const entries = fs.readdirSync(dir).sort();
 
   const images = entries
-    .filter(f => IMAGE_RE.test(f) && fs.statSync(path.join(dir, f)).isFile())
+    .filter(f => ARTWORK_RE.test(f) && !PDF_PREVIEW_RE.test(f) && fs.statSync(path.join(dir, f)).isFile())
     .map(f => path.relative(ROOT, path.join(dir, f)));
 
   if (images.length > 0) {

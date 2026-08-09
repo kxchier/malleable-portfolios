@@ -351,7 +351,7 @@ body.view-card_catalog {
     inset 0 0 0 1px rgba(255,255,255,0.18);
 }
 
-.cc-work img {
+.cc-work :is(img, video, iframe) {
   display: block;
   width: 100%;
   height: auto;

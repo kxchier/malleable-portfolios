@@ -16,8 +16,9 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    cd malleable-portfolios
    ```
 
-2. Put shared study images in `Art/example/` and each participant's images in
-   `Art/participants/<id>/`, organized by collection. Nested folders that contain images
+2. Put shared study artwork in `Art/example/` and each participant's artwork in
+   `Art/participants/<id>/`, organized by collection. Supported artwork files are JPG,
+   PNG, GIF, WebP, MP4, and PDF. Nested folders that contain supported artwork
    become collections:
    ```
    Art/example/Mary Cassatt/the-bath.jpeg
@@ -25,12 +26,16 @@ Built as a prototype for [Walo] — separating *what the work is* from *how it i
    Art/participants/01/Comics/Fall Chilly/00.jpg
                                       →  collection "Comics / Fall Chilly"
    ```
-   To add optional metadata for an image, place a same-name `.txt` file beside it:
+   PDF artwork is displayed through a committed first-page preview named
+   `<filename>.pdf.preview`; preview files are JPEG-encoded but use a dedicated
+   non-artwork extension so they are never added as separate works. Run
+   `node scripts/build-pdf-previews.js` after adding or replacing PDFs.
+   To add optional metadata for an artwork, place a same-name `.txt` file beside it:
    ```
    Art/participants/01/VTubers/Kyle.jpg
    Art/participants/01/VTubers/Kyle.txt
    ```
-   The text file can be plain blurb text, or key/value lines like `title: Kyle`, `blurb: Character portrait`, `link: https://...`, `medium: Digital`, `year: 2026`, and `tags: portrait, vtuber`. In the editor toolbar, use **Metadata** to display this text hidden, below the image, beside the image, or overlaid on it for each site version.
+   The text file can be plain blurb text, or key/value lines like `title: Kyle`, `blurb: Character portrait`, `link: https://...`, `medium: Digital`, `year: 2026`, and `tags: portrait, vtuber`. In the editor toolbar, use **Metadata** to display this text hidden, below, beside, or overlaid on the artwork for each site version.
 
    The portfolio also includes a lightweight **social interaction prototype**: sample likes, comment notes, and page sticky notes can render in the browser to show artists what social feedback could feel like. It is **Off by default**; in the editor toolbar, use **Social** to choose All, Likes, Comments, Likes + comments, Page notes, or Off for each site version. These interactions are demo-only and are not stored or sent anywhere.
 

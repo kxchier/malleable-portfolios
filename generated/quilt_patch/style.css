@@ -197,7 +197,7 @@ body.view-quilt_patch {
   z-index: 10;
 }
 
-.qp-work-tile img {
+.qp-work-tile :is(img, video, iframe) {
   display: block;
   width: 100%;
   aspect-ratio: 1;

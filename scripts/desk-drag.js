@@ -2,7 +2,8 @@
 window.saveDeskPositions = (surface) => {
   const saved = new Map();
   surface.querySelectorAll('.desk-item').forEach((item) => {
-    const src = item.querySelector('img')?.getAttribute('src');
+    const media = item.querySelector('img,video,iframe');
+    const src = media?.getAttribute('src');
     if (src && item.dataset.dragged === '1') {
       saved.set(src, {
         left: item.style.left,
@@ -26,6 +27,7 @@ window.bindDeskDragging = (surface) => {
   surface.querySelectorAll('.desk-item').forEach((item) => {
     item.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      if (e.target.closest('video, iframe, a, button')) return;
       e.preventDefault();
 
       const startX = e.clientX;

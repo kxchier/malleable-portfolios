@@ -297,7 +297,8 @@ window.GeneratedRuntime = (() => {
         const indexedWork = Number.isFinite(collectionIndex) && Number.isFinite(workIndex)
           ? workByKey.get(`${collectionIndex}:${workIndex}`)
           : null;
-        const imagePath = tile.querySelector('img')?.getAttribute('src') || '';
+        const media = tile.querySelector('img,video,iframe');
+        const imagePath = media?.getAttribute('src') || media?.getAttribute('data') || '';
         const imageWork = imageKeys(imagePath).map((key) => workByImage.get(key)).find(Boolean);
         const work = indexedWork || imageWork;
         if (!existingCaption) appendWorkMetadata(tile, workMetadata(work, tile.dataset.modelLabel));
@@ -307,11 +308,11 @@ window.GeneratedRuntime = (() => {
       // Older generated bundles sometimes clone the helper-created image into
       // their own frame and discard the helper tile (and its model markers).
       // Recover those frames by matching the rendered image path directly.
-      root.querySelectorAll('img').forEach((image) => {
-        const imagePath = image.getAttribute('src') || '';
+      root.querySelectorAll('img,video,iframe').forEach((media) => {
+        const imagePath = media.getAttribute('src') || media.getAttribute('data') || '';
         const work = imageKeys(imagePath).map((key) => workByImage.get(key)).find(Boolean);
-        if (!work || handledWorks.has(work) || image.closest('[data-model-kind="work"]')) return;
-        const tile = image.parentElement;
+        if (!work || handledWorks.has(work) || media.closest('[data-model-kind="work"]')) return;
+        const tile = media.parentElement;
         if (!tile || tile === root) return;
         tile.dataset.modelKind = 'work';
         tile.dataset.modelLabel = work.title || imagePath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
@@ -415,20 +416,53 @@ window.GeneratedRuntime = (() => {
         tile.dataset.modelLabel = opts.label || resolvedPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
       }
 
-      const image = document.createElement('img');
-      image.src = resolvedPath;
-      image.alt = opts.alt || 'artwork';
-      image.draggable = false;
-      image.dataset.generatedArtworkImage = 'true';
-      image.classList.add('generated-artwork-image');
-      image.onerror = () => {
-        if (fallbackPath && image.getAttribute('src') !== fallbackPath) {
-          image.src = fallbackPath;
+      const isVideo = /\.mp4(?:[?#].*)?$/i.test(resolvedPath);
+      const isPdf = /\.pdf(?:[?#].*)?$/i.test(resolvedPath);
+      const media = document.createElement(isVideo ? 'video' : 'img');
+      if (isPdf) {
+        media.src = resolvedPath.replace(/\.pdf(?:[?#].*)?$/i, '.pdf.preview');
+        media.loading = 'lazy';
+      } else if (!isVideo) {
+        media.src = resolvedPath;
+      }
+      media.draggable = false;
+      media.dataset.generatedArtworkImage = 'true';
+      media.classList.add('generated-artwork-image');
+      if (isPdf) {
+        media.alt = opts.alt || 'artwork document';
+      } else if (isVideo) {
+        media.setAttribute('aria-label', opts.alt || 'artwork animation');
+        media.muted = true;
+        media.defaultMuted = true;
+        media.loop = true;
+        media.playsInline = true;
+        media.controls = true;
+        media.preload = 'auto';
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        media.autoplay = !reduceMotion;
+        if (!reduceMotion) {
+          media.setAttribute('autoplay', '');
+          media.setAttribute('muted', '');
+          media.setAttribute('loop', '');
+          media.setAttribute('playsinline', '');
+          media.addEventListener('canplay', () => media.play().catch(() => {}), { once: true });
+        }
+        media.src = resolvedPath;
+      } else {
+        media.alt = opts.alt || 'artwork';
+      }
+      media.onerror = () => {
+        const currentPath = media.getAttribute('src') || '';
+        const fallbackMediaPath = isPdf
+          ? fallbackPath.replace(/\.pdf(?:[?#].*)?$/i, '.pdf.preview')
+          : fallbackPath;
+        if (fallbackMediaPath && currentPath !== fallbackMediaPath) {
+          media.src = fallbackMediaPath;
           return;
         }
-        image.remove();
+        media.remove();
       };
-      tile.appendChild(image);
+      tile.appendChild(media);
       const inferredWork = opts.work
         || imageKeys(resolvedPath).map((key) => workByImage.get(key)).find(Boolean)
         || indexedWork;
@@ -538,10 +572,10 @@ window.GeneratedRuntime = (() => {
       el.dataset.collectionIndex = String(ci);
       el.dataset.workIndex = String(wi);
       el.dataset.workId = `work_${ci}_${wi}`;
-      const img = el.querySelector('img');
-      el.dataset.modelLabel = img?.alt && img.alt !== 'artwork'
-        ? img.alt
-        : img?.src?.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+      const media = el.querySelector('img,video,iframe');
+      el.dataset.modelLabel = media?.alt && media.alt !== 'artwork'
+        ? media.alt
+        : media?.getAttribute('aria-label') || (media?.getAttribute('src') || '').split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
     });
   }
 
@@ -607,7 +641,7 @@ window.GeneratedRuntime = (() => {
       item.style.cursor = 'grab';
       item.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
-        if (e.target.closest('[data-text-id]')) return;
+        if (e.target.closest('[data-text-id], video, iframe, a, button')) return;
         e.preventDefault();
 
         const parent = item.offsetParent || item.parentElement;
@@ -793,10 +827,10 @@ window.GeneratedRuntime = (() => {
         tile.dataset.collectionIndex = String(ci);
         tile.dataset.workIndex = String(wi);
         tile.dataset.workId = `work_${ci}_${wi}`;
-        const img = tile.querySelector('img');
-        tile.dataset.modelLabel = img?.alt && img.alt !== 'artwork'
-          ? img.alt
-          : img?.src?.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
+        const media = tile.querySelector('img,video,iframe');
+        tile.dataset.modelLabel = media?.alt && media.alt !== 'artwork'
+          ? media.alt
+          : media?.getAttribute('aria-label') || (media?.getAttribute('src') || '').split('/').pop()?.replace(/\.[^.]+$/, '') || 'Artwork';
       });
     });
 
