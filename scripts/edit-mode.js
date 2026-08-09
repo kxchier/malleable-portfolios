@@ -2702,7 +2702,6 @@ function renderCustomDesignAxes() {
         axis.scores = [];
         axis.terms = defaultTermsForAxis(axis);
         saveDesignAxes();
-        renderCustomDesignAxes();
         renderSidebarDesignAxes();
         syncCustomAxesToDesignSpace();
       });
