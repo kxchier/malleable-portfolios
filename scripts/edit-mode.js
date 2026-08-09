@@ -5410,16 +5410,16 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
   const publicRenderScript = String(layout.publicBundle?.renderScript || '').replace(/<\/script/gi, '<\\/script');
   const generatedScripts = layout.publicBundle
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson}; window.__PUBLIC_BUNDLE__=window.__PUBLIC_LAYOUT__.publicBundle;<\/script>
-  <script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
+  <script src="./scripts/generated-runtime.js?v=public-video-v4-20260809"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script>${publicRenderScript}<\/script>`
     : layout.publicGenerated
     ? `<script>window.__PUBLIC_LAYOUT__=${publicLayoutJson};<\/script>
-  <script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
+  <script src="./scripts/generated-runtime.js?v=public-video-v4-20260809"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./scripts/public-layout-runtime.js?v=public-generation-20260722"><\/script>`
     : layout.generated
-    ? `<script src="./scripts/generated-runtime.js?v=section-target-v3-20260804"><\/script>
+    ? `<script src="./scripts/generated-runtime.js?v=public-video-v4-20260809"><\/script>
   <script src="./scripts/decorations-runtime.js"><\/script>
   <script src="./generated/${layout.key}/render.js"><\/script>`
     : `<script src="./scripts/component-registry.js"><\/script>
@@ -5524,7 +5524,7 @@ function buildPreviewHTML(manifest, version, previewWidth = 1100, options = {}) 
 
   const sandboxOrigin = options.baseHref ? new URL(options.baseHref).origin : window.location.origin;
   const publicBundleCsp = layout.publicBundle
-    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' ${sandboxOrigin}; style-src 'unsafe-inline' ${sandboxOrigin} https://fonts.googleapis.com; font-src ${sandboxOrigin} https://fonts.gstatic.com; img-src ${sandboxOrigin} data: blob:; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri ${sandboxOrigin}">`
+    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' ${sandboxOrigin}; style-src 'unsafe-inline' ${sandboxOrigin} https://fonts.googleapis.com; font-src ${sandboxOrigin} https://fonts.gstatic.com; img-src ${sandboxOrigin} data: blob:; connect-src 'none'; media-src ${sandboxOrigin} blob:; object-src 'none'; frame-src 'none'; base-uri ${sandboxOrigin}">`
     : '';
 
   return `<!DOCTYPE html>

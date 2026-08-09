@@ -160,6 +160,11 @@ assets:
 - Keys are filenames like "frame.svg", "wall-pattern.svg", "cloud.svg", "creature.svg".
 - Keep the complete response compact enough to finish reliably: CSS under 12,000 characters, renderScript under 12,000 characters, presentation metadata under 4,000 characters, no more than 4 SVG assets, and each SVG under 3,000 characters.
 
+requested-world fidelity:
+- Turn concrete nouns and places in the user's request into visible interface structure and scenery, not merely themeColors. A forest request must visibly include elements such as trees/trunks, canopy or foliage, branches, paths, clearings, forest-floor texture, or layered depth; choose the subset that makes the composition coherent.
+- Express the requested world in at least three distinct ways across layout structure, CSS/DOM decoration, SVG assets, typography/materials, and interaction. The result should be recognizable from the first viewport with the artwork temporarily hidden.
+- Never treat a themed request as permission to return a generic card grid with a matching background color. Make artwork containers and navigation belong to the metaphor (for example, works hanging from branches or collections arranged as clearings).
+
 Minimal CSS pattern:
 ${EXAMPLE_CSS}
 
