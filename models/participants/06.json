@@ -1,0 +1,183 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Art folder / FANTASYLAND",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Art folder / Mementos",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3",
+        "work_1_4",
+        "work_1_5"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "Art folder / OBEX",
+      "works": [
+        "work_2_0",
+        "work_2_1",
+        "work_2_2",
+        "work_2_3",
+        "work_2_4",
+        "work_2_5",
+        "work_2_6"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "Art folder / Phobos",
+      "works": [
+        "work_3_0"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "FANTASYLAND LiamMackenziePhotography 095",
+      "images": [
+        "Art/participants/06/Art folder/FANTASYLAND/FANTASYLAND_LiamMackenziePhotography-095.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "FANTASYLAND LiamMackenziePhotography 256",
+      "images": [
+        "Art/participants/06/Art folder/FANTASYLAND/FANTASYLAND_LiamMackenziePhotography-256.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "FANTASYLAND LiamMackenziePhotography 277",
+      "images": [
+        "Art/participants/06/Art folder/FANTASYLAND/FANTASYLAND_LiamMackenziePhotography-277.jpeg"
+      ]
+    },
+    {
+      "id": "work_1_0",
+      "title": "Screenshot from 2025 12 16 14 35 13",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-35-13.png"
+      ]
+    },
+    {
+      "id": "work_1_1",
+      "title": "Screenshot from 2025 12 16 14 35 20",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-35-20.png"
+      ]
+    },
+    {
+      "id": "work_1_2",
+      "title": "Screenshot from 2025 12 16 14 36 34",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-36-34.png"
+      ]
+    },
+    {
+      "id": "work_1_3",
+      "title": "Screenshot from 2025 12 16 14 36 51",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-36-51.png"
+      ]
+    },
+    {
+      "id": "work_1_4",
+      "title": "Screenshot from 2025 12 16 14 37 11",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-37-11.png"
+      ]
+    },
+    {
+      "id": "work_1_5",
+      "title": "Screenshot from 2025 12 16 14 37 24",
+      "images": [
+        "Art/participants/06/Art folder/Mementos/Screenshot from 2025-12-16 14-37-24.png"
+      ]
+    },
+    {
+      "id": "work_2_0",
+      "title": "Screenshot from 2025 12 16 14 37 52",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-37-52.png"
+      ]
+    },
+    {
+      "id": "work_2_1",
+      "title": "Screenshot from 2025 12 16 14 38 21",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-38-21.png"
+      ]
+    },
+    {
+      "id": "work_2_2",
+      "title": "Screenshot from 2025 12 16 14 38 38",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-38-38.png"
+      ]
+    },
+    {
+      "id": "work_2_3",
+      "title": "Screenshot from 2025 12 16 14 39 10",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-39-10.png"
+      ]
+    },
+    {
+      "id": "work_2_4",
+      "title": "Screenshot from 2025 12 16 14 39 27",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-39-27.png"
+      ]
+    },
+    {
+      "id": "work_2_5",
+      "title": "Screenshot from 2025 12 16 14 45 19",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-45-19.png"
+      ]
+    },
+    {
+      "id": "work_2_6",
+      "title": "Screenshot from 2025 12 16 14 45 38",
+      "images": [
+        "Art/participants/06/Art folder/OBEX/Screenshot from 2025-12-16 14-45-38.png"
+      ]
+    },
+    {
+      "id": "work_3_0",
+      "title": "IMG 8251",
+      "images": [
+        "Art/participants/06/Art folder/Phobos/IMG_8251.JPG"
+      ]
+    }
+  ]
+}
