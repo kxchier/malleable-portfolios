@@ -110,8 +110,21 @@ window.PortfolioSupabase = (() => {
     if (error) {
       let message = error.message || `Could not call ${functionName}.`;
       try {
-        const details = await error.context?.json?.();
+        const response = error.context;
+        const status = Number(response?.status) || 0;
+        const raw = response?.clone
+          ? await response.clone().text()
+          : await response?.text?.();
+        let details = null;
+        try { details = raw ? JSON.parse(raw) : null; } catch { /* Keep raw text below. */ }
         if (details?.error) message = details.error;
+        else if (details?.message) message = details.message;
+        else if (raw?.trim()) message = raw.trim().slice(0, 500);
+        if (status === 546) {
+          message = 'Generation exceeded the hosted AI time limit. Please try again with a simpler request.';
+        } else if (status && message === error.message) {
+          message = `${message} (HTTP ${status})`;
+        }
       } catch {
         // Keep the SDK message when the response body is not JSON.
       }

@@ -5,9 +5,11 @@ const corsHeaders = {
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = Deno.env.get('ANTHROPIC_TEXT_MODEL') || 'claude-sonnet-4-6';
+const ANTHROPIC_ATTEMPT_TIMEOUT_MS = 165_000;
 const GENERATE_MAX_TOKENS = Math.max(
   12_000,
-  Math.min(64_000, Number(Deno.env.get('GENERATE_MAX_TOKENS')) || 32_000),
+  // Keep ample bundle headroom while bounding worst-case generation time.
+  Math.min(24_000, Number(Deno.env.get('GENERATE_MAX_TOKENS')) || 24_000),
 );
 
 function json(status: number, value: unknown) {
@@ -68,23 +70,32 @@ function repairJsonStringLiterals(value: string) {
 async function callAnthropic(apiKey: string, system: string, user: unknown, maxTokens: number) {
   let parseError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await fetch(ANTHROPIC_URL, {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        temperature: attempt ? 0.1 : 0.3,
-        system: attempt
-          ? `${system}\nYour previous response contained malformed JSON. Regenerate the complete response, carefully escaping every quote, backslash, newline, and control character inside string values. Return one complete JSON object only.`
-          : system,
-        messages: [{ role: 'user', content: JSON.stringify(user) }],
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(ANTHROPIC_ATTEMPT_TIMEOUT_MS),
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: maxTokens,
+          temperature: attempt ? 0.1 : 0.3,
+          system: attempt
+            ? `${system}\nYour previous response contained malformed JSON. Regenerate the complete response, carefully escaping every quote, backslash, newline, and control character inside string values. Return one complete JSON object only.`
+            : system,
+          messages: [{ role: 'user', content: JSON.stringify(user) }],
+        }),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name)) {
+        throw new Error('AI generation took too long. Please try again; your design request can stay the same.');
+      }
+      throw error;
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data?.error?.message || `Anthropic request failed (${response.status}).`);
     const content = Array.isArray(data?.content) ? data.content.map((part: any) => part?.text || '').join('\n') : '';

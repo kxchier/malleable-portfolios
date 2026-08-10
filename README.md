@@ -199,16 +199,18 @@ Set the AI secrets and deploy the functions once. Design-axis ranking uses Anthr
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=your-key
 supabase secrets set OPENAI_API_KEY=your-key
-supabase secrets set GENERATE_MAX_TOKENS=32000
+supabase secrets set GENERATE_MAX_TOKENS=24000
 supabase functions deploy image-design-tokens
 supabase functions deploy design-axis
 supabase functions deploy generate-public-layout
 supabase functions deploy ai-assisted-edit
 ```
 
-Full portfolio generation defaults to a 32,000-token output budget. Set
+Full portfolio generation defaults to a 24,000-token output budget. Set
 `GENERATE_MAX_TOKENS` in the local `.env` or as a Supabase secret to override it;
-public generation accepts values from 12,000 through 64,000.
+public generation accepts values from 12,000 through 24,000. Each upstream AI
+attempt has a 165-second deadline so the function can return a controlled error
+before reaching the hosted Edge Function execution limit.
 
 Keep JWT verification enabled (the default). The editor creates an anonymous Supabase Auth session before invoking the functions, and the provider API keys never reach the browser.
 
