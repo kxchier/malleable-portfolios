@@ -1,0 +1,201 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Recent Visual Art / Minimalist Movie Posters",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9",
+        "work_0_10"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Recent Visual Art / Word of the Day Posters for Language Learning",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3",
+        "work_1_4",
+        "work_1_5",
+        "work_1_6",
+        "work_1_7",
+        "work_1_8",
+        "work_1_9"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "2012 3Idiots",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2012 3Idiots.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "2016 Mirzya",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2016 Mirzya.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "2016 Sultan",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2016 Sultan.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "2017 eightColumnAffair",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2017 eightColumnAffair.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "2018 Andhadhun",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2018 Andhadhun.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "2018 BhaveshJoshi",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2018 BhaveshJoshi.jpg"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "2018 October",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2018 October.jpg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "2018 Raazi",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2018 Raazi.jpg"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "2018 manto",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2018 manto.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "2021 hungamaKyonHaiBurpa",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2021 hungamaKyonHaiBurpa.jpg"
+      ]
+    },
+    {
+      "id": "work_0_10",
+      "title": "2024 Merry Christmas",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Minimalist Movie Posters/2024 Merry Christmas.png"
+      ]
+    },
+    {
+      "id": "work_1_0",
+      "title": "aureate",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/aureate.png"
+      ]
+    },
+    {
+      "id": "work_1_1",
+      "title": "careen",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/careen.png"
+      ]
+    },
+    {
+      "id": "work_1_2",
+      "title": "congeal",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/congeal.png"
+      ]
+    },
+    {
+      "id": "work_1_3",
+      "title": "delerict",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/delerict.png"
+      ]
+    },
+    {
+      "id": "work_1_4",
+      "title": "famished",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/famished.png"
+      ]
+    },
+    {
+      "id": "work_1_5",
+      "title": "fulgurous",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/fulgurous.png"
+      ]
+    },
+    {
+      "id": "work_1_6",
+      "title": "mundivagant",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/mundivagant.png"
+      ]
+    },
+    {
+      "id": "work_1_7",
+      "title": "profusion",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/profusion.png"
+      ]
+    },
+    {
+      "id": "work_1_8",
+      "title": "spume",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/spume.png"
+      ]
+    },
+    {
+      "id": "work_1_9",
+      "title": "undulate",
+      "images": [
+        "Art/participants/07/Recent Visual Art/Word of the Day Posters for Language Learning/undulate.png"
+      ]
+    }
+  ]
+}
