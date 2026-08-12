@@ -60,6 +60,13 @@ function consumeSessionStart(participantId) {
   }
 }
 
+function sanitizePublicRenderScript(source) {
+  return String(source || '').replace(
+    ".replace(/^Artworks Media / /i, '')",
+    ".replace(/^Artworks Media \\/\\s*/i, '')"
+  );
+}
+
 function hydratePublicLayouts() {
   const stored = Array.isArray(editedContent.publicLayouts) ? editedContent.publicLayouts : [];
   if (!stored.length) return;
@@ -81,11 +88,16 @@ function hydratePublicLayouts() {
       nextId += 1;
     }
     idOwners.set(id, layout.key);
+    const publicBundle = layout.publicBundle ? {
+      ...layout.publicBundle,
+      renderScript: sanitizePublicRenderScript(layout.publicBundle.renderScript),
+    } : layout.publicBundle;
     byKey.set(layout.key, {
       ...layout,
       id,
       generated: true,
       publicGenerated: true,
+      publicBundle,
       referenceImage: savedReferenceImage,
     });
   });
@@ -104,9 +116,11 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
     ...data.bundle,
     presentation: { ...(data.bundle.presentation || {}), id: key, metaphor: data.metaphor || data.bundle.presentation?.metaphor || key },
     css: replaceKey(data.bundle.css),
-    renderScript: replaceKey(data.bundle.renderScript).replace(
-      /(GeneratedLayouts\s*\[\s*['"])[^'"]+(['"]\s*\])/g,
-      `$1${key}$2`
+    renderScript: sanitizePublicRenderScript(
+      replaceKey(data.bundle.renderScript).replace(
+        /(GeneratedLayouts\s*\[\s*['"])[^'"]+(['"]\s*\])/g,
+        `$1${key}$2`
+      )
     ),
   };
   const savedReferenceImage = /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))
