@@ -1,0 +1,8 @@
+Title: Fido
+Year: 2026
+Medium: Polished Stainless Steel, Raspberry Pi 5, Diaphragm Pumps, Silicone Tubing, 3D-Printed Housing, YOLO11 Pose Detection, Loonen Bottles
+Context: Designing Emerging Technologies, University of California, Berkeley
+Description: Fido is a speculative, fiduciary hydration system that assigns the decision to dispense water or alcohol to artificial intelligence. Built with two reservoirs, a pump system, and a camera-linked onboard computer, Fido treats the body as input and hydration as output. To receive a drink, users must complete the One-Leg Stand field sobriety test. The project asks what it means to outsource agency to systems designed to care on our behalf.
+Source: /Users/thomaschang/Desktop/ContainmentPort/fido.html
+Original-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/previews/fidoHero.jpeg
+Exceptions: The remaining staged Fido stills use website image assets because no corresponding original still-image files were found in media-originals; media-originals/project-media/fido contains video only.

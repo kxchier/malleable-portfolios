@@ -1,0 +1,203 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Artworks Media / Fido",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Artworks Media / Painting to Dance With",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2",
+        "work_1_3",
+        "work_1_4",
+        "work_1_5"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "Artworks Media / SpaghettiOs",
+      "works": [
+        "work_2_0"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "Artworks Media / Trays",
+      "works": [
+        "work_3_0",
+        "work_3_1",
+        "work_3_2",
+        "work_3_3",
+        "work_3_4",
+        "work_3_5",
+        "work_3_6",
+        "work_3_7"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "Fido",
+      "images": [
+        "Art/participants/08/Artworks Media/Fido/Fido_Image_01.jpeg"
+      ],
+      "year": "2026",
+      "medium": "Polished Stainless Steel, Raspberry Pi 5, Diaphragm Pumps, Silicone Tubing, 3D-Printed Housing, YOLO11 Pose Detection, Loonen Bottles",
+      "description": "Designing Emerging Technologies, University of California, Berkeley\nFido is a speculative, fiduciary hydration system that assigns the decision to dispense water or alcohol to artificial intelligence. Built with two reservoirs, a pump system, and a camera-linked onboard computer, Fido treats the body as input and hydration as output. To receive a drink, users must complete the One-Leg Stand field sobriety test. The project asks what it means to outsource agency to systems designed to care on our behalf.\nSource: /Users/thomaschang/Desktop/ContainmentPort/fido.html\nOriginal-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/previews/fidoHero.jpeg\nExceptions: The remaining staged Fido stills use website image assets because no corresponding original still-image files were found in media-originals; media-originals/project-media/fido contains video only."
+    },
+    {
+      "id": "work_0_1",
+      "title": "Fido Image 05",
+      "images": [
+        "Art/participants/08/Artworks Media/Fido/Fido_Image_05.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "Fido Image 08",
+      "images": [
+        "Art/participants/08/Artworks Media/Fido/Fido_Image_08.jpeg"
+      ]
+    },
+    {
+      "id": "work_1_0",
+      "title": "Painting to Dance With",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_01.webp"
+      ],
+      "year": "2025",
+      "medium": "Canvas, steel, pine wood, various tools, Elmer's glue, India ink, oil, acrylic, graphite, colored pencil, Sharpie, dye-based ink, enamel",
+      "description": "2025 BA Thesis Exhibition: ALL WALLS FALL, The University of Chicago. Also selected for Festival of the Arts 2025 Winter Gallery, vestige, a student-selected and student-run exhibition at the University of Chicago.\nPainting to Dance With emerged through an iterative conversation with materials, form, and digital tools. The work began as an abstraction of intuition, layered through experiments in scale, speed, symbolism, and rhythm. Up close, the surface reveals dense traces of human mark-making: footprints, hidden messages, small references, and accumulated gestures. From a distance, those details reorganize into a larger field of movement, inviting the viewer into a dance of approach and retreat.\nSource: /Users/thomaschang/Desktop/ContainmentPort/painting-to-dance-with.html\nOriginal-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/project-media/painting-to-dance-with/03.jpg through 07.jpg\nExceptions: Hero, installation, and process images without matching media-originals stills remain website image assets."
+    },
+    {
+      "id": "work_1_1",
+      "title": "Painting To Dance With Image 04",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_04.jpg"
+      ]
+    },
+    {
+      "id": "work_1_2",
+      "title": "Painting To Dance With Image 05",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_05.jpg"
+      ]
+    },
+    {
+      "id": "work_1_3",
+      "title": "Painting To Dance With Image 06",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_06.jpg"
+      ]
+    },
+    {
+      "id": "work_1_4",
+      "title": "Painting To Dance With Image 07",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_07.jpg"
+      ]
+    },
+    {
+      "id": "work_1_5",
+      "title": "Painting To Dance With Image 13",
+      "images": [
+        "Art/participants/08/Artworks Media/Painting to Dance With/Painting_To_Dance_With_Image_13.jpg"
+      ]
+    },
+    {
+      "id": "work_2_0",
+      "title": "Spaghetti0s",
+      "images": [
+        "Art/participants/08/Artworks Media/SpaghettiOs/SpaghettiOs.png"
+      ],
+      "year": "2023",
+      "medium": "Sharpie, Watercolor, & Graphite on Medium Density Fiberboard",
+      "description": "The University of Chicago\nSpaghetti0s features a depiction of Chef Boyardee wielding an AK-47 and smoking a cigar. The composition is filled with fractal-like images that shift across various scales, guiding the viewer through a series of visual transitions where explicit shapes dissolve into implicit ones. As lines cross between scenes, they blur distinctions, creating a dynamic interplay of forms.\nSource: /Users/thomaschang/Desktop/ContainmentPort/spaghetti0s.html\nOriginal-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/previews/Spaghetti0sHero.png\nExceptions: None for staged still images.\nNote: The requested name \"SpaghettiOs\" maps to the archived work titled \"Spaghetti0s.\""
+    },
+    {
+      "id": "work_3_0",
+      "title": "Trays",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_02.png"
+      ],
+      "year": "2023",
+      "medium": "Cafeteria Lunch Trays, Found Objects",
+      "description": "The University of Chicago\nIn Trays, 20 cafeteria lunch trays function as containers for an eclectic assortment of found objects, each meticulously arranged to resemble food. The work explores the tension between container and contents: trays associated with nourishment, childhood routine, and institutional order instead hold items that are strange, absurd, and often harmful if consumed.\nSource: /Users/thomaschang/Desktop/ContainmentPort/trays.html\nOriginal-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/previews/TraysHero.JPG; /Users/thomaschang/Desktop/ContainmentPort/media-originals/project-media/trays/01.png through 21.png\nExceptions: None for staged still images."
+    },
+    {
+      "id": "work_3_1",
+      "title": "Trays Image 03",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_03.png"
+      ]
+    },
+    {
+      "id": "work_3_2",
+      "title": "Trays Image 04",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_04.png"
+      ]
+    },
+    {
+      "id": "work_3_3",
+      "title": "Trays Image 05",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_05.png"
+      ]
+    },
+    {
+      "id": "work_3_4",
+      "title": "Trays Image 06",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_06.png"
+      ]
+    },
+    {
+      "id": "work_3_5",
+      "title": "Trays Image 07",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_07.png"
+      ]
+    },
+    {
+      "id": "work_3_6",
+      "title": "Trays Image 08",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_08.png"
+      ]
+    },
+    {
+      "id": "work_3_7",
+      "title": "Trays Image 09",
+      "images": [
+        "Art/participants/08/Artworks Media/Trays/Trays_Image_09.png"
+      ]
+    }
+  ]
+}

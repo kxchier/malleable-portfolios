@@ -1,0 +1,9 @@
+Title: Spaghetti0s
+Year: 2023
+Medium: Sharpie, Watercolor, & Graphite on Medium Density Fiberboard
+Context: The University of Chicago
+Description: Spaghetti0s features a depiction of Chef Boyardee wielding an AK-47 and smoking a cigar. The composition is filled with fractal-like images that shift across various scales, guiding the viewer through a series of visual transitions where explicit shapes dissolve into implicit ones. As lines cross between scenes, they blur distinctions, creating a dynamic interplay of forms.
+Source: /Users/thomaschang/Desktop/ContainmentPort/spaghetti0s.html
+Original-media sources used where available: /Users/thomaschang/Desktop/ContainmentPort/media-originals/previews/Spaghetti0sHero.png
+Exceptions: None for staged still images.
+Note: The requested name "SpaghettiOs" maps to the archived work titled "Spaghetti0s."
