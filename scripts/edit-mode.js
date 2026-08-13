@@ -1017,7 +1017,7 @@ function visualRemovalOperationFromPrompt(prompt) {
   const visual = request.match(/\b(?:remove|remote|delete|hide|get rid of|take away)\b\s+(?:all\s+|the\s+|these\s+|those\s+|any\s+)?(.+?)(?:\s+(?:from|on)\s+(?:the\s+)?(?:page|site|website))?[.!?]*$/i)?.[1] || '';
   const query = visual.replace(/\b(?:please|can you|could you)\b/gi, '').trim().slice(0, 100);
   if (!query || /^(?:it|this|that|everything)$/i.test(query)) return null;
-  const looksVisual = /\b(?:svg|svgs|decoration|decorations|asset|assets|blotch|blotches|wash|washes|doodle|doodles|sticker|stickers|motif|motifs|icon|icons|ornament|ornaments|illustration|illustrations|shape|shapes|background art)\b/i.test(query);
+  const looksVisual = /\b(?:svg|svgs|decoration|decorations|asset|assets|blotch|blotches|wash|washes|doodle|doodles|sticker|stickers|motif|motifs|icon|icons|ornament|ornaments|illustration|illustrations|shape|shapes|background art|flower|flowers|flowerpot|pot|plant|plants|tree|trees|cloud|clouds|grass|sky|star|stars|sun|moon|vase|furniture|object|objects)\b/i.test(query);
   if (!looksVisual) return null;
   return { type: 'visualRemoval', query };
 }

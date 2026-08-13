@@ -364,6 +364,9 @@ const server = http.createServer(async (req, res) => {
       const result = await generateDecorativeAssets({
         layoutKey: body.layoutKey,
         prompt: body.prompt,
+        // Participant edits belong to their undoable content snapshot. Do not
+        // write them into the shared template's generated asset directory.
+        persist: !participantId,
       });
       return sendJSON(res, 200, result);
     } catch (e) {

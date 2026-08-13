@@ -140,7 +140,7 @@ function uniqueAssetFile(assetsDir, base) {
   return filename;
 }
 
-async function generateDecorativeAssets({ apiKey, provider, layoutKey, prompt }) {
+async function generateDecorativeAssets({ apiKey, provider, layoutKey, prompt, persist = true }) {
   const key = safeLayoutKey(layoutKey);
   if (!key) throw new Error('missing layout key');
   if (!prompt?.trim()) throw new Error('Tell the sparkle what object or asset to add.');
@@ -191,6 +191,28 @@ async function generateDecorativeAssets({ apiKey, provider, layoutKey, prompt })
   }
   const rawAssets = Array.isArray(parsed.assets) ? parsed.assets : [];
   if (!rawAssets.length) throw new Error('No SVG assets were returned.');
+
+  if (!persist) {
+    const embedded = rawAssets.slice(0, 6).map((asset, index) => {
+      const svg = sanitizeSvg(asset.svg);
+      if (!svg) return null;
+      const placement = asset.placement || {};
+      return {
+        src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+        alt: String(asset.alt || asset.name || `${key} decoration`).slice(0, 80),
+        x: clampPercent(placement.x, (12 + index * 17) % 88),
+        y: clampPercent(placement.y, 12 + index * 13),
+        size: clampNumber(placement.size, 36, 180, 76),
+        rotate: clampNumber(placement.rotate, -28, 28, 0),
+        opacity: clampNumber(placement.opacity, 0.25, 0.95, 0.72),
+      };
+    }).filter(Boolean);
+    if (!embedded.length) throw new Error('The generated assets were not valid safe SVG.');
+    return {
+      message: parsed.message || `Added ${embedded.length} new asset${embedded.length === 1 ? '' : 's'} to ${layout.name}.`,
+      assets: embedded,
+    };
+  }
 
   fs.mkdirSync(assetsDir, { recursive: true });
   const decorations = readJson(decorationsPath, []);
