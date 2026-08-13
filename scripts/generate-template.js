@@ -1,6 +1,7 @@
 /** Call the selected AI provider, validate bundle, write generated template files. */
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const { callTextModel, normalizeProvider, providerLabel } = require('./ai-client.js');
 const { buildSystemPrompt, buildUserPrompt } = require('./generate-prompt.js');
 const {
@@ -115,6 +116,13 @@ function validateBundle(bundle) {
   if (bundle.assets != null && typeof bundle.assets !== 'object') errors.push('assets must be an object');
   if (bundle.renderScript && !bundle.renderScript.includes('GeneratedLayouts')) {
     errors.push('renderScript must register window.GeneratedLayouts');
+  }
+  if (bundle.renderScript) {
+    try {
+      new vm.Script(bundle.renderScript, { filename: 'generated-render.js' });
+    } catch (error) {
+      errors.push(`renderScript contains invalid JavaScript: ${String(error?.message || error).slice(0, 240)}`);
+    }
   }
   if (!bundle.themeColors || typeof bundle.themeColors !== 'object') {
     errors.push('missing themeColors (must match editor swatches for this layout)');

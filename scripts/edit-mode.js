@@ -67,6 +67,19 @@ function sanitizePublicRenderScript(source) {
   );
 }
 
+function validateGeneratedRenderScriptSyntax(source, label = 'generated renderer') {
+  const script = String(source || '').trim();
+  if (!script) throw new Error(`The ${label} was empty.`);
+  try {
+    // Parse only. The function body is not executed here.
+    new Function(script);
+  } catch (error) {
+    const detail = String(error?.message || 'invalid JavaScript').slice(0, 240);
+    throw new Error(`The ${label} contained invalid JavaScript and was not saved: ${detail}`);
+  }
+  return script;
+}
+
 function hydratePublicLayouts() {
   const stored = Array.isArray(editedContent.publicLayouts) ? editedContent.publicLayouts : [];
   if (!stored.length) return;
@@ -112,16 +125,18 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
   const key = `public_${keyBase}_${suffix}`;
   const ids = (window.PORTFOLIO_LAYOUTS || []).map((layout) => Number(layout.id)).filter(Number.isFinite);
   const replaceKey = (value) => String(value || '').split(sourceKey).join(key).split('KEY').join(key);
+  const renderScript = sanitizePublicRenderScript(
+    replaceKey(data.bundle.renderScript).replace(
+      /(GeneratedLayouts\s*\[\s*['"])[^'"]+(['"]\s*\])/g,
+      `$1${key}$2`
+    )
+  );
+  validateGeneratedRenderScriptSyntax(renderScript);
   const bundle = {
     ...data.bundle,
     presentation: { ...(data.bundle.presentation || {}), id: key, metaphor: data.metaphor || data.bundle.presentation?.metaphor || key },
     css: replaceKey(data.bundle.css),
-    renderScript: sanitizePublicRenderScript(
-      replaceKey(data.bundle.renderScript).replace(
-        /(GeneratedLayouts\s*\[\s*['"])[^'"]+(['"]\s*\])/g,
-        `$1${key}$2`
-      )
-    ),
+    renderScript,
   };
   const savedReferenceImage = /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))
     ? referenceImage.image
@@ -1063,6 +1078,7 @@ function validateGeneratedBundleRevision(data, layoutKey) {
   if (/\b(fetch|XMLHttpRequest|WebSocket|eval)\s*\(|\bnew\s+Function\b|\bimport\s*\(|document\.cookie|(?:local|session)Storage|window\.(?:parent|top|opener)|location\s*=|<script/i.test(renderScript)) {
     throw new Error('The revised renderer requested an unsupported browser capability.');
   }
+  validateGeneratedRenderScriptSyntax(renderScript, 'revised renderer');
   return { css, renderScript, message: String(data?.message || '').slice(0, 240) };
 }
 
@@ -4104,6 +4120,7 @@ function setupAI() {
         });
 
       if (publicGeneration) {
+        generateStatus.textContent = 'Validating generated interface…';
         const publicLayout = createPublicGeneratedLayout(data, clarifiedPrompt, designSpace, referenceImage);
         const versionTheme = publicLayoutTheme(publicLayout);
         window.PORTFOLIO_LAYOUTS.push(publicLayout);
