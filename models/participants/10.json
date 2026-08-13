@@ -1,0 +1,90 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Portfolio",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "AdvenLohen",
+      "images": [
+        "Art/participants/10/Portfolio/AdvenLohen.PNG"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "BunnSketchComm",
+      "images": [
+        "Art/participants/10/Portfolio/BunnSketchComm.PNG"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "HUBBY",
+      "images": [
+        "Art/participants/10/Portfolio/HUBBY.PNG"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "JaxInplickRedraw",
+      "images": [
+        "Art/participants/10/Portfolio/JaxInplickRedraw.jpg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "LCRedraw",
+      "images": [
+        "Art/participants/10/Portfolio/LCRedraw.png"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "ShuAKChibi",
+      "images": [
+        "Art/participants/10/Portfolio/ShuAKChibi.PNG"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "ShyBustComm",
+      "images": [
+        "Art/participants/10/Portfolio/ShyBustComm.jpeg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "ShyStartingSoonComm",
+      "images": [
+        "Art/participants/10/Portfolio/ShyStartingSoonComm.PNG"
+      ]
+    }
+  ]
+}
