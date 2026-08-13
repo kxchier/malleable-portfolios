@@ -36,13 +36,14 @@ async function callAnthropic(apiKey: string, system: string, user: unknown, maxT
 
 const cursorSystem = `Convert a situated art-portfolio editing request into one safe JSON operation. Return only {"message":"brief proposal","operation":{...}}.
 Allowed operations:
+- textContent for replacing or clearing selected text: {"type":"textContent","target":TARGET,"scope":"this","content":"replacement text"}. For remove/delete/clear text, use an empty content string.
 - stylePatch for text and its visible box: {"type":"stylePatch","target":TARGET,"scope":"this|role|all-headings","patch":{"fontFamily":"...","fontSize":"32px","fontWeight":"700","textAlign":"left|center|right","width":"36rem","maxWidth":"90%","padding":"16px","marginLeft":"auto","marginRight":"auto","border":"1px solid var(--color-accent)","transform":"rotate(-4deg)","opacity":"0.8"}}
 - elementStylePatch for images/tiles/sections: {"type":"elementStylePatch","target":TARGET,"scope":"this|all-images|all-sections","patch":{"borderRadius":"24px","overflow":"hidden","border":"2px solid var(--color-accent)","boxShadow":"0 8px 24px rgba(0,0,0,.2)","filter":"grayscale(100%)","marginLeft":"24px","marginRight":"24px","padding":"12px","gap":"24px","transform":"rotate(-4deg)","opacity":"0.8"},"imagePatch":{"borderRadius":"24px","objectFit":"cover","objectPosition":"center"}}
 - relativeMove for moving the clicked thing: {"type":"relativeMove","target":TARGET,"scope":"this|all-images|all-sections","dx":0,"dy":-24}. Negative dy moves up; positive dy moves down; negative dx moves left; positive dx moves right. Use 12 for slightly, 24 normally, and 48 for substantially.
 - collectionVisibility: {"type":"collectionVisibility","target":TARGET,"visible":false}
 - spacing: {"type":"spacing","target":TARGET,"gridGap":"32px","artSize":"220px","imagePadding":"12px"}
 - noop.
-Reuse the provided target. Treat text as both typography and a visible box; compose typography and safe box properties in one stylePatch when needed. Use simple CSS values. Never return HTML, selectors, JavaScript, URLs, or arbitrary CSS.`;
+Reuse the provided target. Use textContent—not opacity or noop—when asked to remove, clear, rename, replace, or rewrite selected text. Treat text as both typography and a visible box; compose typography and safe box properties in one stylePatch when needed. Use simple CSS values. Never return HTML, selectors, JavaScript, URLs, or arbitrary CSS.`;
 
 const portfolioSystem = `Convert a whole art-portfolio editing request into safe JSON: {"message":"brief proposal","operations":[...]}.
 Allowed operations:
@@ -104,7 +105,7 @@ Deno.serve(async (request) => {
         target: body.target, request: text(body.prompt, 1200), scope: body.scope,
         presentationId: text(body.presentationId, 80), context: body.context || null,
       }, 1400);
-      const allowed = ['stylePatch', 'elementStylePatch', 'relativeMove', 'collectionVisibility', 'spacing', 'noop'];
+      const allowed = ['textContent', 'stylePatch', 'elementStylePatch', 'relativeMove', 'collectionVisibility', 'spacing', 'noop'];
       if (!allowed.includes(parsed?.operation?.type)) throw new Error('Anthropic returned an unsupported cursor operation.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operation: parsed.operation });
     }

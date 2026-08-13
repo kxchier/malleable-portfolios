@@ -24,6 +24,7 @@
         role: textEl.dataset.textRole,
         path: `content.text.${textEl.dataset.textId}`,
         label: textEl.dataset.textFallback || textEl.textContent.trim() || 'Text',
+        currentContent: textEl.textContent,
         currentStyle: {
           fontFamily: style.fontFamily,
           fontSize: style.fontSize,

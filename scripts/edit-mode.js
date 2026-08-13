@@ -588,6 +588,14 @@ async function parseOperationWithAI({ target, prompt, scope, presentationId, ver
 
 function directCursorOperationFromPrompt(target, prompt, scope, presentationId, versionKey) {
   const request = String(prompt || '').trim().toLowerCase();
+  const removesSelectedText = target?.kind === 'text'
+    && /\b(?:remove|delete|clear|erase|get rid of|take out)\b/.test(request)
+    && /\b(?:text|title|heading|label|words?|copy|this|it)\b/.test(request);
+  if (removesSelectedText) {
+    return {
+      type: 'textContent', target, scope: 'this', versionKey, content: '',
+    };
+  }
   const distance = /\b(?:slightly|little|a bit|tiny)\b/.test(request) ? 12
     : /\b(?:far|much|lot|significantly)\b/.test(request) ? 48 : 24;
   const asksToMove = /\b(?:move|shift|nudge|push|pull|raise|lower)\b/.test(request);
@@ -826,6 +834,16 @@ function validateCursorOperation(rawOperation, fallback) {
 
   const operation = normalizeGeneratedOperation(rawOperation, fallback);
   const target = operation.target || fallback.target;
+
+  if (operation.type === 'textContent') {
+    if (target?.kind !== 'text' || !target.id) {
+      throw new Error('Choose a specific text element to change its content.');
+    }
+    return {
+      type: 'textContent', target, scope: 'this', versionKey: fallback.versionKey,
+      content: String(operation.content ?? '').replace(/<[^>]*>/g, '').slice(0, 2000),
+    };
+  }
 
   if (operation.type === 'relativeMove') {
     if (!target || target.kind === 'presentation') throw new Error('Choose a section, image, or text element to move.');
@@ -1302,6 +1320,11 @@ function validatePortfolioOperations(rawOperations, fallback) {
 }
 
 function messageForOperation(operation) {
+  if (operation.type === 'textContent') {
+    return operation.content
+      ? `Replace ${operation.target?.label || 'the selected text'}.`
+      : `Remove ${operation.target?.label || 'the selected text'} from this presentation.`;
+  }
   if (operation.type === 'relativeMove') {
     const vertical = operation.dy < 0 ? 'up' : operation.dy > 0 ? 'down' : '';
     const horizontal = operation.dx < 0 ? 'left' : operation.dx > 0 ? 'right' : '';
@@ -1357,6 +1380,17 @@ function collectionTargetFromText(target) {
 
 function applyCursorOperation(operation) {
   if (!operation) return;
+
+  if (operation.type === 'textContent' && operation.target?.kind === 'text') {
+    handleTextEditChange({
+      id: operation.target.id,
+      role: operation.target.role || 'body',
+      scope: 'this',
+      property: 'content',
+      value: operation.content,
+    });
+    return;
+  }
 
   if (operation.type === 'typography' && operation.target?.kind === 'text') {
     const role = operation.target.role || (operation.target.id === 'portfolio.title' ? 'portfolio.title' : 'collection.title');

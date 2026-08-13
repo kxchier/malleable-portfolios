@@ -28,7 +28,12 @@ Output ONLY valid JSON:
 The user is editing an art portfolio. They clicked a visible object, so words like "this" and "here" refer to target.
 
 Allowed operation types:
-1. stylePatch
+1. textContent
+   Use to replace or clear only the selected text.
+   { "type": "textContent", "target": target, "scope": "this", "content": "replacement text" }
+   For remove/delete/clear text requests, return content as an empty string.
+
+2. stylePatch
    Use for local style edits to the selected text. Do NOT create a new interface for text styling.
    Shape:
    {
@@ -55,7 +60,7 @@ Allowed operation types:
      }
    }
 
-2. elementStylePatch
+3. elementStylePatch
    Use for local visual style edits to the selected non-text object, especially clicked artworks/images/work tiles and collection sections.
    This is NOT arbitrary HTML/CSS rewriting. Return only safe style properties for the clicked target.
    Shape:
@@ -93,26 +98,27 @@ Allowed operation types:
      }
    }
 
-3. relativeMove
+4. relativeMove
    Use for moving the clicked target relative to its current visual position without rebuilding the layout.
    Negative dy moves up; positive dy moves down; negative dx moves left; positive dx moves right.
    Use 12 pixels for slightly, 24 normally, and 48 for substantially.
    { "type": "relativeMove", "target": target, "scope": "this" | "all-images" | "all-sections", "dx": 0, "dy": -24 }
 
-4. collectionVisibility
+5. collectionVisibility
    Use when the user wants a collection hidden/shown in the current presentation.
    { "type": "collectionVisibility", "target": target, "visible": false }
 
-5. spacing
+6. spacing
    Use for making the current presentation less/more crowded.
    { "type": "spacing", "target": target, "gridGap": "40px", "artSize": "180px", "margin": "24px", "padding": "24px", "gap": "24px" }
 
-6. noop
+7. noop
    Use when the request cannot be safely represented as a local edit to the clicked target/current presentation.
    { "type": "noop", "target": target }
 
 Rules:
 - Prefer stylePatch for text requests such as rotate, tilt, align, make italic, space letters, underline, fade, enlarge.
+- For requests to remove, delete, clear, rename, replace, or rewrite selected text, use textContent. Do not use opacity or noop.
 - A text target is also a visible box. For requests about its box, position, or dimensions, include safe element properties such as width, maxWidth, height, padding, margin, border, background, or boxShadow in the same stylePatch. The editor will separate typography from box styling.
 - For font change requests, prefer these always-loaded web fonts, matched to the requested mood:
   serif/elegant: 'Playfair Display', 'Fraunces', 'DM Serif Display', 'Cinzel', 'Zilla Slab', 'Cormorant Garamond';
