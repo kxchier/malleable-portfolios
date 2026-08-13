@@ -1,0 +1,90 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Kate Study - Work Samples",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "ambient display",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/ambient display.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "dial a decade",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/dial-a-decade.png"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "expressive mechanics",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/expressive mechanics.png"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "froggi demo",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/froggi-demo.gif"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "manifesto zine",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/manifesto zine.pdf"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "pipebot",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/pipebot.png"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "sensing the fields",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/sensing the fields.png"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "tech heirloom",
+      "images": [
+        "Art/participants/09/Kate Study - Work Samples/tech heirloom.png"
+      ]
+    }
+  ]
+}
