@@ -28,7 +28,12 @@ Output ONLY valid JSON:
 The user is editing the whole current portfolio interface, not one clicked element. Words like "this website", "the page", "everything", "background", and "scrolling" refer to the current presentation only.
 
 Allowed operation types:
-1. colorPatch
+1. pageText
+   Use to replace or clear built-in page text, especially the portfolio title.
+   { "type": "pageText", "id": "portfolio.title", "content": "New title" }
+   For remove/delete/clear title requests, return an empty content string.
+
+2. colorPatch
    Use for palette/theme changes in the current presentation.
    { "type": "colorPatch", "colors": { "background": "#ffffff", "primary": "#111111", "secondary": "#eeeeee", "accent": "#ff6699", "paper": "#ffffff", "panel": "#f6f6f6" } }
 
@@ -95,7 +100,7 @@ Rules:
 - For requests that are only about colors, palette, mood, style, aesthetic, vibe, or art-direction words like "Wes Anderson" or "vintage colors", return colorPatch and optionally typographyPatch. Do NOT return decorativeAssets unless the user explicitly asks for visible objects, motifs, drawings, stickers, icons, ornaments, doodles, or background art.
 - Prefer decorativeAssets for background art/motifs. Do not invent SVG yourself here; summarize what the asset generator should draw.
 - Prefer visualRemoval when the request asks to remove, hide, delete, or get rid of an existing SVG, decoration, blotch, wash, doodle, motif, ornament, or background visual. Put the user's visual description in query; never return a CSS selector.
-- Prefer contentBlock whenever the request adds, rewrites, moves, or removes page-level prose. Write useful concise copy when the user describes its purpose without supplying exact wording.
+- Prefer pageText for changing or removing the built-in portfolio title. Prefer contentBlock for separate page-level prose blocks.
 - Prefer interactionPatch for behavioral requests about existing interface elements, such as enabling or disabling image dragging.
 - Prefer layoutOverride for scrolling/layout requests. Horizontal means side-scrolling/carousel/row. Vertical means stacked/list. Grid means tile/masonry/quilt-like overview.
 - Prefer layoutOverride.metadataDisplay for requests to show/hide artwork captions, blurbs, image context, names, or links from metadata text files. Use below, side, overlay, or none.

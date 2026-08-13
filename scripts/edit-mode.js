@@ -1077,6 +1077,12 @@ function sanitizeCssOverride(css, versionKey) {
   return source;
 }
 
+function generatedCssWithAppliedOverrides(layout) {
+  const baseCss = String(layout?.publicBundle?.css || '');
+  const customCss = String(editedContent.layoutOverrides?.[layout?.key]?.customCss || '');
+  return customCss ? `${baseCss}\n\n/* Previously applied page-level edits */\n${customCss}` : baseCss;
+}
+
 function requestNeedsBundleRevision(prompt) {
   return /\b(more|fewer|less)\s+(images|artworks?|works?|items?)\s+(on|per|in)\s+(each|a|the)?\s*(page|spread|panel)|\b(items?|images?|artworks?)\s+per\s+(page|spread)|\b(repaginate|pagination|page capacity|pages? per)\b/i
     .test(String(prompt || ''));
@@ -1112,9 +1118,8 @@ function applyGeneratedBundleRevision(layout, revision, prompt) {
   });
   if (history.length > 10) history.splice(0, history.length - 10);
   layout.publicBundle = { ...layout.publicBundle, css: revision.css, renderScript: revision.renderScript };
-  if (editedContent.layoutOverrides?.[layout.key]) {
-    delete editedContent.layoutOverrides[layout.key].customCss;
-  }
+  // Preserve page-level CSS as a cascading layer over structural revisions.
+  // A later request must not silently undo an earlier page adjustment.
   if (editedContent.elementStyles?.versions?.[layout.key]) {
     delete editedContent.elementStyles.versions[layout.key].__layout_root__;
   }
@@ -1183,12 +1188,28 @@ function paletteOnlyFallbackOperation(versionKey) {
   };
 }
 
+function pageTextOperationFromPrompt(prompt) {
+  const text = String(prompt || '').trim();
+  const removesTitle = /\b(?:remove|delete|clear|erase|hide|get rid of|take out)\b/i.test(text)
+    && /\b(?:my art portfolio|portfolio title|site title|page title|main title|header text)\b/i.test(text);
+  if (removesTitle) return { type: 'pageText', id: 'portfolio.title', content: '' };
+  return null;
+}
+
 function validatePortfolioOperations(rawOperations, fallback) {
   const source = Array.isArray(rawOperations) ? rawOperations : (rawOperations ? [rawOperations] : []);
   const operations = [];
 
   source.forEach((operation) => {
     if (!operation || typeof operation !== 'object') return;
+
+    if (operation.type === 'pageText') {
+      const id = operation.id === 'portfolio.title' ? 'portfolio.title' : '';
+      if (!id) return;
+      const content = String(operation.content ?? '').replace(/<[^>]*>/g, '').slice(0, 500);
+      operations.push({ type: 'pageText', versionKey: fallback.versionKey, id, content });
+      return;
+    }
 
     if (operation.type === 'colorPatch') {
       const colors = sanitizeColorPatch(operation.colors);
@@ -1551,6 +1572,17 @@ function applyPortfolioOperation(operation) {
   if (!operation) return false;
   const versionKey = operation.versionKey || getCurrentVersionKey();
 
+  if (operation.type === 'pageText') {
+    handleTextEditChange({
+      id: operation.id,
+      role: operation.id === 'portfolio.title' ? 'portfolio.title' : 'body',
+      scope: 'this',
+      property: 'content',
+      value: operation.content,
+    });
+    return true;
+  }
+
   if (operation.type === 'colorPatch') {
     ensureVersionColorsObject(versionKey);
     editedTheme.versions[versionKey].colors = {
@@ -1619,7 +1651,11 @@ function applyPortfolioOperation(operation) {
 
   if (operation.type === 'cssOverride') {
     const overrides = ensureLayoutOverrides(versionKey);
-    overrides.customCss = operation.css;
+    const previous = String(overrides.customCss || '').trim();
+    const next = String(operation.css || '').trim();
+    if (!next) return false;
+    const layer = `/* Assistant edit ${new Date().toISOString()} */\n${next}`;
+    overrides.customCss = previous ? `${previous}\n\n${layer}` : layer;
     return true;
   }
 
@@ -3438,7 +3474,7 @@ function setupAssetAssistant() {
         theme: currentTheme, spacing: getVersionSpacingForKey(versionKey),
         pageBlocks: editedContent.pageBlocks?.versions?.[versionKey] || [],
         generatedSource: layout.publicBundle ? {
-          css: String(layout.publicBundle.css || '').slice(0, 24000),
+          css: generatedCssWithAppliedOverrides(layout).slice(0, 36000),
           renderScript: String(layout.publicBundle.renderScript || '').slice(0, 16000),
         } : null,
       };
@@ -3481,12 +3517,15 @@ function setupAssetAssistant() {
         syncUndoButton();
         return;
       }
+      const directPageText = pageTextOperationFromPrompt(prompt);
       const directInteraction = interactionOperationFromPrompt(prompt);
       const directVisualRemoval = visualRemovalOperationFromPrompt(prompt);
-      const directOperation = directInteraction || directVisualRemoval;
+      const directOperation = directPageText || directInteraction || directVisualRemoval;
       const result = directOperation
         ? {
-          message: directOperation.type === 'visualRemoval'
+          message: directOperation.type === 'pageText'
+            ? 'Removed the portfolio title from this site version.'
+            : directOperation.type === 'visualRemoval'
             ? `Removed visuals matching “${directOperation.query}”.`
             : directOperation.draggable ? 'Made the images draggable.' : 'Made the images non-draggable.',
           operations: [directOperation],
@@ -3502,7 +3541,7 @@ function setupAssetAssistant() {
             theme: currentTheme,
             spacing: getVersionSpacingForKey(versionKey),
             generatedSource: layout.publicBundle ? {
-              css: String(layout.publicBundle.css || '').slice(0, 24000),
+              css: generatedCssWithAppliedOverrides(layout).slice(0, 36000),
               renderScript: String(layout.publicBundle.renderScript || '').slice(0, 16000),
             } : null,
             contentSummary: {

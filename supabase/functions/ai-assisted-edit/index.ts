@@ -47,6 +47,7 @@ Reuse the provided target. Use textContent—not opacity or noop—when asked to
 
 const portfolioSystem = `Convert a whole art-portfolio editing request into safe JSON: {"message":"brief proposal","operations":[...]}.
 Allowed operations:
+- pageText {"type":"pageText","id":"portfolio.title","content":"New title"} for replacing or clearing the built-in portfolio title. Use empty content to remove it.
 - colorPatch {"type":"colorPatch","colors":{"background":"#ffffff","primary":"#111111","secondary":"#eeeeee","accent":"#ff6699","paper":"#ffffff","panel":"#f6f6f6"}}
 - typographyPatch {"type":"typographyPatch","typography":{"heading1":{"fontFamily":"'Playfair Display', serif","fontSize":"3rem","fontWeight":"700"},"heading2":{},"body":{}}}
 - spacing {"type":"spacing","gridGap":"32px","artSize":"220px","imagePadding":"12px"}
@@ -125,7 +126,7 @@ Deno.serve(async (request) => {
         );
         source = Array.isArray(parsed.operations) ? parsed.operations : parsed.operation ? [parsed.operation] : [];
       }
-      const allowed = ['colorPatch', 'typographyPatch', 'spacing', 'layoutPatch', 'cssOverride', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'visualRemoval', 'contentBlock', 'interactionPatch', 'noop'];
+      const allowed = ['pageText', 'colorPatch', 'typographyPatch', 'spacing', 'layoutPatch', 'cssOverride', 'layoutOverride', 'elementStylePatch', 'decorativeAssets', 'visualRemoval', 'contentBlock', 'interactionPatch', 'noop'];
       const operations = source.filter((operation: any) => allowed.includes(operation?.type)).slice(0, 8);
       if (!operations.length) throw new Error('Anthropic returned no supported portfolio operations.');
       return json(200, { model: MODEL, message: text(parsed.message, 240), operations });
