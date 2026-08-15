@@ -1,0 +1,106 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "Artwork",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "Vegetable Lamb of Tartary",
+      "images": [
+        "Art/participants/11/Artwork/Vegetable Lamb of Tartary.JPEG"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "campanile day",
+      "images": [
+        "Art/participants/11/Artwork/campanile_day.png"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "campanile night",
+      "images": [
+        "Art/participants/11/Artwork/campanile_night.png"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "head1",
+      "images": [
+        "Art/participants/11/Artwork/head1.png"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "head2",
+      "images": [
+        "Art/participants/11/Artwork/head2.png"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "head3",
+      "images": [
+        "Art/participants/11/Artwork/head3.png"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "head4",
+      "images": [
+        "Art/participants/11/Artwork/head4.png"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "pear",
+      "images": [
+        "Art/participants/11/Artwork/pear.png"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "skull",
+      "images": [
+        "Art/participants/11/Artwork/skull.png"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "vase",
+      "images": [
+        "Art/participants/11/Artwork/vase.png"
+      ]
+    }
+  ]
+}
