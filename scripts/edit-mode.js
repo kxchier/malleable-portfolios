@@ -1114,18 +1114,37 @@ function generatedCssWithAppliedOverrides(layout) {
   return customCss ? `${baseCss}\n\n/* Previously applied page-level edits */\n${customCss}` : baseCss;
 }
 
-function requestNeedsBundleRevision(prompt) {
-  return /\b(more|fewer|less)\s+(images|artworks?|works?|items?)\s+(on|per|in)\s+(each|a|the)?\s*(page|spread|panel)|\b(items?|images?|artworks?)\s+per\s+(page|spread)|\b(repaginate|pagination|page capacity|pages? per)\b/i
-    .test(String(prompt || ''));
+function requestAsksForSinglePage(prompt) {
+  const text = String(prompt || '');
+  return /\b(?:all|every)\s+(?:the\s+)?(?:images?|artworks?|works?|items?|collections?)\s+(?:together\s+)?(?:on|in|onto)\s+(?:one|a single|the same)\s+(?:page|spread)\b/i.test(text)
+    || /\b(?:put|place|show|display|fit|keep|move|have|get)\b[^.!?]{0,80}\b(?:all|every)\b[^.!?]{0,80}\b(?:one|single|same)\s+(?:page|spread)\b/i.test(text)
+    || /\b(?:one|single)[ -]page\b|\b(?:remove|disable|without|no)\s+(?:the\s+)?pagination\b/i.test(text);
 }
 
-function validateGeneratedBundleRevision(data, layoutKey) {
+function requestNeedsBundleRevision(prompt) {
+  return requestAsksForSinglePage(prompt)
+    || /\b(more|fewer|less)\s+(images|artworks?|works?|items?)\s+(on|per|in)\s+(each|a|the)?\s*(page|spread|panel)|\b(items?|images?|artworks?)\s+per\s+(page|spread)|\b(repaginate|pagination|page capacity|pages? per)\b/i
+      .test(String(prompt || ''));
+}
+
+function cssUrlValues(css) {
+  const values = new Set();
+  const pattern = /url\(\s*(['"]?)(.*?)\1\s*\)/gi;
+  let match;
+  while ((match = pattern.exec(String(css || '')))) values.add(match[2].trim());
+  return values;
+}
+
+function validateGeneratedBundleRevision(data, layoutKey, originalCss = '') {
   const css = String(data?.css || '').trim();
   const renderScript = String(data?.renderScript || '').trim();
   const safeKey = String(layoutKey || '').replace(/[^a-zA-Z0-9_-]/g, '');
   if (!css || !renderScript) throw new Error('The assistant returned an incomplete layout revision.');
   if (css.length > 60000 || renderScript.length > 60000) throw new Error('The layout revision was too large to apply safely.');
-  if (/<\/?style|<script|@import|@charset|url\s*\(/i.test(css)) throw new Error('The revised CSS contained unsupported external or embedded code.');
+  if (/<\/?style|<script|@import|@charset/i.test(css)) throw new Error('The revised CSS contained unsupported embedded code.');
+  const existingUrls = cssUrlValues(originalCss);
+  const addedUrls = [...cssUrlValues(css)].filter((value) => !existingUrls.has(value));
+  if (addedUrls.length) throw new Error('The revised CSS introduced a new external or embedded asset reference.');
   if (!css.includes(`body.view-${safeKey}`)) throw new Error('The revised CSS was not scoped to this portfolio.');
   if (!renderScript.includes('GeneratedLayouts') || !renderScript.includes(safeKey)) {
     throw new Error('The revised renderer did not register the current portfolio layout.');
@@ -3510,7 +3529,9 @@ function setupAssetAssistant() {
         } : null,
       };
       if (layout.publicBundle && requestNeedsBundleRevision(prompt)) {
-        const settingChange = applyDeclaredStructuralSetting(layout, prompt);
+        const settingChange = requestAsksForSinglePage(prompt)
+          ? null
+          : applyDeclaredStructuralSetting(layout, prompt);
         if (settingChange) {
           undoSnapshot = beforeChange;
           updatePreview();
@@ -3535,7 +3556,7 @@ function setupAssetAssistant() {
               collections: (sourceManifest?.collections || []).map((collection) => ({ name: collection.name, count: (collection.images || []).length })),
             },
           });
-        const revision = validateGeneratedBundleRevision(bundleResult, layout.key);
+        const revision = validateGeneratedBundleRevision(bundleResult, layout.key, layout.publicBundle.css);
         if (!applyGeneratedBundleRevision(layout, revision, prompt)) throw new Error('This portfolio cannot accept a structural bundle revision.');
         undoSnapshot = beforeChange;
         updatePreview();
