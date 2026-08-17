@@ -15,6 +15,27 @@ function detectColorKeysFromCss(css) {
   });
 }
 
+function normalizeThemeColorCss(css, themeColors) {
+  let normalized = String(css || '');
+  // The editor owns the standard tokens. Generated body-scoped declarations
+  // otherwise override :root and make postMessage updates appear to do nothing.
+  normalized = normalized.replace(
+    /--color-(?:background|primary|accent|paper|panel|secondary)\s*:\s*[^;}{]+;?/gi,
+    ''
+  );
+  Object.entries(themeColors || {}).forEach(([key, value]) => {
+    if (!THEME_COLOR_KEYS.includes(key)) return;
+    const color = String(value || '').trim();
+    if (!/^#[0-9a-f]{3,8}$/i.test(color)) return;
+    const escaped = color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    normalized = normalized.replace(
+      new RegExp(`${escaped}(?![0-9a-f])`, 'gi'),
+      `var(--color-${key})`
+    );
+  });
+  return normalized;
+}
+
 function colorKeysForLayout(layout) {
   if (layout?.colorKeys?.length) return layout.colorKeys;
   if (layout?.key && BUILTIN_COLOR_KEYS[layout.key]) return BUILTIN_COLOR_KEYS[layout.key];
@@ -47,6 +68,7 @@ if (typeof module !== 'undefined' && module.exports) {
     THEME_COLOR_KEYS,
     BUILTIN_COLOR_KEYS,
     detectColorKeysFromCss,
+    normalizeThemeColorCss,
     colorKeysForLayout,
     shortDisplayName,
     pickThemeColorsForKeys,
@@ -58,6 +80,7 @@ if (typeof window !== 'undefined') {
     THEME_COLOR_KEYS,
     BUILTIN_COLOR_KEYS,
     detectColorKeysFromCss,
+    normalizeThemeColorCss,
     colorKeysForLayout,
     shortDisplayName,
     pickThemeColorsForKeys,

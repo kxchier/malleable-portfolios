@@ -64,6 +64,9 @@ function sanitizePublicRenderScript(source) {
   return String(source || '').replace(
     ".replace(/^Artworks Media / /i, '')",
     ".replace(/^Artworks Media \\/\\s*/i, '')"
+  ).replace(
+    "wall.style.background = 'linear-gradient(180deg,' + lighten(roomColor,0.18) + ' 0%,' + roomColor + ' 55%,' + darken(roomColor,0.08) + ' 100%)';",
+    "wall.style.background = ci === 0 ? 'linear-gradient(180deg,color-mix(in srgb,var(--color-panel) 82%,white) 0%,var(--color-panel) 55%,color-mix(in srgb,var(--color-panel) 92%,black) 100%)' : 'linear-gradient(180deg,' + lighten(roomColor,0.18) + ' 0%,' + roomColor + ' 55%,' + darken(roomColor,0.08) + ' 100%)';"
   );
 }
 
@@ -78,6 +81,24 @@ function validateGeneratedRenderScriptSyntax(source, label = 'generated renderer
     throw new Error(`The ${label} contained invalid JavaScript and was not saved: ${detail}`);
   }
   return script;
+}
+
+function generatedPaletteCompatibility(bundle, versionKey) {
+  const css = String(bundle?.css || '');
+  const themeColors = { ...(bundle?.themeColors || {}) };
+  // Older gallery generations used their first room color for the visible wall
+  // while advertising an unrelated Panel swatch. Adopt that wall color as the
+  // panel default; normalizeThemeColorCss then turns it into --color-panel.
+  const roomColor = css.match(/--room-color-0\s*:\s*(#[0-9a-f]{3,8})/i)?.[1];
+  if (roomColor) {
+    const savedPanel = editedTheme.versions?.[versionKey]?.colors?.panel;
+    if (!savedPanel || savedPanel.toLowerCase() === String(themeColors.panel || '').toLowerCase()) {
+      ensureVersionColorsObject(versionKey);
+      editedTheme.versions[versionKey].colors.panel = roomColor;
+    }
+    themeColors.panel = roomColor;
+  }
+  return { css, themeColors };
 }
 
 function hydratePublicLayouts() {
@@ -101,8 +122,14 @@ function hydratePublicLayouts() {
       nextId += 1;
     }
     idOwners.set(id, layout.key);
+    const compatiblePalette = generatedPaletteCompatibility(layout.publicBundle, layout.key);
+    const normalizedPublicCss = window.PaletteColors?.normalizeThemeColorCss
+      ? window.PaletteColors.normalizeThemeColorCss(compatiblePalette.css, compatiblePalette.themeColors)
+      : layout.publicBundle?.css;
     const publicBundle = layout.publicBundle ? {
       ...layout.publicBundle,
+      themeColors: compatiblePalette.themeColors,
+      css: normalizedPublicCss,
       renderScript: sanitizePublicRenderScript(layout.publicBundle.renderScript),
     } : layout.publicBundle;
     byKey.set(layout.key, {
@@ -111,6 +138,7 @@ function hydratePublicLayouts() {
       generated: true,
       publicGenerated: true,
       publicBundle,
+      colorKeys: window.PaletteColors?.detectColorKeysFromCss?.(normalizedPublicCss) || layout.colorKeys,
       referenceImage: savedReferenceImage,
     });
   });
@@ -135,7 +163,9 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
   const bundle = {
     ...data.bundle,
     presentation: { ...(data.bundle.presentation || {}), id: key, metaphor: data.metaphor || data.bundle.presentation?.metaphor || key },
-    css: replaceKey(data.bundle.css),
+    css: window.PaletteColors?.normalizeThemeColorCss
+      ? window.PaletteColors.normalizeThemeColorCss(replaceKey(data.bundle.css), data.bundle.themeColors)
+      : replaceKey(data.bundle.css),
     renderScript,
   };
   const savedReferenceImage = /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(String(referenceImage?.image || ''))
@@ -155,7 +185,8 @@ function createPublicGeneratedLayout(data, prompt, designSpace, referenceImage =
     ownerParticipantId: participantIdValue(),
     prompt,
     examplePrompt: prompt,
-    colorKeys: ['background', 'primary', 'accent', 'paper', 'panel', 'secondary'],
+    colorKeys: window.PaletteColors?.detectColorKeysFromCss?.(bundle.css)
+      || ['background', 'primary', 'accent', 'paper'],
     designSpace: designSpace || null,
     publicBundle: bundle,
     referenceImage: savedReferenceImage,

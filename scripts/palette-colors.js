@@ -29,6 +29,31 @@ window.PaletteColors = (() => {
 
   const BUILTIN_LAYOUTS = new Set(['grid', 'clothesline', 'desk', 'directory']);
 
+  function normalizeThemeColorCss(css, themeColors) {
+    let normalized = String(css || '');
+    normalized = normalized.replace(
+      /--color-(?:background|primary|accent|paper|panel|secondary)\s*:\s*[^;}{]+;?/gi,
+      ''
+    );
+    Object.entries(themeColors || {}).forEach(([key, value]) => {
+      if (!GENERIC_SWATCHES[key]) return;
+      const color = String(value || '').trim();
+      if (!/^#[0-9a-f]{3,8}$/i.test(color)) return;
+      const escaped = color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      normalized = normalized.replace(
+        new RegExp(`${escaped}(?![0-9a-f])`, 'gi'),
+        `var(--color-${key})`
+      );
+    });
+    return normalized;
+  }
+
+  function detectColorKeysFromCss(css) {
+    return Object.keys(GENERIC_SWATCHES).filter((key) => (
+      new RegExp(`var\\(\\s*--color-${key}\\b`).test(String(css || ''))
+    ));
+  }
+
   function swatchForGenerated(key, layoutKey) {
     const base = SWATCHES.find((swatch) => swatch.key === key) || { key, label: key, hint: '' };
     return {
@@ -123,5 +148,5 @@ window.PaletteColors = (() => {
     };
   }
 
-  return { SWATCHES, forLayout, hexToHsl, hslToHex, fromPad, padPosition, toHex, parseHex };
+  return { SWATCHES, forLayout, normalizeThemeColorCss, detectColorKeysFromCss, hexToHsl, hslToHex, fromPad, padPosition, toHex, parseHex };
 })();

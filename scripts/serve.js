@@ -411,6 +411,10 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req));
       // Reload so generation parsing and prompt fixes apply without restarting
       // the local authoring server.
+      // Generation modules are hot-reloaded during local authoring. Reload the
+      // shared color helpers too so generate-template never sees an older export
+      // shape after palette code changes.
+      delete require.cache[require.resolve('./color-keys.js')];
       delete require.cache[require.resolve('./generate-template.js')];
       const { generateTemplate } = require('./generate-template.js');
       const { buildContentModel } = require('./build-content.js');

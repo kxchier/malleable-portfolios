@@ -17,6 +17,7 @@ const {
 
 const {
   detectColorKeysFromCss,
+  normalizeThemeColorCss,
   shortDisplayName,
   pickThemeColorsForKeys,
   THEME_COLOR_KEYS,
@@ -106,6 +107,44 @@ function repairJsonStringLiterals(jsonText) {
   return repaired;
 }
 
+function normalizeEditableSpacingCss(css, themeSpacing = {}) {
+  let normalized = String(css || '').replace(
+    /--space-(?:gridGap|artSize|imagePadding)\s*:\s*[^;}{]+;?/gi,
+    ''
+  );
+  const tokens = ['gridGap', 'artSize', 'imagePadding'];
+  tokens.forEach((token) => {
+    const value = String(themeSpacing?.[token] || '').trim();
+    if (!/^[0-9.]+(?:rem|em|px|vw|%)$/i.test(value)) return;
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    normalized = normalized.replace(new RegExp(`${escaped}(?![a-z0-9.%])`, 'gi'), `var(--space-${token})`);
+  });
+
+  const compatibilityRules = [];
+  if (!normalized.includes('var(--space-gridGap)')) {
+    compatibilityRules.push(`
+:is(.generated-collection, [data-generated-collection], .generated-layout) {
+  column-gap: var(--space-gridGap);
+  row-gap: var(--space-gridGap);
+}`);
+  }
+  if (!normalized.includes('var(--space-artSize)')) {
+    compatibilityRules.push(`
+.generated-work-tile:not([data-fixed-size="true"]),
+[data-generated-artwork-image="true"]:not([data-fixed-size="true"]) {
+  width: var(--space-artSize);
+  max-width: var(--space-artSize);
+}`);
+  }
+  if (!normalized.includes('var(--space-imagePadding)')) {
+    compatibilityRules.push(`
+.generated-work-tile:not([data-fixed-size="true"]) {
+  padding: var(--space-imagePadding);
+}`);
+  }
+  return normalized + compatibilityRules.join('');
+}
+
 function validateBundle(bundle) {
   const errors = [];
   if (!bundle.name) errors.push('missing name');
@@ -127,6 +166,13 @@ function validateBundle(bundle) {
   if (!bundle.themeColors || typeof bundle.themeColors !== 'object') {
     errors.push('missing themeColors (must match editor swatches for this layout)');
   }
+  if (bundle.css && bundle.themeColors && typeof bundle.themeColors === 'object') {
+    // Models occasionally repeat their declared palette as hex literals. Convert
+    // those exact palette values to editor tokens so old and new generators keep
+    // every advertised swatch live without flattening intentional shade variants.
+    bundle.css = normalizeThemeColorCss(bundle.css, bundle.themeColors);
+  }
+  if (bundle.css) bundle.css = normalizeEditableSpacingCss(bundle.css, bundle.themeSpacing);
   if (!bundle.editableSettings || typeof bundle.editableSettings !== 'object' || !Object.keys(bundle.editableSettings).length) {
     errors.push('missing editableSettings (generated layouts must expose structural controls)');
   }
@@ -592,4 +638,5 @@ module.exports = {
   callProvider,
   validateBundle,
   extractJson,
+  normalizeEditableSpacingCss,
 };

@@ -148,6 +148,7 @@ renderScript:
 - If you create a decorative outer wrapper around a helper-created collection section, put the collection metadata on the visible outer wrapper instead. Do not hide the editable collection target inside an inner shell, because cursor edits like padding, margins, borders, and backgrounds must affect the visible section.
 - helpers.workTile(imgPath, { className, alt, collectionIndex, workIndex, fixedSize }) — returns div with img for author artwork. Always pass collectionIndex: col.originalIndex and workIndex: wi so clicked images can be edited directly. Leave fixedSize unset/false so the size slider controls it; use fixedSize: true only for explicitly fixed-size concepts.
 - helpers.portfolioTitle() — optional; headings are usually in the page shell.
+- The shared page shell already includes the editable portfolio title. If the generated design creates its own title, nameplate, legend title, or equivalent branded heading, mark that element with data-text-role="portfolio-title"; the runtime will hide the duplicate shared header automatically. Do not show both titles.
 - Any generated portfolio/collection/work label text that should be editable must receive data-text-id, data-text-role, and data-text-fallback, or be created through the helper APIs.
 - Loop every collection and every image in col.images — NEVER skip artwork slots.
 - Mark draggable canvas elements with data-canvas-draggable="true" on work tiles when appropriate.

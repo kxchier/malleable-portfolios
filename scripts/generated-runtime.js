@@ -794,6 +794,14 @@ window.GeneratedRuntime = (() => {
         ...(resolvedModels.contentOverrides?.layoutSettings?.[layoutKey] || {}),
       },
     });
+    const shellHeader = document.querySelector('body > header');
+    if (shellHeader) {
+      const generatedTitle = Array.from(document.querySelectorAll(
+        '[data-text-role="portfolio-title"], [data-text-role="portfolio.title"], [data-text-id="portfolio-title"]'
+      )).find((candidate) => !shellHeader.contains(candidate));
+      shellHeader.hidden = Boolean(generatedTitle);
+      shellHeader.dataset.generatedTitleReplacement = generatedTitle ? 'true' : 'false';
+    }
     repairMissingArtworkImages(root, collections);
     helpers.applyWorkMetadata(root);
     mountDecorations(root, assets, decorations);
