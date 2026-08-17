@@ -1,0 +1,130 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "art-portfolio-study",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6",
+        "work_0_7",
+        "work_0_8",
+        "work_0_9",
+        "work_0_10",
+        "work_0_11",
+        "work_0_12"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "5sgsg copy",
+      "images": [
+        "Art/participants/12/art-portfolio-study/5sgsg copy.jpg"
+      ]
+    },
+    {
+      "id": "work_0_1",
+      "title": "aslkdhll ajxcn",
+      "images": [
+        "Art/participants/12/art-portfolio-study/aslkdhll_ajxcn.jpg"
+      ]
+    },
+    {
+      "id": "work_0_2",
+      "title": "breakin",
+      "images": [
+        "Art/participants/12/art-portfolio-study/breakin.jpg"
+      ]
+    },
+    {
+      "id": "work_0_3",
+      "title": "city",
+      "images": [
+        "Art/participants/12/art-portfolio-study/city.jpg"
+      ]
+    },
+    {
+      "id": "work_0_4",
+      "title": "honglu",
+      "images": [
+        "Art/participants/12/art-portfolio-study/honglu.jpg"
+      ]
+    },
+    {
+      "id": "work_0_5",
+      "title": "inumakicc",
+      "images": [
+        "Art/participants/12/art-portfolio-study/inumakicc.jpg"
+      ]
+    },
+    {
+      "id": "work_0_6",
+      "title": "inumakifall",
+      "images": [
+        "Art/participants/12/art-portfolio-study/inumakifall.jpg"
+      ]
+    },
+    {
+      "id": "work_0_7",
+      "title": "jelly",
+      "images": [
+        "Art/participants/12/art-portfolio-study/jelly.jpg"
+      ]
+    },
+    {
+      "id": "work_0_8",
+      "title": "maron copy",
+      "images": [
+        "Art/participants/12/art-portfolio-study/maron copy.jpg"
+      ]
+    },
+    {
+      "id": "work_0_9",
+      "title": "morningstr copy",
+      "images": [
+        "Art/participants/12/art-portfolio-study/morningstr copy.jpg"
+      ]
+    },
+    {
+      "id": "work_0_10",
+      "title": "olajd",
+      "images": [
+        "Art/participants/12/art-portfolio-study/olajd.jpg"
+      ]
+    },
+    {
+      "id": "work_0_11",
+      "title": "virginia",
+      "images": [
+        "Art/participants/12/art-portfolio-study/virginia.jpg"
+      ]
+    },
+    {
+      "id": "work_0_12",
+      "title": "xiao copy",
+      "images": [
+        "Art/participants/12/art-portfolio-study/xiao copy.jpg"
+      ]
+    }
+  ]
+}

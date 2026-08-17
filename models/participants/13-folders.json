@@ -1,0 +1,156 @@
+{
+  "portfolio": {
+    "id": "portfolio_1",
+    "title": "My Art Portfolio",
+    "artist": "artist_1",
+    "collections": [
+      "collection_0",
+      "collection_1",
+      "collection_2",
+      "collection_3"
+    ]
+  },
+  "artist": {
+    "id": "artist_1",
+    "name": "My Art Portfolio",
+    "bio": null,
+    "links": []
+  },
+  "collections": [
+    {
+      "id": "collection_0",
+      "title": "3D Artwork",
+      "works": [
+        "work_0_0",
+        "work_0_1",
+        "work_0_2",
+        "work_0_3",
+        "work_0_4",
+        "work_0_5",
+        "work_0_6"
+      ]
+    },
+    {
+      "id": "collection_1",
+      "title": "Code Art",
+      "works": [
+        "work_1_0",
+        "work_1_1",
+        "work_1_2"
+      ]
+    },
+    {
+      "id": "collection_2",
+      "title": "Cosplay Photography",
+      "works": [
+        "work_2_0"
+      ]
+    },
+    {
+      "id": "collection_3",
+      "title": "Traditional Art",
+      "works": [
+        "work_3_0"
+      ]
+    }
+  ],
+  "works": [
+    {
+      "id": "work_0_0",
+      "title": "2 JapaneseBathHouse 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/2_JapaneseBathHouse_3d.jpg"
+      ],
+      "description": "As I float in my thoughts in the hot springs in Japan, I provoke myself with thoughts such as “Can I 3D model this bath house?”\nI then proceed to go home and recreate the entire place in Blender.\nThis one is modeled after Sakura Onsen in Tokyo. Much of my time in the bath was spent thinking about how I’d model each object—especially the showers in the back."
+    },
+    {
+      "id": "work_0_1",
+      "title": "3 JapaneseBathHouse2 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/3_JapaneseBathHouse2_3d.jpg"
+      ],
+      "description": "Here is another bath house. I had a lot of fun making these scenes for a while. Each piece would take me around 3 days and a lot of computing power."
+    },
+    {
+      "id": "work_0_2",
+      "title": "4 LiminalSpaces 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/4_LiminalSpaces_3d.jpg"
+      ],
+      "description": "I was always a fan of the liminal spaces / pool rooms aesthetic, but after the recent release of The Backrooms, I was inspired to create this. From my earlier experiments with Japanese bath houses, I became a fan of using water in my 3D renders. The reflections are very nice. \nHere, I add some subtle details that bring an eerie, unsettling feeling, like the floating cube, darkening hallway, and shortening windows."
+    },
+    {
+      "id": "work_0_3",
+      "title": "5 Katana",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/5_Katana.jpg"
+      ],
+      "description": "This is the main animation on my home page. This is one of my first 3D animations made in blender, and I got to work with particle animation (petals) and camerawork."
+    },
+    {
+      "id": "work_0_4",
+      "title": "6 neonArcadeSpaceship 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/6_neonArcadeSpaceship_3d.jpg"
+      ],
+      "description": "Also one of my earlier works. I liked seeing vaporwave / neon aesthetics from the 80s, so I tried creating this. Also, I had some experience modeling spaceships as it was probably the second thing i ever 3d modeled"
+    },
+    {
+      "id": "work_0_5",
+      "title": "7 RedBathroom 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/7_RedBathroom_3d.jpg"
+      ],
+      "description": "Based off of SF MoMA’s red bathroom! As you can tell by now, I love taking inspiration from my surroundings."
+    },
+    {
+      "id": "work_0_6",
+      "title": "8 Psyduck 3d",
+      "images": [
+        "Art/participants/13/raine's folders/3D Artwork/8_Psyduck_3d.jpg"
+      ],
+      "description": "I made this around the time I started experimenting with low poly art and characters. The process was a lot quicker than the large scenes like bathhouses, and focused more on stylized cell shading and outlines that made shapes look great while simple."
+    },
+    {
+      "id": "work_1_0",
+      "title": "10 LoveMe audiovisual codeart still",
+      "images": [
+        "Art/participants/13/raine's folders/Code Art/10_LoveMe_audiovisual_codeart_still.jpg"
+      ],
+      "description": "Realtime audiovisual music video for “Love me, love me, love me” by Kikuo. Most of what’s in the video is purely reactive to audio. For example, the ceiling height and the wall lines move based on both left and right audio tracks (it’s quite cool when you listen with headphones), and the red boxes appear based on the volume of the music playing."
+    },
+    {
+      "id": "work_1_1",
+      "title": "11 Takayan audiovisual video",
+      "images": [
+        "Art/participants/13/raine's folders/Code Art/11_Takayan_audiovisual_video.jpg"
+      ],
+      "description": "This an audiovisual I made using a Japanese rap song called “Cheating” by Takayan. I think I particularly cooked with the mathematics behind this one—the lines get drawn in the circle in a way that combined forms a net with a whole in the middle. The music’s instruments compliment the audiovisuals as well, as they’re mostly clear, individual sounds that lead to beautiful waves such as the one you see in the above screenshot"
+    },
+    {
+      "id": "work_1_2",
+      "title": "9 candycrash still",
+      "images": [
+        "Art/participants/13/raine's folders/Code Art/9_candycrash_still.jpg"
+      ],
+      "description": "I used Java Processing to create an interactive squishy ball simulation featuring some fun color interactions and blending modes, with some physics-like reactions from the circles. I later re-implemented this on my website so I can share with my friends: https://www.koizura.me/candycrash/",
+      "link": "https://www.koizura.me/candycrash/"
+    },
+    {
+      "id": "work_2_0",
+      "title": "12 Asuka cosplayphotography",
+      "images": [
+        "Art/participants/13/raine's folders/Cosplay Photography/12_Asuka_cosplayphotography.jpg"
+      ],
+      "description": "Photography is another art form I enjoy. Here I did a beach photoshoot with a friend. I did some location planning, as well as a lot of improvisation on the spot, making use of all the great props of the environment.\nYou can find my photography portfolio on this instagram page: @krai.photo"
+    },
+    {
+      "id": "work_3_0",
+      "title": "1 bluelock drawing",
+      "images": [
+        "Art/participants/13/raine's folders/Traditional Art/1_bluelock_drawing.jpg"
+      ],
+      "description": "This is a redraw of a panel I found from a manga series called blue lock. My own personal touches mainly include background & line work. I enjoy working on pieces with dynamic movements and action, using things like motion blur and straight lines to show the speed of actions."
+    }
+  ]
+}

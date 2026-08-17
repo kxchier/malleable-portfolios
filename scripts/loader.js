@@ -73,7 +73,7 @@ function contentForSelectedArt(rawContent, manifest) {
   const artSource = window.PortfolioSupabase?.artSourceFromLocation?.() || 'example';
   const filtered = { ...(rawContent || {}) };
 
-  if (artSource === 'participant') {
+  if (artSource.startsWith('participant')) {
     // Keep current and legacy example titles from leaking into participant portfolios.
     const exampleTitles = new Set(['mary cassatt', 'louis wain']);
     filtered.text = { ...(filtered.text || {}) };

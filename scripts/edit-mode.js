@@ -3024,7 +3024,7 @@ function layoutPreviewSrc(layout) {
   const artSource = window.PortfolioSupabase?.artSourceFromLocation?.() || 'example';
   const participantId = window.PortfolioSupabase?.participantIdFromLocation?.() || '';
   url.searchParams.set('art', artSource);
-  if (artSource === 'participant' && participantId) url.searchParams.set('participant', participantId);
+  if (artSource.startsWith('participant') && participantId) url.searchParams.set('participant', participantId);
   else url.searchParams.delete('participant');
   return url.href;
 }
@@ -5005,9 +5005,16 @@ function setupSupabaseControls() {
   participantInput.value = window.PortfolioSupabase.participantIdFromLocation() || '';
   if (artSource) {
     const participantOption = artSource.querySelector('option[value="participant"]');
+    const foldersOption = artSource.querySelector('option[value="participant-folders"]');
     const syncArtSource = () => {
-      const hasParticipant = Boolean(window.PortfolioSupabase.participantIdFromLocation());
+      const participantId = window.PortfolioSupabase.participantIdFromLocation();
+      const hasParticipant = Boolean(participantId);
       if (participantOption) participantOption.disabled = !hasParticipant;
+      if (participantOption) participantOption.textContent = participantId === '13' ? 'My art — all' : 'My art';
+      if (foldersOption) {
+        foldersOption.hidden = participantId !== '13';
+        foldersOption.disabled = participantId !== '13';
+      }
       artSource.value = window.PortfolioSupabase.artSourceFromLocation();
     };
     syncArtSource();

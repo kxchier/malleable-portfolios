@@ -45,14 +45,20 @@ window.PortfolioSupabase = (() => {
   function artSourceFromLocation() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('art') === 'example') return 'example';
+    if (params.get('art') === 'participant-folders' && participantIdFromLocation() === '13') {
+      return 'participant-folders';
+    }
     return participantIdFromLocation() ? 'participant' : 'example';
   }
 
   function setArtSourceInUrl(source) {
     const url = new URL(window.location.href);
-    const normalized = source === 'participant' && participantIdFromLocation()
-      ? 'participant'
-      : 'example';
+    const participantId = participantIdFromLocation();
+    const normalized = source === 'participant-folders' && participantId === '13'
+      ? 'participant-folders'
+      : source === 'participant' && participantId
+        ? 'participant'
+        : 'example';
     url.searchParams.set('art', normalized);
     window.history.replaceState({}, '', url);
     return normalized;
@@ -68,8 +74,10 @@ window.PortfolioSupabase = (() => {
 
   function staticContentModelUrl() {
     const participantId = participantIdFromLocation();
-    if (artSourceFromLocation() === 'participant' && participantId) {
-      return `./models/participants/${encodeURIComponent(participantId)}.json`;
+    const source = artSourceFromLocation();
+    if (source.startsWith('participant') && participantId) {
+      const suffix = source === 'participant-folders' ? '-folders' : '';
+      return `./models/participants/${encodeURIComponent(participantId)}${suffix}.json`;
     }
     return './models/content.json';
   }

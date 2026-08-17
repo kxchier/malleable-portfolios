@@ -1,0 +1,1 @@
+I used Java Processing to create an interactive squishy ball simulation featuring some fun color interactions and blending modes, with some physics-like reactions from the circles. I later re-implemented this on my website so I can share with my friends: https://www.koizura.me/candycrash/

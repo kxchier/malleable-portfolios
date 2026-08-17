@@ -82,12 +82,24 @@ function artSelection(req) {
   const requestUrl = new URL(req.url, 'http://localhost');
   const participantId = String(requestUrl.searchParams.get('participant') || '')
     .trim().toLowerCase();
-  const wantsParticipant = requestUrl.searchParams.get('art') === 'participant';
+  const artSource = requestUrl.searchParams.get('art');
+  const wantsParticipant = artSource === 'participant' || artSource === 'participant-folders';
   if (wantsParticipant && /^[a-z0-9_-]{1,40}$/.test(participantId)) {
+    const variant = participantId === '13' && artSource === 'participant-folders'
+      ? 'folders'
+      : participantId === '13'
+        ? 'flat'
+        : '';
+    const participantRoot = path.join(ART_DIR, 'participants', participantId);
     return {
       kind: 'participant',
       participantId,
-      root: path.join(ART_DIR, 'participants', participantId),
+      variant,
+      root: variant === 'folders'
+        ? path.join(participantRoot, "raine's folders")
+        : variant === 'flat'
+          ? path.join(participantRoot, "raine's art")
+          : participantRoot,
     };
   }
   return { kind: 'example', participantId: '', root: EXAMPLE_ART_DIR };
@@ -162,7 +174,7 @@ const server = http.createServer(async (req, res) => {
     }
     const selection = artSelection(req);
     const contentFile = selection.kind === 'participant'
-      ? path.join(ROOT, 'models', 'participants', `${selection.participantId}.json`)
+      ? path.join(ROOT, 'models', 'participants', `${selection.participantId}${selection.variant === 'folders' ? '-folders' : ''}.json`)
       : path.join(ROOT, 'models', 'content.json');
     const { content, manifest } = writeContent(
       collectionsForRequest(req),

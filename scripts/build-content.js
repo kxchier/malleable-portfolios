@@ -186,13 +186,25 @@ if (require.main === module) {
     fs.readdirSync(participantsDir, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && /^[a-z0-9_-]{1,40}$/i.test(entry.name))
       .forEach((entry) => {
-        const participantCollections = buildCollections(path.join(participantsDir, entry.name));
+        const participantId = entry.name.toLowerCase();
+        const participantRoot = path.join(participantsDir, entry.name);
+        const participantCollections = buildCollections(
+          participantId === '13' ? path.join(participantRoot, "raine's art") : participantRoot
+        );
         writeContent(participantCollections, {
           'portfolio.title': storedText['portfolio.title'],
         }, {
-          contentFile: path.join(MODELS_DIR, 'participants', `${entry.name.toLowerCase()}.json`),
+          contentFile: path.join(MODELS_DIR, 'participants', `${participantId}.json`),
           writeManifest: false,
         });
+        if (participantId === '13') {
+          writeContent(buildCollections(path.join(participantRoot, "raine's folders")), {
+            'portfolio.title': storedText['portfolio.title'],
+          }, {
+            contentFile: path.join(MODELS_DIR, 'participants', '13-folders.json'),
+            writeManifest: false,
+          });
+        }
       });
   }
   console.log('Content model built:', CONTENT_FILE);

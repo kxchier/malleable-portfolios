@@ -1,0 +1,1 @@
+This is the main animation on my home page. This is one of my first 3D animations made in blender, and I got to work with particle animation (petals) and camerawork. 
